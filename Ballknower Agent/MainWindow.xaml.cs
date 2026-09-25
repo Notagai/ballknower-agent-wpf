@@ -199,21 +199,22 @@ public partial class MainWindow : Window
         try
         {
             /*
-             * Remove the previous captured frame before taking
-             * the next screenshot. Otherwise the desktop capture
-             * can include the old backdrop and the effect compounds
-             * every refresh cycle.
+             * The window itself must be transparent while we capture,
+             * but the previous backdrop also has to be removed from the
+             * visual tree first. Clearing Source alone is not enough to
+             * guarantee that WPF has presented the change to the desktop
+             * before CopyFromScreen runs.
              */
-            DesktopBackdrop.Source = null;
+            DesktopBackdrop.Visibility =
+                Visibility.Hidden;
 
-            /*
-             * Temporarily make the WPF overlay transparent.
-             * This lets the real desktop show through while
-             * the screenshot is captured.
-             */
             Opacity = 0;
 
             UpdateLayout();
+
+            Dispatcher.Invoke(
+                DispatcherPriority.Render,
+                new Action(() => { }));
 
             var bounds =
                 System.Windows.Forms.Screen
@@ -243,9 +244,9 @@ public partial class MainWindow : Window
             }
 
             /*
-             * Downscale the screenshot.
-             * This creates a subtle blur when we scale it
-             * back up and also keeps the backdrop inexpensive.
+             * Downscale and upscale once to produce the soft backdrop.
+             * This processing is performed entirely on the fresh desktop
+             * capture, never on the previous backdrop image.
              */
             int smallWidth =
                 Math.Max(
@@ -279,11 +280,6 @@ public partial class MainWindow : Window
                     smallHeight);
             }
 
-            /*
-             * Scale it back to screen size.
-             * Because the source was already reduced,
-             * the result is softly blurred.
-             */
             using var blurred =
                 new DrawingBitmap(
                     screenshot.Width,
@@ -341,6 +337,9 @@ public partial class MainWindow : Window
         }
         finally
         {
+            DesktopBackdrop.Visibility =
+                Visibility.Visible;
+
             Opacity = 1;
 
             _isCapturingBackdrop = false;
