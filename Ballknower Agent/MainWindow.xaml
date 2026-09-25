@@ -34,7 +34,8 @@
                     Padding="25"
                     Visibility="Collapsed">
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
+            <ScrollViewer x:Name="ChatScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
 
                 <StackPanel x:Name="MessagePanel"/>
@@ -151,6 +152,12 @@
 
             </ListBox>
         </Border>
+
+        <!-- Confetti easter egg overlay -->
+        <Canvas x:Name="ConfettiCanvas"
+                IsHitTestVisible="False"
+                Visibility="Collapsed"
+                Panel.ZIndex="1000"/>
 
         <!-- Input pill -->
         <Border x:Name="InputPill"
