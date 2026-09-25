@@ -42,6 +42,116 @@
             </ScrollViewer>
         </Border>
 
+        <!-- Command autocomplete -->
+        <Border x:Name="CommandSuggestions"
+                Width="700"
+                MaxHeight="260"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Background="Black"
+                CornerRadius="18"
+                Padding="8"
+                Visibility="Collapsed">
+
+            <ListBox x:Name="CommandSuggestionList"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Foreground="White"
+                     SelectionChanged="CommandSuggestionList_SelectionChanged"
+                     MouseDoubleClick="CommandSuggestionList_MouseDoubleClick"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+
+                        <Setter Property="Padding"
+                                Value="14,10"/>
+
+                        <Setter Property="Margin"
+                                Value="0,2"/>
+
+                        <Setter Property="Background"
+                                Value="Transparent"/>
+
+                        <Setter Property="Foreground"
+                                Value="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=Foreground}"/>
+
+                        <Setter Property="HorizontalContentAlignment"
+                                Value="Stretch"/>
+
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+
+                                    <Border x:Name="SuggestionItemBorder"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="12"
+                                            Padding="{TemplateBinding Padding}">
+
+                                        <ContentPresenter
+                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+
+                                    </Border>
+
+                                    <ControlTemplate.Triggers>
+
+                                        <Trigger Property="IsMouseOver"
+                                                 Value="True">
+                                            <Setter TargetName="SuggestionItemBorder"
+                                                    Property="Background"
+                                                    Value="#22000000"/>
+                                        </Trigger>
+
+                                        <Trigger Property="IsSelected"
+                                                 Value="True">
+                                            <Setter TargetName="SuggestionItemBorder"
+                                                    Property="Background"
+                                                    Value="#33000000"/>
+                                        </Trigger>
+
+                                    </ControlTemplate.Triggers>
+
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+
+                    </Style>
+                </ListBox.ItemContainerStyle>
+
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Command}"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,14,0"/>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Description}"
+                                       FontSize="14"
+                                       Opacity="0.65"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+
+                        </Grid>
+
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+
+            </ListBox>
+        </Border>
+
         <!-- Input pill -->
         <Border x:Name="InputPill"
                 Width="700"
@@ -67,6 +177,7 @@
                          VerticalContentAlignment="Center"
                          TextWrapping="NoWrap"
                          AcceptsReturn="False"
+                         TextChanged="ChatInput_TextChanged"
                          PreviewKeyDown="ChatInput_PreviewKeyDown"/>
 
             </Grid>

@@ -76,6 +76,8 @@ public partial class MainWindow : Window
     private bool _inputIsLight;
     private bool _messageAreaIsLight;
 
+    private bool _isApplyingCommandSuggestion;
+
     /*
      * /pin state.
      *
@@ -103,9 +105,6 @@ public partial class MainWindow : Window
         /*
          * Keep the window invisible while the initial
          * desktop backdrop and adaptive colors are prepared.
-         *
-         * This prevents the black/default color state from
-         * being displayed for a frame during startup.
          */
         Opacity = 0;
 
@@ -114,10 +113,6 @@ public partial class MainWindow : Window
         _blackTextBrush.Freeze();
         _whiteTextBrush.Freeze();
 
-        /*
-         * Start in the dark state so there is no white
-         * frame before adaptive colors are calculated.
-         */
         InputPill.Background =
             _darkBrush;
 
@@ -151,12 +146,6 @@ public partial class MainWindow : Window
         Closed +=
             MainWindow_Closed;
 
-        /*
-         * Actual close requests go through this event.
-         *
-         * This shows confirmation only while Ballknower
-         * is pinned.
-         */
         Closing +=
             MainWindow_Closing;
 
@@ -250,12 +239,9 @@ public partial class MainWindow : Window
     }
 
     private void MainWindow_Closing(
-    object? sender,
-    System.ComponentModel.CancelEventArgs e)
+        object? sender,
+        System.ComponentModel.CancelEventArgs e)
     {
-        /*
-         * If Ballknower isn't pinned, allow it to close normally.
-         */
         if (!_isPinned || _allowClose)
         {
             return;
@@ -275,15 +261,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        /*
-         * Cancel the close request.
-         */
         e.Cancel = true;
 
-        /*
-         * Restore Ballknower's activation after the
-         * confirmation dialog closes.
-         */
         Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,
             new Action(
@@ -311,28 +290,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        /*
-         * PINNED:
-         *
-         * Stay visible when the user Alt-Tabs to another
-         * application.
-         */
         if (_isPinned)
         {
             return;
         }
 
-        /*
-         * UNPINNED:
-         *
-         * Preserve the original Ballknower behavior.
-         */
         Hide();
     }
 
     private void MainWindow_Activated(
-    object? sender,
-    EventArgs e)
+        object? sender,
+        EventArgs e)
     {
         if (!_isPinned)
             return;
@@ -483,10 +451,6 @@ public partial class MainWindow : Window
 
             Show();
 
-            /*
-             * Calculate colors after the backdrop has been
-             * installed, then reveal the window.
-             */
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Render,
                 new Action(
@@ -509,21 +473,10 @@ public partial class MainWindow : Window
 
         try
         {
-            /*
-             * Completely remove Ballknower from the desktop
-             * before taking the screenshot.
-             *
-             * Opacity = 0 is not sufficient because DWM can
-             * still include the window in the composed desktop.
-             */
             Opacity = 0;
 
             Hide();
 
-            /*
-             * Give Windows/WPF a chance to finish removing
-             * Ballknower from the visible desktop composition.
-             */
             Dispatcher.Invoke(
                 DispatcherPriority.Render,
                 new Action(() => { }));
@@ -633,10 +586,6 @@ public partial class MainWindow : Window
 
             image.Freeze();
 
-            /*
-             * Install the new backdrop while Ballknower is
-             * still hidden.
-             */
             DesktopBackdrop.Source =
                 image;
         }
@@ -650,10 +599,6 @@ public partial class MainWindow : Window
         {
             _isCapturingBackdrop = false;
 
-            /*
-             * Re-show Ballknower only after the new backdrop
-             * has been installed and its colors calculated.
-             */
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Render,
                 new Action(
@@ -665,10 +610,6 @@ public partial class MainWindow : Window
 
                             Show();
 
-                            /*
-                             * Keep it invisible until WPF has rendered
-                             * the new backdrop and colors.
-                             */
                             Dispatcher.BeginInvoke(
                                 DispatcherPriority.Render,
                                 new Action(
@@ -706,6 +647,296 @@ public partial class MainWindow : Window
             Visibility.Collapsed;
 
         UpdateAllAdaptiveColors();
+    }
+
+    /*
+     * Returns every command that the user is currently
+     * allowed to autocomplete.
+     */
+    private List<CommandSuggestion> GetEligibleCommands()
+    {
+        var commands =
+            new Dictionary<string, CommandSuggestion>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                ["settings"] =
+                    new CommandSuggestion
+                    {
+                        Command = "settings",
+                        Description = "Opens Ballknower settings."
+                    },
+
+                ["logs"] =
+                    new CommandSuggestion
+                    {
+                        Command = "logs",
+                        Description = "Opens the Ballknower error logs."
+                    },
+
+                ["see"] =
+                    new CommandSuggestion
+                    {
+                        Command = "see",
+                        Description = "Shows the desktop without the blur."
+                    },
+
+                ["pin"] =
+                    new CommandSuggestion
+                    {
+                        Command = "pin",
+                        Description = "Keeps Ballknower visible when switching apps."
+                    },
+
+                ["unpin"] =
+                    new CommandSuggestion
+                    {
+                        Command = "unpin",
+                        Description = "Makes Ballknower hide when it loses focus."
+                    }
+            };
+
+        foreach (var shortcut in
+                 _settings.Shortcuts)
+        {
+            string command =
+                shortcut.Key?
+                    .Trim()
+                    .TrimStart('/');
+
+            if (string.IsNullOrWhiteSpace(command))
+                continue;
+
+            string launchPath =
+                shortcut.Value ?? string.Empty;
+
+            string appName =
+                Path.GetFileName(
+                    launchPath);
+
+            if (string.IsNullOrWhiteSpace(appName))
+            {
+                appName =
+                    launchPath;
+            }
+
+            commands[command] =
+                new CommandSuggestion
+                {
+                    Command = command,
+
+                    Description =
+                        $"Opens {appName}"
+                };
+        }
+
+        var result =
+            new List<CommandSuggestion>(
+                commands.Values);
+
+        result.Sort(
+            (a, b) =>
+                StringComparer.OrdinalIgnoreCase.Compare(
+                    a.Command,
+                    b.Command));
+
+        return result;
+    }
+
+    private void ChatInput_TextChanged(
+        object sender,
+        TextChangedEventArgs e)
+    {
+        if (_isApplyingCommandSuggestion)
+            return;
+
+        UpdateCommandSuggestions();
+    }
+
+    private void UpdateCommandSuggestions()
+    {
+        string text =
+            ChatInput.Text;
+
+        string trimmed =
+            text.TrimStart();
+
+        /*
+         * Suggestions only apply while the input is a
+         * single command token.
+         */
+        if (!trimmed.StartsWith("/") ||
+            trimmed.Length == 0)
+        {
+            HideCommandSuggestions();
+            return;
+        }
+
+        if (trimmed.Contains(' ') ||
+            trimmed.Contains('\t') ||
+            trimmed.Contains('\r') ||
+            trimmed.Contains('\n'))
+        {
+            HideCommandSuggestions();
+            return;
+        }
+
+        string prefix =
+            trimmed.Substring(1);
+
+        var eligibleCommands =
+            GetEligibleCommands();
+
+        var matches =
+            new List<CommandSuggestion>();
+
+        foreach (var command in
+                 eligibleCommands)
+        {
+            if (command.Command.StartsWith(
+                    prefix,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                matches.Add(command);
+            }
+        }
+
+        if (matches.Count == 0)
+        {
+            HideCommandSuggestions();
+            return;
+        }
+
+        CommandSuggestionList.ItemsSource =
+            matches;
+
+        CommandSuggestionList.SelectedIndex =
+            0;
+
+        CommandSuggestions.Visibility =
+            Visibility.Visible;
+
+        UpdateCommandSuggestionColors();
+        UpdateCommandSuggestionPosition();
+    }
+
+    private void HideCommandSuggestions()
+    {
+        CommandSuggestions.Visibility =
+            Visibility.Collapsed;
+
+        CommandSuggestionList.ItemsSource =
+            null;
+    }
+
+    private void UpdateCommandSuggestionPosition()
+    {
+        double pillY =
+            _inputPillTransform.Y;
+
+        double suggestionHeight =
+            CommandSuggestions.ActualHeight > 0
+                ? CommandSuggestions.ActualHeight
+                : Math.Min(
+                    260,
+                    Math.Max(
+                        70,
+                        GetEligibleCommands().Count * 58 + 16));
+
+        CommandSuggestions.Margin =
+            new Thickness(
+                0,
+                Math.Max(
+                    0,
+                    pillY -
+                    suggestionHeight -
+                    12),
+                0,
+                0);
+    }
+
+    private void UpdateCommandSuggestionColors()
+    {
+        bool lightBackground =
+            _inputIsLight;
+
+        CommandSuggestions.Background =
+            lightBackground
+                ? _lightBrush
+                : _darkBrush;
+
+        CommandSuggestionList.Foreground =
+            lightBackground
+                ? _blackTextBrush
+                : _whiteTextBrush;
+
+        /*
+         * Rebuild the item containers' foreground so the
+         * adaptive color is applied even after virtualization.
+         */
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Loaded,
+            new Action(
+                () =>
+                {
+                    foreach (var item in
+                             CommandSuggestionList.Items)
+                    {
+                        if (CommandSuggestionList
+                                .ItemContainerGenerator
+                                .ContainerFromItem(item)
+                            is ListBoxItem container)
+                        {
+                            container.Foreground =
+                                lightBackground
+                                    ? _blackTextBrush
+                                    : _whiteTextBrush;
+                        }
+                    }
+                }));
+    }
+
+    private void CommandSuggestionList_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        UpdateCommandSuggestionColors();
+    }
+
+    private void CommandSuggestionList_MouseDoubleClick(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        ApplySelectedCommandSuggestion();
+
+        e.Handled = true;
+    }
+
+    private void ApplySelectedCommandSuggestion()
+    {
+        if (CommandSuggestionList.SelectedItem
+            is not CommandSuggestion suggestion)
+        {
+            return;
+        }
+
+        _isApplyingCommandSuggestion = true;
+
+        try
+        {
+            ChatInput.Text =
+                "/" + suggestion.Command;
+
+            ChatInput.CaretIndex =
+                ChatInput.Text.Length;
+        }
+        finally
+        {
+            _isApplyingCommandSuggestion = false;
+        }
+
+        HideCommandSuggestions();
+
+        ChatInput.Focus();
     }
 
     private void UpdateAllAdaptiveColors()
@@ -764,6 +995,16 @@ public partial class MainWindow : Window
                 shouldBeLight
                     ? _blackTextBrush
                     : _whiteTextBrush;
+
+            /*
+             * Keep the autocomplete popup synchronized with
+             * the pill's adaptive color.
+             */
+            if (CommandSuggestions.Visibility ==
+                Visibility.Visible)
+            {
+                UpdateCommandSuggestionColors();
+            }
         }
         catch (Exception ex)
         {
@@ -1300,10 +1541,6 @@ public partial class MainWindow : Window
                 ? height * ChatPillPosition
                 : height * InitialPillPosition;
 
-        /*
-         * Don't kill an active animation during a normal
-         * window layout update.
-         */
         if (_pillStoryboard is null)
         {
             _inputPillTransform.Y =
@@ -1311,6 +1548,7 @@ public partial class MainWindow : Window
         }
 
         UpdateMessageAreaPosition();
+        UpdateCommandSuggestionPosition();
         UpdateAllAdaptiveColors();
     }
 
@@ -1371,6 +1609,7 @@ public partial class MainWindow : Window
                 targetY;
 
             UpdateMessageAreaPosition();
+            UpdateCommandSuggestionPosition();
             UpdateAllAdaptiveColors();
 
             return;
@@ -1411,6 +1650,7 @@ public partial class MainWindow : Window
         animation.CurrentTimeInvalidated +=
             (_, _) =>
             {
+                UpdateCommandSuggestionPosition();
                 UpdateAllAdaptiveColors();
             };
 
@@ -1421,6 +1661,7 @@ public partial class MainWindow : Window
                     targetY;
 
                 UpdateMessageAreaPosition();
+                UpdateCommandSuggestionPosition();
                 UpdateAllAdaptiveColors();
 
                 _pillStoryboard = null;
@@ -1452,10 +1693,18 @@ public partial class MainWindow : Window
             return;
 
         /*
-         * Escape requests a normal close.
-         * MainWindow_Closing will show the confirmation
-         * only while pinned.
+         * Escape first dismisses autocomplete.
+         * A second Escape closes Ballknower.
          */
+        if (CommandSuggestions.Visibility ==
+            Visibility.Visible)
+        {
+            HideCommandSuggestions();
+
+            e.Handled = true;
+            return;
+        }
+
         Close();
 
         e.Handled = true;
@@ -1502,6 +1751,64 @@ public partial class MainWindow : Window
         object sender,
         System.Windows.Input.KeyEventArgs e)
     {
+        /*
+         * Autocomplete keyboard navigation.
+         */
+        if (CommandSuggestions.Visibility ==
+            Visibility.Visible)
+        {
+            if (e.Key == Key.Down)
+            {
+                if (CommandSuggestionList.Items.Count > 0)
+                {
+                    int nextIndex =
+                        Math.Min(
+                            CommandSuggestionList.SelectedIndex + 1,
+                            CommandSuggestionList.Items.Count - 1);
+
+                    CommandSuggestionList.SelectedIndex =
+                        nextIndex;
+
+                    CommandSuggestionList.ScrollIntoView(
+                        CommandSuggestionList.SelectedItem);
+                }
+
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Up)
+            {
+                if (CommandSuggestionList.Items.Count > 0)
+                {
+                    int previousIndex =
+                        Math.Max(
+                            CommandSuggestionList.SelectedIndex - 1,
+                            0);
+
+                    CommandSuggestionList.SelectedIndex =
+                        previousIndex;
+
+                    CommandSuggestionList.ScrollIntoView(
+                        CommandSuggestionList.SelectedItem);
+                }
+
+                e.Handled = true;
+                return;
+            }
+
+            /*
+             * Tab accepts the selected suggestion.
+             */
+            if (e.Key == Key.Tab)
+            {
+                ApplySelectedCommandSuggestion();
+
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key != Key.Enter)
             return;
 
@@ -1515,6 +1822,8 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrWhiteSpace(message))
             return;
+
+        HideCommandSuggestions();
 
         ChatInput.Clear();
 
@@ -1531,10 +1840,6 @@ public partial class MainWindow : Window
                 return;
             }
 
-            /*
-             * Move the pill immediately on the FIRST
-             * normal chat message.
-             */
             if (!_hasEnteredChat)
             {
                 AnimateInputPillDown();
@@ -2201,5 +2506,14 @@ public partial class MainWindow : Window
             text);
 
         UpdateMessageAreaColor();
+    }
+
+    private sealed class CommandSuggestion
+    {
+        public string Command { get; init; } =
+            string.Empty;
+
+        public string Description { get; init; } =
+            string.Empty;
     }
 }
