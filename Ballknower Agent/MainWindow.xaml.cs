@@ -7,8 +7,6 @@ using Ballknower.Tools;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
-using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -22,9 +20,6 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
-using DrawingBitmap = System.Drawing.Bitmap;
-using DrawingGraphics = System.Drawing.Graphics;
-using DrawingPixelFormat = System.Drawing.Imaging.PixelFormat;
 
 namespace Ballknower;
 
@@ -35,8 +30,6 @@ public partial class MainWindow : Window
     private const double MessageGap = 16;
     private const double PillAnimationMilliseconds = 600;
 
-    private const int BackdropRefreshMilliseconds = 125;
-
     private readonly AppSettings _settings;
     private readonly List<OpenRouterMessage> _conversation;
     private readonly CommandParser _commandParser;
@@ -46,14 +39,11 @@ public partial class MainWindow : Window
     private readonly TranslateTransform _inputPillTransform;
     private readonly TranslateTransform _messageAreaTransform;
 
-    private readonly DispatcherTimer _backdropTimer;
-
     private SettingsWindow? _settingsWindow;
     private Storyboard? _pillStoryboard;
 
     private bool _isProcessing;
     private bool _hasEnteredChat;
-    private bool _isCapturingBackdrop;
 
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath(
@@ -137,46 +127,64 @@ public partial class MainWindow : Window
                 }
             };
 
+        SourceInitialized +=
+            (_, _) =>
+            {
+                EnableDesktopBlur();
+            };
+
         ContentRoot.Loaded +=
             (_, _) =>
             {
                 UpdateLayoutPositions();
 
                 ChatInput.Focus();
-
-                Dispatcher.BeginInvoke(
-                    DispatcherPriority.ApplicationIdle,
-                    new Action(
-                        UpdateDesktopBackdrop));
             };
 
         PreviewKeyDown +=
             MainWindow_PreviewKeyDown;
-
-        _backdropTimer =
-            new DispatcherTimer
-            {
-                Interval =
-                    TimeSpan.FromMilliseconds(
-                        BackdropRefreshMilliseconds)
-            };
-
-        _backdropTimer.Tick +=
-            (_, _) => UpdateDesktopBackdrop();
-
-        Loaded +=
-            (_, _) =>
-            {
-                _backdropTimer.Start();
-            };
     }
+
+    private enum AccentState
+    {
+        Disabled = 0,
+        EnableGradient = 1,
+        EnableTransparentGradient = 2,
+        EnableBlurBehind = 3,
+        EnableAcrylicBlurBehind = 4
+    }
+
+    private enum WindowCompositionAttribute
+    {
+        AccentPolicy = 19
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct AccentPolicy
+    {
+        public AccentState AccentState;
+        public int AccentFlags;
+        public int GradientColor;
+        public int AnimationId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowCompositionAttributeData
+    {
+        public WindowCompositionAttribute Attribute;
+        public IntPtr Data;
+        public int SizeOfData;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int SetWindowCompositionAttribute(
+        IntPtr hwnd,
+        ref WindowCompositionAttributeData data);
 
     private void MainWindow_Closed(
         object? sender,
         EventArgs e)
     {
-        _backdropTimer.Stop();
-
         _pillStoryboard?.Stop();
 
         if (_settingsWindow is not null)
@@ -186,145 +194,57 @@ public partial class MainWindow : Window
         }
     }
 
-    private void UpdateDesktopBackdrop()
+    private void EnableDesktopBlur()
     {
-        if (_isCapturingBackdrop)
-            return;
+        var hwnd =
+            new System.Windows.Interop.WindowInteropHelper(this).Handle;
 
-        if (!IsVisible)
-            return;
+        var accent =
+            new AccentPolicy
+            {
+                AccentState =
+                    AccentState.EnableBlurBehind,
 
-        _isCapturingBackdrop = true;
+                AccentFlags = 0,
+
+                GradientColor =
+                    0x01000000,
+
+                AnimationId = 0
+            };
+
+        int size =
+            Marshal.SizeOf<AccentPolicy>();
+
+        IntPtr accentPtr =
+            Marshal.AllocHGlobal(size);
 
         try
         {
-            /*
-             * Never capture the screen while this window is visible.
-             * WPF can still composite a transparent/hidden window into
-             * the frame being captured, which creates a feedback loop.
-             * Hide the whole window, capture the real desktop, then show it.
-             */
-            Hide();
+            Marshal.StructureToPtr(
+                accent,
+                accentPtr,
+                false);
 
-            var bounds =
-                System.Windows.Forms.Screen
-                    .PrimaryScreen?
-                    .Bounds;
+            var data =
+                new WindowCompositionAttributeData
+                {
+                    Attribute =
+                        WindowCompositionAttribute.AccentPolicy,
 
-            if (bounds is null)
-                return;
+                    Data = accentPtr,
 
-            using var screenshot =
-                new DrawingBitmap(
-                    bounds.Value.Width,
-                    bounds.Value.Height,
-                    DrawingPixelFormat.Format32bppArgb);
+                    SizeOfData = size
+                };
 
-            using (DrawingGraphics graphics =
-                   DrawingGraphics.FromImage(
-                       screenshot))
-            {
-                graphics.CopyFromScreen(
-                    bounds.Value.Left,
-                    bounds.Value.Top,
-                    0,
-                    0,
-                    screenshot.Size,
-                    System.Drawing.CopyPixelOperation.SourceCopy);
-            }
-
-            int smallWidth =
-                Math.Max(
-                    1,
-                    screenshot.Width / 4);
-
-            int smallHeight =
-                Math.Max(
-                    1,
-                    screenshot.Height / 4);
-
-            using var small =
-                new DrawingBitmap(
-                    smallWidth,
-                    smallHeight,
-                    DrawingPixelFormat.Format32bppArgb);
-
-            using (DrawingGraphics graphics =
-                   DrawingGraphics.FromImage(
-                       small))
-            {
-                graphics.InterpolationMode =
-                    System.Drawing.Drawing2D
-                        .InterpolationMode.HighQualityBilinear;
-
-                graphics.DrawImage(
-                    screenshot,
-                    0,
-                    0,
-                    smallWidth,
-                    smallHeight);
-            }
-
-            using var blurred =
-                new DrawingBitmap(
-                    screenshot.Width,
-                    screenshot.Height,
-                    DrawingPixelFormat.Format32bppArgb);
-
-            using (DrawingGraphics graphics =
-                   DrawingGraphics.FromImage(
-                       blurred))
-            {
-                graphics.InterpolationMode =
-                    System.Drawing.Drawing2D
-                        .InterpolationMode.HighQualityBilinear;
-
-                graphics.DrawImage(
-                    small,
-                    0,
-                    0,
-                    blurred.Width,
-                    blurred.Height);
-            }
-
-            using var stream =
-                new MemoryStream();
-
-            blurred.Save(
-                stream,
-                System.Drawing.Imaging.ImageFormat.Png);
-
-            stream.Position = 0;
-
-            var image =
-                new BitmapImage();
-
-            image.BeginInit();
-
-            image.CacheOption =
-                BitmapCacheOption.OnLoad;
-
-            image.StreamSource =
-                stream;
-
-            image.EndInit();
-
-            image.Freeze();
-
-            DesktopBackdrop.Source =
-                image;
-        }
-        catch (Exception ex)
-        {
-            AppLogger.Error(
-                "Desktop backdrop capture failed",
-                ex);
+            SetWindowCompositionAttribute(
+                hwnd,
+                ref data);
         }
         finally
         {
-            Show();
-
-            _isCapturingBackdrop = false;
+            Marshal.FreeHGlobal(
+                accentPtr);
         }
     }
 
@@ -517,7 +437,6 @@ public partial class MainWindow : Window
 
                 ChatInput.Focus();
 
-                UpdateDesktopBackdrop();
             };
 
         _settingsWindow.Show();
