@@ -23,8 +23,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 using DrawingBitmap = System.Drawing.Bitmap;
+using DrawingColor = System.Drawing.Color;
 using DrawingGraphics = System.Drawing.Graphics;
 using DrawingPixelFormat = System.Drawing.Imaging.PixelFormat;
+
+using WpfMessageBox = System.Windows.MessageBox;
+using WpfMessageBoxButton = System.Windows.MessageBoxButton;
+using WpfMessageBoxImage = System.Windows.MessageBoxImage;
+using WpfMessageBoxResult = System.Windows.MessageBoxResult;
 
 namespace Ballknower;
 
@@ -32,6 +38,7 @@ public partial class MainWindow : Window
 {
     private const double InitialPillPosition = 0.30;
     private const double ChatPillPosition = 0.65;
+
     private const double MessageGap = 16;
     private const double PillAnimationMilliseconds = 600;
 
@@ -44,11 +51,43 @@ public partial class MainWindow : Window
     private readonly TranslateTransform _inputPillTransform;
     private readonly TranslateTransform _messageAreaTransform;
 
+    private readonly SolidColorBrush _lightBrush =
+        new SolidColorBrush(Colors.White);
+
+    private readonly SolidColorBrush _darkBrush =
+        new SolidColorBrush(Colors.Black);
+
+    private readonly SolidColorBrush _blackTextBrush =
+        new SolidColorBrush(Colors.Black);
+
+    private readonly SolidColorBrush _whiteTextBrush =
+        new SolidColorBrush(Colors.White);
+
     private SettingsWindow? _settingsWindow;
+
     private Storyboard? _pillStoryboard;
 
     private bool _isProcessing;
     private bool _hasEnteredChat;
+    private bool _desktopUnblurred;
+    private bool _isCapturingBackdrop;
+
+    private bool _isRefreshingPinnedBackdrop;
+    private bool _inputIsLight;
+    private bool _messageAreaIsLight;
+
+    /*
+     * /pin state.
+     *
+     * When true, losing focus does NOT hide Ballknower.
+     */
+    private bool _isPinned;
+
+    /*
+     * Used when the user has explicitly confirmed that
+     * Ballknower should close.
+     */
+    private bool _allowClose;
 
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath(
@@ -60,6 +99,39 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        /*
+         * Keep the window invisible while the initial
+         * desktop backdrop and adaptive colors are prepared.
+         *
+         * This prevents the black/default color state from
+         * being displayed for a frame during startup.
+         */
+        Opacity = 0;
+
+        _lightBrush.Freeze();
+        _darkBrush.Freeze();
+        _blackTextBrush.Freeze();
+        _whiteTextBrush.Freeze();
+
+        /*
+         * Start in the dark state so there is no white
+         * frame before adaptive colors are calculated.
+         */
+        InputPill.Background =
+            _darkBrush;
+
+        MessageArea.Background =
+            _darkBrush;
+
+        ChatInput.Foreground =
+            _whiteTextBrush;
+
+        ChatInput.CaretBrush =
+            _whiteTextBrush;
+
+        _inputIsLight = false;
+        _messageAreaIsLight = false;
 
         _inputPillTransform =
             new TranslateTransform();
@@ -78,6 +150,21 @@ public partial class MainWindow : Window
 
         Closed +=
             MainWindow_Closed;
+
+        /*
+         * Actual close requests go through this event.
+         *
+         * This shows confirmation only while Ballknower
+         * is pinned.
+         */
+        Closing +=
+            MainWindow_Closing;
+
+        Deactivated +=
+            MainWindow_Deactivated;
+
+        Activated +=
+            MainWindow_Activated;
 
         _toolRegistry =
             new ToolRegistry();
@@ -147,18 +234,6 @@ public partial class MainWindow : Window
 
         PreviewKeyDown +=
             MainWindow_PreviewKeyDown;
-
-        _backdropTimer =
-            new DispatcherTimer
-            {
-                Interval =
-                    TimeSpan.FromMilliseconds(
-                        BackdropRefreshMilliseconds)
-            };
-
-        _backdropTimer.Tick +=
-            (_, _) => UpdateDesktopBackdrop();
-
     }
 
     private void MainWindow_Closed(
@@ -174,13 +249,118 @@ public partial class MainWindow : Window
         }
     }
 
+    private void MainWindow_Closing(
+    object? sender,
+    System.ComponentModel.CancelEventArgs e)
+    {
+        /*
+         * If Ballknower isn't pinned, allow it to close normally.
+         */
+        if (!_isPinned || _allowClose)
+        {
+            return;
+        }
+
+        var result =
+            WpfMessageBox.Show(
+                "Do you want to close Ballknower?",
+                "Close Ballknower",
+                WpfMessageBoxButton.YesNo,
+                WpfMessageBoxImage.Question);
+
+        if (result ==
+            WpfMessageBoxResult.Yes)
+        {
+            _allowClose = true;
+            return;
+        }
+
+        /*
+         * Cancel the close request.
+         */
+        e.Cancel = true;
+
+        /*
+         * Restore Ballknower's activation after the
+         * confirmation dialog closes.
+         */
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.ApplicationIdle,
+            new Action(
+                () =>
+                {
+                    if (!IsVisible)
+                        Show();
+
+                    Activate();
+
+                    ChatInput.Focus();
+                }));
+    }
+
+    private void MainWindow_Deactivated(
+        object? sender,
+        EventArgs e)
+    {
+        if (_isCapturingBackdrop)
+            return;
+
+        if (_settingsWindow is not null &&
+            _settingsWindow.IsVisible)
+        {
+            return;
+        }
+
+        /*
+         * PINNED:
+         *
+         * Stay visible when the user Alt-Tabs to another
+         * application.
+         */
+        if (_isPinned)
+        {
+            return;
+        }
+
+        /*
+         * UNPINNED:
+         *
+         * Preserve the original Ballknower behavior.
+         */
+        Hide();
+    }
+
+    private void MainWindow_Activated(
+    object? sender,
+    EventArgs e)
+    {
+        if (!_isPinned)
+            return;
+
+        if (_desktopUnblurred)
+            return;
+
+        if (_isCapturingBackdrop ||
+            _isRefreshingPinnedBackdrop)
+        {
+            return;
+        }
+
+        RefreshPinnedBackdrop();
+    }
+
     private void UpdateDesktopBackdrop()
     {
+        if (_desktopUnblurred)
+            return;
+
         if (DesktopBackdrop.Source is not null)
             return;
 
         try
         {
+            _isCapturingBackdrop = true;
+
             Hide();
 
             var bounds =
@@ -211,10 +391,14 @@ public partial class MainWindow : Window
             }
 
             int smallWidth =
-                Math.Max(1, screenshot.Width / 4);
+                Math.Max(
+                    1,
+                    screenshot.Width / 4);
 
             int smallHeight =
-                Math.Max(1, screenshot.Height / 4);
+                Math.Max(
+                    1,
+                    screenshot.Height / 4);
 
             using var small =
                 new DrawingBitmap(
@@ -273,12 +457,19 @@ public partial class MainWindow : Window
                 new BitmapImage();
 
             image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.StreamSource = stream;
+
+            image.CacheOption =
+                BitmapCacheOption.OnLoad;
+
+            image.StreamSource =
+                stream;
+
             image.EndInit();
+
             image.Freeze();
 
-            DesktopBackdrop.Source = image;
+            DesktopBackdrop.Source =
+                image;
         }
         catch (Exception ex)
         {
@@ -288,7 +479,804 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _isCapturingBackdrop = false;
+
             Show();
+
+            /*
+             * Calculate colors after the backdrop has been
+             * installed, then reveal the window.
+             */
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Render,
+                new Action(
+                    () =>
+                    {
+                        UpdateAllAdaptiveColors();
+
+                        Opacity = 1;
+                    }));
+        }
+    }
+
+    private void RefreshPinnedBackdrop()
+    {
+        if (_isRefreshingPinnedBackdrop)
+            return;
+
+        _isRefreshingPinnedBackdrop = true;
+        _isCapturingBackdrop = true;
+
+        try
+        {
+            /*
+             * Completely remove Ballknower from the desktop
+             * before taking the screenshot.
+             *
+             * Opacity = 0 is not sufficient because DWM can
+             * still include the window in the composed desktop.
+             */
+            Opacity = 0;
+
+            Hide();
+
+            /*
+             * Give Windows/WPF a chance to finish removing
+             * Ballknower from the visible desktop composition.
+             */
+            Dispatcher.Invoke(
+                DispatcherPriority.Render,
+                new Action(() => { }));
+
+            var bounds =
+                System.Windows.Forms.Screen
+                    .PrimaryScreen?
+                    .Bounds;
+
+            if (bounds is null)
+                return;
+
+            using var screenshot =
+                new DrawingBitmap(
+                    bounds.Value.Width,
+                    bounds.Value.Height,
+                    DrawingPixelFormat.Format32bppArgb);
+
+            using (DrawingGraphics graphics =
+                   DrawingGraphics.FromImage(
+                       screenshot))
+            {
+                graphics.CopyFromScreen(
+                    bounds.Value.Left,
+                    bounds.Value.Top,
+                    0,
+                    0,
+                    screenshot.Size,
+                    System.Drawing.CopyPixelOperation.SourceCopy);
+            }
+
+            int smallWidth =
+                Math.Max(
+                    1,
+                    screenshot.Width / 4);
+
+            int smallHeight =
+                Math.Max(
+                    1,
+                    screenshot.Height / 4);
+
+            using var small =
+                new DrawingBitmap(
+                    smallWidth,
+                    smallHeight,
+                    DrawingPixelFormat.Format32bppArgb);
+
+            using (DrawingGraphics graphics =
+                   DrawingGraphics.FromImage(
+                       small))
+            {
+                graphics.InterpolationMode =
+                    System.Drawing.Drawing2D
+                        .InterpolationMode.HighQualityBilinear;
+
+                graphics.DrawImage(
+                    screenshot,
+                    0,
+                    0,
+                    smallWidth,
+                    smallHeight);
+            }
+
+            using var blurred =
+                new DrawingBitmap(
+                    screenshot.Width,
+                    screenshot.Height,
+                    DrawingPixelFormat.Format32bppArgb);
+
+            using (DrawingGraphics graphics =
+                   DrawingGraphics.FromImage(
+                       blurred))
+            {
+                graphics.InterpolationMode =
+                    System.Drawing.Drawing2D
+                        .InterpolationMode.HighQualityBilinear;
+
+                graphics.DrawImage(
+                    small,
+                    0,
+                    0,
+                    blurred.Width,
+                    blurred.Height);
+            }
+
+            using var stream =
+                new MemoryStream();
+
+            blurred.Save(
+                stream,
+                System.Drawing.Imaging.ImageFormat.Png);
+
+            stream.Position = 0;
+
+            var image =
+                new BitmapImage();
+
+            image.BeginInit();
+
+            image.CacheOption =
+                BitmapCacheOption.OnLoad;
+
+            image.StreamSource =
+                stream;
+
+            image.EndInit();
+
+            image.Freeze();
+
+            /*
+             * Install the new backdrop while Ballknower is
+             * still hidden.
+             */
+            DesktopBackdrop.Source =
+                image;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(
+                "Pinned desktop backdrop refresh failed",
+                ex);
+        }
+        finally
+        {
+            _isCapturingBackdrop = false;
+
+            /*
+             * Re-show Ballknower only after the new backdrop
+             * has been installed and its colors calculated.
+             */
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Render,
+                new Action(
+                    () =>
+                    {
+                        try
+                        {
+                            UpdateAllAdaptiveColors();
+
+                            Show();
+
+                            /*
+                             * Keep it invisible until WPF has rendered
+                             * the new backdrop and colors.
+                             */
+                            Dispatcher.BeginInvoke(
+                                DispatcherPriority.Render,
+                                new Action(
+                                    () =>
+                                    {
+                                        Opacity = 1;
+
+                                        _isRefreshingPinnedBackdrop =
+                                            false;
+                                    }));
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLogger.Error(
+                                "Pinned backdrop reveal failed",
+                                ex);
+
+                            Opacity = 1;
+
+                            _isRefreshingPinnedBackdrop =
+                                false;
+                        }
+                    }));
+        }
+    }
+
+    private void UnblurDesktop()
+    {
+        _desktopUnblurred = true;
+
+        DesktopBackdrop.Source =
+            null;
+
+        BackdropOverlay.Visibility =
+            Visibility.Collapsed;
+
+        UpdateAllAdaptiveColors();
+    }
+
+    private void UpdateAllAdaptiveColors()
+    {
+        UpdateInputPillColor();
+        UpdateMessageAreaColor();
+    }
+
+    private void UpdateInputPillColor()
+    {
+        try
+        {
+            double x =
+                (ContentRoot.ActualWidth -
+                 InputPill.ActualWidth) / 2;
+
+            double y =
+                _inputPillTransform.Y;
+
+            double width =
+                InputPill.ActualWidth;
+
+            double height =
+                InputPill.ActualHeight;
+
+            if (width <= 0 ||
+                height <= 0)
+            {
+                return;
+            }
+
+            double luminance =
+                GetAdaptiveLuminance(
+                    x,
+                    y,
+                    width,
+                    height);
+
+            bool shouldBeLight =
+                luminance < 0.50;
+
+            _inputIsLight =
+                shouldBeLight;
+
+            InputPill.Background =
+                shouldBeLight
+                    ? _lightBrush
+                    : _darkBrush;
+
+            ChatInput.Foreground =
+                shouldBeLight
+                    ? _blackTextBrush
+                    : _whiteTextBrush;
+
+            ChatInput.CaretBrush =
+                shouldBeLight
+                    ? _blackTextBrush
+                    : _whiteTextBrush;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(
+                "Input pill color update failed",
+                ex);
+        }
+    }
+
+    private void UpdateMessageAreaColor()
+    {
+        try
+        {
+            if (MessageArea.Visibility !=
+                Visibility.Visible)
+            {
+                return;
+            }
+
+            double x =
+                (ContentRoot.ActualWidth -
+                 MessageArea.ActualWidth) / 2;
+
+            double y =
+                _messageAreaTransform.Y;
+
+            double width =
+                MessageArea.ActualWidth;
+
+            double height =
+                MessageArea.ActualHeight;
+
+            if (width <= 0 ||
+                height <= 0)
+            {
+                return;
+            }
+
+            double luminance =
+                GetAdaptiveLuminance(
+                    x,
+                    y,
+                    width,
+                    height);
+
+            bool shouldBeLight =
+                luminance < 0.50;
+
+            _messageAreaIsLight =
+                shouldBeLight;
+
+            MessageArea.Background =
+                shouldBeLight
+                    ? _lightBrush
+                    : _darkBrush;
+
+            UpdateMessageTextColors(
+                shouldBeLight);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error(
+                "Message area color update failed",
+                ex);
+        }
+    }
+
+    private double GetAdaptiveLuminance(
+        double x,
+        double y,
+        double width,
+        double height)
+    {
+        if (_desktopUnblurred)
+        {
+            return SampleScreenAroundRegion(
+                x,
+                y,
+                width,
+                height);
+        }
+
+        return SampleBackdropAroundRegion(
+            x,
+            y,
+            width,
+            height);
+    }
+
+    private double SampleBackdropAroundRegion(
+        double x,
+        double y,
+        double width,
+        double height)
+    {
+        if (DesktopBackdrop.Source is not BitmapSource bitmap)
+            return 0.0;
+
+        const double sampleSize = 35;
+
+        double scaleX =
+            bitmap.PixelWidth /
+            Math.Max(
+                1.0,
+                ContentRoot.ActualWidth);
+
+        double scaleY =
+            bitmap.PixelHeight /
+            Math.Max(
+                1.0,
+                ContentRoot.ActualHeight);
+
+        double total = 0;
+        int regions = 0;
+
+        total +=
+            SampleBackdropRegion(
+                bitmap,
+                x - sampleSize,
+                y,
+                sampleSize,
+                height,
+                scaleX,
+                scaleY);
+
+        regions++;
+
+        total +=
+            SampleBackdropRegion(
+                bitmap,
+                x + width,
+                y,
+                sampleSize,
+                height,
+                scaleX,
+                scaleY);
+
+        regions++;
+
+        total +=
+            SampleBackdropRegion(
+                bitmap,
+                x,
+                y - sampleSize,
+                width,
+                sampleSize,
+                scaleX,
+                scaleY);
+
+        regions++;
+
+        total +=
+            SampleBackdropRegion(
+                bitmap,
+                x,
+                y + height,
+                width,
+                sampleSize,
+                scaleX,
+                scaleY);
+
+        regions++;
+
+        return regions == 0
+            ? 0.0
+            : total / regions;
+    }
+
+    private double SampleBackdropRegion(
+        BitmapSource bitmap,
+        double x,
+        double y,
+        double width,
+        double height,
+        double scaleX,
+        double scaleY)
+    {
+        double rootWidth =
+            Math.Max(
+                1.0,
+                ContentRoot.ActualWidth);
+
+        double rootHeight =
+            Math.Max(
+                1.0,
+                ContentRoot.ActualHeight);
+
+        double left =
+            Math.Max(
+                0,
+                x);
+
+        double top =
+            Math.Max(
+                0,
+                y);
+
+        double right =
+            Math.Min(
+                rootWidth,
+                x + width);
+
+        double bottom =
+            Math.Min(
+                rootHeight,
+                y + height);
+
+        if (right <= left ||
+            bottom <= top)
+        {
+            return 0.0;
+        }
+
+        int pixelLeft =
+            Math.Clamp(
+                (int)(left * scaleX),
+                0,
+                bitmap.PixelWidth - 1);
+
+        int pixelTop =
+            Math.Clamp(
+                (int)(top * scaleY),
+                0,
+                bitmap.PixelHeight - 1);
+
+        int pixelRight =
+            Math.Clamp(
+                (int)(right * scaleX),
+                pixelLeft + 1,
+                bitmap.PixelWidth);
+
+        int pixelBottom =
+            Math.Clamp(
+                (int)(bottom * scaleY),
+                pixelTop + 1,
+                bitmap.PixelHeight);
+
+        int sampleWidth =
+            Math.Max(
+                1,
+                pixelRight - pixelLeft);
+
+        int sampleHeight =
+            Math.Max(
+                1,
+                pixelBottom - pixelTop);
+
+        var pixels =
+            new byte[
+                sampleWidth *
+                sampleHeight *
+                4];
+
+        bitmap.CopyPixels(
+            new Int32Rect(
+                pixelLeft,
+                pixelTop,
+                sampleWidth,
+                sampleHeight),
+            pixels,
+            sampleWidth * 4,
+            0);
+
+        double total = 0;
+        int samples = 0;
+
+        int stepX =
+            Math.Max(
+                1,
+                sampleWidth / 10);
+
+        int stepY =
+            Math.Max(
+                1,
+                sampleHeight / 10);
+
+        for (
+            int py = 0;
+            py < sampleHeight;
+            py += stepY)
+        {
+            for (
+                int px = 0;
+                px < sampleWidth;
+                px += stepX)
+            {
+                int index =
+                    (py * sampleWidth + px) * 4;
+
+                byte blue =
+                    pixels[index];
+
+                byte green =
+                    pixels[index + 1];
+
+                byte red =
+                    pixels[index + 2];
+
+                total +=
+                    (0.2126 * red +
+                     0.7152 * green +
+                     0.0722 * blue) /
+                    255.0;
+
+                samples++;
+            }
+        }
+
+        return samples == 0
+            ? 0.0
+            : total / samples;
+    }
+
+    private double SampleScreenAroundRegion(
+        double x,
+        double y,
+        double width,
+        double height)
+    {
+        try
+        {
+            var screen =
+                System.Windows.Forms.Screen
+                    .PrimaryScreen;
+
+            if (screen is null)
+                return 0.0;
+
+            const double sampleSize = 35;
+
+            double total = 0;
+            int regions = 0;
+
+            total +=
+                SampleScreenRegion(
+                    screen.Bounds,
+                    x - sampleSize,
+                    y,
+                    sampleSize,
+                    height);
+
+            regions++;
+
+            total +=
+                SampleScreenRegion(
+                    screen.Bounds,
+                    x + width,
+                    y,
+                    sampleSize,
+                    height);
+
+            regions++;
+
+            total +=
+                SampleScreenRegion(
+                    screen.Bounds,
+                    x,
+                    y - sampleSize,
+                    width,
+                    sampleSize);
+
+            regions++;
+
+            total +=
+                SampleScreenRegion(
+                    screen.Bounds,
+                    x,
+                    y + height,
+                    width,
+                    sampleSize);
+
+            regions++;
+
+            return regions == 0
+                ? 0.0
+                : total / regions;
+        }
+        catch
+        {
+            return 0.0;
+        }
+    }
+
+    private double SampleScreenRegion(
+        System.Drawing.Rectangle screenBounds,
+        double x,
+        double y,
+        double width,
+        double height)
+    {
+        int relativeLeft =
+            Math.Max(
+                0,
+                (int)x);
+
+        int relativeTop =
+            Math.Max(
+                0,
+                (int)y);
+
+        if (relativeLeft >=
+            screenBounds.Width ||
+            relativeTop >=
+            screenBounds.Height)
+        {
+            return 0.0;
+        }
+
+        int sampleWidth =
+            Math.Min(
+                Math.Max(
+                    1,
+                    (int)width),
+                screenBounds.Width -
+                relativeLeft);
+
+        int sampleHeight =
+            Math.Min(
+                Math.Max(
+                    1,
+                    (int)height),
+                screenBounds.Height -
+                relativeTop);
+
+        if (sampleWidth <= 0 ||
+            sampleHeight <= 0)
+        {
+            return 0.0;
+        }
+
+        int left =
+            screenBounds.Left +
+            relativeLeft;
+
+        int top =
+            screenBounds.Top +
+            relativeTop;
+
+        using var bitmap =
+            new DrawingBitmap(
+                sampleWidth,
+                sampleHeight,
+                DrawingPixelFormat.Format32bppArgb);
+
+        using (DrawingGraphics graphics =
+               DrawingGraphics.FromImage(
+                   bitmap))
+        {
+            graphics.CopyFromScreen(
+                left,
+                top,
+                0,
+                0,
+                bitmap.Size,
+                System.Drawing.CopyPixelOperation.SourceCopy);
+        }
+
+        double total = 0;
+        int samples = 0;
+
+        int stepX =
+            Math.Max(
+                1,
+                sampleWidth / 10);
+
+        int stepY =
+            Math.Max(
+                1,
+                sampleHeight / 10);
+
+        for (
+            int py = 0;
+            py < sampleHeight;
+            py += stepY)
+        {
+            for (
+                int px = 0;
+                px < sampleWidth;
+                px += stepX)
+            {
+                DrawingColor pixel =
+                    bitmap.GetPixel(
+                        px,
+                        py);
+
+                total +=
+                    (0.2126 * pixel.R +
+                     0.7152 * pixel.G +
+                     0.0722 * pixel.B) /
+                    255.0;
+
+                samples++;
+            }
+        }
+
+        return samples == 0
+            ? 0.0
+            : total / samples;
+    }
+
+    private void UpdateMessageTextColors(
+        bool lightBackground)
+    {
+        foreach (var child in
+                 MessagePanel.Children)
+        {
+            if (child is TextBlock textBlock)
+            {
+                textBlock.Foreground =
+                    lightBackground
+                        ? _blackTextBrush
+                        : _whiteTextBrush;
+            }
         }
     }
 
@@ -307,17 +1295,23 @@ public partial class MainWindow : Window
         if (height <= 0)
             return;
 
-        _pillStoryboard?.Stop();
+        double targetPosition =
+            _hasEnteredChat
+                ? height * ChatPillPosition
+                : height * InitialPillPosition;
 
-        _pillStoryboard = null;
-
-        _inputPillTransform.Y =
-            height *
-            (_hasEnteredChat
-                ? ChatPillPosition
-                : InitialPillPosition);
+        /*
+         * Don't kill an active animation during a normal
+         * window layout update.
+         */
+        if (_pillStoryboard is null)
+        {
+            _inputPillTransform.Y =
+                targetPosition;
+        }
 
         UpdateMessageAreaPosition();
+        UpdateAllAdaptiveColors();
     }
 
     private void UpdateMessageAreaPosition()
@@ -329,8 +1323,7 @@ public partial class MainWindow : Window
             return;
 
         double pillY =
-            height *
-            ChatPillPosition;
+            height * ChatPillPosition;
 
         double availableHeight =
             pillY -
@@ -367,8 +1360,10 @@ public partial class MainWindow : Window
             return;
 
         double targetY =
-            height *
-            ChatPillPosition;
+            height * ChatPillPosition;
+
+        double startingY =
+            _inputPillTransform.Y;
 
         if (_hasEnteredChat)
         {
@@ -376,36 +1371,66 @@ public partial class MainWindow : Window
                 targetY;
 
             UpdateMessageAreaPosition();
+            UpdateAllAdaptiveColors();
 
             return;
         }
 
-        double startingY =
-            _inputPillTransform.Y;
-
         _hasEnteredChat = true;
 
-        UpdateMessageAreaPosition();
-
         _pillStoryboard?.Stop();
+
+        _pillStoryboard = null;
 
         var animation =
             new DoubleAnimation
             {
-                From = startingY,
-                To = targetY,
+                From =
+                    startingY,
+
+                To =
+                    targetY,
+
                 Duration =
                     TimeSpan.FromMilliseconds(
                         PillAnimationMilliseconds),
+
+                FillBehavior =
+                    FillBehavior.Stop,
 
                 EasingFunction =
                     new ExponentialEase
                     {
                         Exponent = 4,
+
                         EasingMode =
                             EasingMode.EaseInOut
                     }
             };
+
+        animation.CurrentTimeInvalidated +=
+            (_, _) =>
+            {
+                UpdateAllAdaptiveColors();
+            };
+
+        animation.Completed +=
+            (_, _) =>
+            {
+                _inputPillTransform.Y =
+                    targetY;
+
+                UpdateMessageAreaPosition();
+                UpdateAllAdaptiveColors();
+
+                _pillStoryboard = null;
+            };
+
+        _pillStoryboard =
+            new Storyboard();
+
+        _pillStoryboard.Children.Add(
+            animation);
 
         Storyboard.SetTarget(
             animation,
@@ -415,21 +1440,6 @@ public partial class MainWindow : Window
             animation,
             new PropertyPath(
                 TranslateTransform.YProperty));
-
-        _pillStoryboard =
-            new Storyboard();
-
-        _pillStoryboard.Children.Add(
-            animation);
-
-        _pillStoryboard.Completed +=
-            (_, _) =>
-            {
-                _inputPillTransform.Y =
-                    targetY;
-
-                _pillStoryboard = null;
-            };
 
         _pillStoryboard.Begin();
     }
@@ -441,6 +1451,11 @@ public partial class MainWindow : Window
         if (e.Key != Key.Escape)
             return;
 
+        /*
+         * Escape requests a normal close.
+         * MainWindow_Closing will show the confirmation
+         * only while pinned.
+         */
         Close();
 
         e.Handled = true;
@@ -454,10 +1469,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        /*
-         * Let the settings window sit above Ballknower
-         * without closing the main overlay.
-         */
         Topmost = false;
 
         _settingsWindow =
@@ -480,8 +1491,6 @@ public partial class MainWindow : Window
                 Activate();
 
                 ChatInput.Focus();
-
-                UpdateDesktopBackdrop();
             };
 
         _settingsWindow.Show();
@@ -522,12 +1531,20 @@ public partial class MainWindow : Window
                 return;
             }
 
-            AnimateInputPillDown();
-
-            UpdateMessageAreaPosition();
+            /*
+             * Move the pill immediately on the FIRST
+             * normal chat message.
+             */
+            if (!_hasEnteredChat)
+            {
+                AnimateInputPillDown();
+            }
 
             MessageArea.Visibility =
                 Visibility.Visible;
+
+            UpdateMessageAreaPosition();
+            UpdateAllAdaptiveColors();
 
             AddUserMessage(message);
 
@@ -646,6 +1663,32 @@ public partial class MainWindow : Window
             case "logs":
 
                 OpenLogs();
+
+                return;
+
+            case "see":
+
+                UnblurDesktop();
+
+                return;
+
+            case "pin":
+
+                _isPinned = true;
+                Topmost = false;
+
+                AddAssistantMessage(
+                    "Pinned. Ballknower will stay open while you switch to another app.");
+
+                return;
+
+            case "unpin":
+
+                _isPinned = false;
+                Topmost = true;
+
+                AddAssistantMessage(
+                    "Unpinned. Ballknower will hide when it loses focus.");
 
                 return;
         }
@@ -1097,7 +2140,7 @@ public partial class MainWindow : Window
     private void AddUserMessage(
         string message)
     {
-        MessagePanel.Children.Add(
+        var text =
             new TextBlock
             {
                 Text =
@@ -1106,7 +2149,9 @@ public partial class MainWindow : Window
                 FontSize = 18,
 
                 Foreground =
-                    System.Windows.Media.Brushes.White,
+                    _messageAreaIsLight
+                        ? _blackTextBrush
+                        : _whiteTextBrush,
 
                 TextWrapping =
                     TextWrapping.Wrap,
@@ -1117,13 +2162,18 @@ public partial class MainWindow : Window
                         0,
                         0,
                         12)
-            });
+            };
+
+        MessagePanel.Children.Add(
+            text);
+
+        UpdateMessageAreaColor();
     }
 
     private void AddAssistantMessage(
         string message)
     {
-        MessagePanel.Children.Add(
+        var text =
             new TextBlock
             {
                 Text =
@@ -1132,7 +2182,9 @@ public partial class MainWindow : Window
                 FontSize = 18,
 
                 Foreground =
-                    System.Windows.Media.Brushes.White,
+                    _messageAreaIsLight
+                        ? _blackTextBrush
+                        : _whiteTextBrush,
 
                 TextWrapping =
                     TextWrapping.Wrap,
@@ -1143,6 +2195,11 @@ public partial class MainWindow : Window
                         0,
                         0,
                         12)
-            });
+            };
+
+        MessagePanel.Children.Add(
+            text);
+
+        UpdateMessageAreaColor();
     }
 }

@@ -13,13 +13,23 @@
     <Grid x:Name="ContentRoot"
           Background="Transparent">
 
+        <!-- Static blurred desktop backdrop -->
+        <Image x:Name="DesktopBackdrop"
+               Stretch="Fill"
+               IsHitTestVisible="False"/>
+
+        <!-- Very subtle darkening over the blur -->
+        <Border x:Name="BackdropOverlay"
+                Background="#12000000"
+                IsHitTestVisible="False"/>
+
         <!-- Conversation -->
         <Border x:Name="MessageArea"
                 Width="700"
                 Height="400"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Background="#FF101010"
+                Background="Black"
                 CornerRadius="20"
                 Padding="25"
                 Visibility="Collapsed">
@@ -38,7 +48,7 @@
                 Height="70"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Background="#FF1A1A1A"
+                Background="Black"
                 CornerRadius="35">
 
             <Grid Height="70">
