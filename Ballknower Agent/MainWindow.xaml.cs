@@ -17,6 +17,11 @@ using System.Threading.Tasks;
 
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
+using FontFamily = System.Windows.Media.FontFamily;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
