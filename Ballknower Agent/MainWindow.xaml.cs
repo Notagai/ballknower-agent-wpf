@@ -199,6 +199,14 @@ public partial class MainWindow : Window
         try
         {
             /*
+             * Remove the previous captured frame before taking
+             * the next screenshot. Otherwise the desktop capture
+             * can include the old backdrop and the effect compounds
+             * every refresh cycle.
+             */
+            DesktopBackdrop.Source = null;
+
+            /*
              * Temporarily make the WPF overlay transparent.
              * This lets the real desktop show through while
              * the screenshot is captured.
