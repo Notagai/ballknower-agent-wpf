@@ -1,0 +1,238 @@
+﻿<Window x:Class="Ballknower.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ballknower Settings"
+        Width="600"
+        Height="750"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF181818">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+
+        <StackPanel Margin="30">
+
+            <!-- AI Provider -->
+
+            <TextBlock
+                Text="AI Provider"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Margin="0,0,0,8" />
+
+            <ComboBox
+                x:Name="ProviderInput"
+                SelectedValuePath="Content"
+                SelectionChanged="ProviderInput_SelectionChanged"
+                Margin="0,0,0,15">
+
+                <ComboBoxItem Content="Groq" />
+                <ComboBoxItem Content="OpenRouter" />
+
+            </ComboBox>
+
+            <!-- API Key -->
+
+            <TextBlock
+                x:Name="ApiKeyLabel"
+                Text="Groq API Key"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Margin="0,0,0,8" />
+
+            <PasswordBox
+                x:Name="ApiKeyInput"
+                Margin="0,0,0,6" />
+
+            <TextBlock
+                Text="API keys are stored locally using Windows encryption."
+                FontSize="12"
+                Foreground="White"
+                Opacity="0.65"
+                TextWrapping="Wrap"
+                Margin="0,0,0,15" />
+
+            <!-- Model -->
+
+            <TextBlock
+                x:Name="ModelLabel"
+                Text="Groq Model"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Margin="0,0,0,8" />
+
+            <TextBox
+                x:Name="ModelInput"
+                Margin="0,0,0,15" />
+
+            <!-- Streaming -->
+
+            <CheckBox
+                x:Name="StreamingCheckBox"
+                Content="Stream responses"
+                Foreground="White"
+                Margin="0,0,0,20" />
+
+            <!-- Conversation Memory -->
+
+            <TextBlock
+                Text="Conversation Memory"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Margin="0,0,0,8" />
+
+            <TextBlock
+                Text="Controls approximately how much previous conversation is sent with each AI request."
+                Foreground="White"
+                Opacity="0.7"
+                TextWrapping="Wrap"
+                Margin="0,0,0,8" />
+
+            <TextBlock
+                x:Name="HistoryBudgetLabel"
+                Text="2,000 tokens"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Margin="0,0,0,8" />
+
+            <Slider
+                x:Name="HistoryBudgetSlider"
+                Minimum="0"
+                Maximum="4"
+                TickFrequency="1"
+                IsSnapToTickEnabled="True"
+                TickPlacement="BottomRight"
+                ValueChanged="HistoryBudgetSlider_ValueChanged"
+                Margin="0,0,0,5" />
+
+            <Grid Margin="0,0,0,8">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Text="Lower token usage"
+                    Foreground="White"
+                    Opacity="0.65"
+                    FontSize="12" />
+
+                <TextBlock
+                    Grid.Column="1"
+                    Text="More conversation history"
+                    Foreground="White"
+                    HorizontalAlignment="Right"
+                    Opacity="0.65"
+                    FontSize="12" />
+
+            </Grid>
+
+            <TextBlock
+                Text="This is a history budget, not a provider rate limit. The current request, tools and AI response also use tokens."
+                Foreground="White"
+                TextWrapping="Wrap"
+                Opacity="0.65"
+                FontSize="12"
+                Margin="0,0,0,20" />
+
+            <!-- Shortcuts -->
+
+            <TextBlock
+                Text="Shortcuts"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Margin="0,0,0,8" />
+
+            <TextBox
+                x:Name="CommandInput"
+                Margin="0,0,0,8" />
+
+            <Grid Margin="0,0,0,10">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox
+                    x:Name="PathInput"
+                    Grid.Column="0" />
+
+                <Button
+                    Grid.Column="1"
+                    Content="Browse"
+                    Click="BrowseButton_Click"
+                    Margin="10,0,0,0" />
+
+            </Grid>
+
+            <StackPanel
+                Orientation="Horizontal"
+                Margin="0,0,0,10">
+
+                <Button
+                    x:Name="AddShortcutButton"
+                    Content="Add Shortcut"
+                    Click="AddShortcutButton_Click"
+                    Margin="0,0,10,0" />
+
+                <Button
+                    x:Name="CancelEditButton"
+                    Content="Cancel Edit"
+                    Click="CancelEditButton_Click"
+                    Visibility="Collapsed" />
+
+            </StackPanel>
+
+            <StackPanel
+                x:Name="ShortcutList"
+                Margin="0,0,0,20" />
+
+            <!-- Import and Export -->
+
+            <StackPanel
+                Orientation="Horizontal"
+                Margin="0,0,0,20">
+
+                <Button
+                    Content="Import Settings"
+                    Click="ImportButton_Click"
+                    Margin="0,0,10,0" />
+
+                <Button
+                    Content="Export Settings"
+                    Click="ExportButton_Click" />
+
+            </StackPanel>
+
+            <!-- Save and Cancel -->
+
+            <StackPanel
+                Orientation="Horizontal"
+                HorizontalAlignment="Right">
+
+                <Button
+                    x:Name="CancelButton"
+                    Content="Cancel"
+                    Click="CancelButton_Click"
+                    Margin="0,0,10,0" />
+
+                <Button
+                    x:Name="SaveButton"
+                    Content="Save"
+                    Click="SaveButton_Click" />
+
+            </StackPanel>
+
+        </StackPanel>
+
+    </ScrollViewer>
+
+</Window>

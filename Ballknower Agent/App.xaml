@@ -1,9 +1,7 @@
-﻿<Application x:Class="Ballknower_Agent.App"
+﻿<Application x:Class="Ballknower.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Ballknower_Agent"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>

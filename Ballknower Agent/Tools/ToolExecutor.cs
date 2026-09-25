@@ -1,22 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
+
+using System.Windows;
+
+using WpfMessageBox = System.Windows.MessageBox;
+using WpfMessageBoxButton = System.Windows.MessageBoxButton;
+using WpfMessageBoxImage = System.Windows.MessageBoxImage;
+using WpfMessageBoxResult = System.Windows.MessageBoxResult;
 
 namespace Ballknower.Tools;
 
 public class ToolExecutor
 {
     private readonly ToolRegistry _registry;
-    private readonly XamlRoot _xamlRoot;
 
     public ToolExecutor(
-        ToolRegistry registry,
-        XamlRoot xamlRoot)
+        ToolRegistry registry)
     {
         _registry = registry;
-        _xamlRoot = xamlRoot;
     }
 
     public async Task<ToolResult> ExecuteAsync(
@@ -66,34 +67,29 @@ public class ToolExecutor
             }
         }
 
-        return await tool.ExecuteAsync(arguments);
+        return await tool.ExecuteAsync(
+            arguments);
     }
 
-    private async Task<bool> RequestConfirmationAsync(
+    private Task<bool> RequestConfirmationAsync(
         ITool tool,
         Dictionary<string, string> arguments)
     {
-        var message =
+        string message =
             BuildConfirmationMessage(
                 tool,
                 arguments);
 
-        var dialog = new ContentDialog
-        {
-            Title = "Confirm Action",
-            Content = message,
-            PrimaryButtonText = "Allow",
-            CloseButtonText = "Cancel",
-            DefaultButton =
-                ContentDialogButton.Close,
-            XamlRoot = _xamlRoot
-        };
-
         var result =
-            await dialog.ShowAsync();
+            WpfMessageBox.Show(
+                message,
+                "Confirm Action",
+                WpfMessageBoxButton.OKCancel,
+                WpfMessageBoxImage.Question);
 
-        return result ==
-            ContentDialogResult.Primary;
+        return Task.FromResult(
+            result ==
+            WpfMessageBoxResult.OK);
     }
 
     private string BuildConfirmationMessage(
