@@ -12,6 +12,7 @@ using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using System.Windows;
@@ -2867,35 +2868,267 @@ public partial class MainWindow : Window
     private void AddAssistantMessage(
         string message)
     {
-        var text =
-            new TextBlock
+        var document =
+            new FlowDocument
             {
-                Text =
-                    "Ballknower: " + message,
+                PagePadding = new Thickness(0),
+                TextAlignment = TextAlignment.Left
+            };
 
+        var title =
+            new Paragraph
+            {
+                Margin = new Thickness(0, 0, 0, 8),
                 FontSize = 18,
+                FontWeight = FontWeights.SemiBold,
+                Foreground =
+                    _messageAreaIsLight
+                        ? _blackTextBrush
+                        : _whiteTextBrush
+            };
 
+        title.Inlines.Add(new Run("Ballknower:"));
+        document.Blocks.Add(title);
+
+        AddMarkdownBlocks(document, message);
+
+        var viewer =
+            new FlowDocumentScrollViewer
+            {
+                Document = document,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                IsToolBarVisible = false,
+                Background = Brushes.Transparent,
                 Foreground =
                     _messageAreaIsLight
                         ? _blackTextBrush
                         : _whiteTextBrush,
-
-                TextWrapping =
-                    TextWrapping.Wrap,
-
-                Margin =
-                    new Thickness(
-                        0,
-                        0,
-                        0,
-                        12)
+                FontSize = 18,
+                Margin = new Thickness(0, 0, 0, 12),
+                IsHitTestVisible = true
             };
 
-        MessagePanel.Children.Add(
-            text);
-
+        MessagePanel.Children.Add(viewer);
         ScrollChatToEnd();
         UpdateMessageAreaColor();
+    }
+
+    private void AddMarkdownBlocks(
+        FlowDocument document,
+        string markdown)
+    {
+        var lines = (markdown ?? string.Empty)
+            .Replace("\\r\\n", "\\n")
+            .Replace('\\r', '\\n')
+            .Split('\\n');
+
+        bool inCodeBlock = false;
+        var codeLines = new List<string>();
+        var paragraphLines = new List<string>();
+
+        void FlushParagraph()
+        {
+            if (paragraphLines.Count == 0)
+                return;
+
+            var paragraph = new Paragraph
+            {
+                Margin = new Thickness(0, 0, 0, 10),
+                Foreground = CurrentMessageBrush()
+            };
+
+            AddMarkdownInlines(
+                paragraph.Inlines,
+                string.Join(" ", paragraphLines).Trim());
+
+            document.Blocks.Add(paragraph);
+            paragraphLines.Clear();
+        }
+
+        void FlushCode()
+        {
+            var code = new Paragraph
+            {
+                Margin = new Thickness(0, 2, 0, 10),
+                Padding = new Thickness(10),
+                Background = _messageAreaIsLight
+                    ? new SolidColorBrush(Color.FromArgb(24, 0, 0, 0))
+                    : new SolidColorBrush(Color.FromArgb(36, 255, 255, 255)),
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 15,
+                Foreground = CurrentMessageBrush()
+            };
+
+            code.Inlines.Add(new Run(string.Join(Environment.NewLine, codeLines)));
+            document.Blocks.Add(code);
+            codeLines.Clear();
+        }
+
+        foreach (string rawLine in lines)
+        {
+            string line = rawLine.TrimEnd();
+            string trimmed = line.Trim();
+
+            if (trimmed.StartsWith("```", StringComparison.Ordinal))
+            {
+                FlushParagraph();
+                if (inCodeBlock)
+                    FlushCode();
+                inCodeBlock = !inCodeBlock;
+                continue;
+            }
+
+            if (inCodeBlock)
+            {
+                codeLines.Add(line);
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                FlushParagraph();
+                continue;
+            }
+
+            var heading = Regex.Match(trimmed, @"^(#{1,6})\\s+(.+)$");
+            if (heading.Success)
+            {
+                FlushParagraph();
+                int level = heading.Groups[1].Length;
+                var p = new Paragraph
+                {
+                    Margin = new Thickness(0, level == 1 ? 8 : 5, 0, 7),
+                    FontSize = level switch
+                    {
+                        1 => 28, 2 => 25, 3 => 22,
+                        4 => 20, 5 => 19, _ => 18
+                    },
+                    FontWeight = FontWeights.Bold,
+                    Foreground = CurrentMessageBrush()
+                };
+                AddMarkdownInlines(p.Inlines, heading.Groups[2].Value);
+                document.Blocks.Add(p);
+                continue;
+            }
+
+            var bullet = Regex.Match(trimmed, @"^[-*+]\\s+(.+)$");
+            var numbered = Regex.Match(trimmed, @"^\\d+[.)]\\s+(.+)$");
+            if (bullet.Success || numbered.Success)
+            {
+                FlushParagraph();
+                var p = new Paragraph
+                {
+                    Margin = new Thickness(12, 0, 0, 6),
+                    Foreground = CurrentMessageBrush()
+                };
+                p.Inlines.Add(new Run(bullet.Success ? "•  " : "‣  "));
+                AddMarkdownInlines(
+                    p.Inlines,
+                    bullet.Success ? bullet.Groups[1].Value : numbered.Groups[1].Value);
+                document.Blocks.Add(p);
+                continue;
+            }
+
+            if (trimmed.StartsWith("> ", StringComparison.Ordinal))
+            {
+                FlushParagraph();
+                var p = new Paragraph
+                {
+                    Margin = new Thickness(12, 0, 0, 8),
+                    Foreground = CurrentMessageBrush(),
+                    FontStyle = FontStyles.Italic
+                };
+                AddMarkdownInlines(p.Inlines, trimmed.Substring(2));
+                document.Blocks.Add(p);
+                continue;
+            }
+
+            paragraphLines.Add(trimmed);
+        }
+
+        FlushParagraph();
+        if (inCodeBlock)
+            FlushCode();
+    }
+
+    private Brush CurrentMessageBrush() =>
+        _messageAreaIsLight ? _blackTextBrush : _whiteTextBrush;
+
+    private void AddMarkdownInlines(
+        InlineCollection inlines,
+        string text)
+    {
+        // Supports bold, italic, inline code, and Markdown links.
+        var pattern = new Regex(
+            @"(\\*\\*.+?\\*\\*|__.+?__|\\*[^*]+?\\*|_[^_]+?_|\`[^\`]+?\`|\\[[^\\]]+\\]\\(https?://[^\\s)]+\\))");
+
+        int position = 0;
+        foreach (Match match in pattern.Matches(text))
+        {
+            if (match.Index > position)
+                inlines.Add(new Run(text.Substring(position, match.Index - position)));
+
+            string token = match.Value;
+            if ((token.StartsWith("**") && token.EndsWith("**")) ||
+                (token.StartsWith("__") && token.EndsWith("__")))
+            {
+                inlines.Add(new Bold(new Run(token.Substring(2, token.Length - 4))));
+            }
+            else if ((token.StartsWith("*") && token.EndsWith("*")) ||
+                     (token.StartsWith("_") && token.EndsWith("_")))
+            {
+                inlines.Add(new Italic(new Run(token.Substring(1, token.Length - 2))));
+            }
+            else if (token.StartsWith("`") && token.EndsWith("`"))
+            {
+                inlines.Add(new Run(token.Substring(1, token.Length - 2))
+                {
+                    FontFamily = new FontFamily("Consolas"),
+                    Background = _messageAreaIsLight
+                        ? new SolidColorBrush(Color.FromArgb(24, 0, 0, 0))
+                        : new SolidColorBrush(Color.FromArgb(36, 255, 255, 255))
+                });
+            }
+            else
+            {
+                var link = Regex.Match(token, @"^\\[([^\\]]+)\\]\\((https?://[^\\s)]+)\\)$");
+                if (link.Success)
+                {
+                    var hyperlink = new Hyperlink(new Run(link.Groups[1].Value))
+                    {
+                        NavigateUri = new Uri(link.Groups[2].Value),
+                        Foreground = _messageAreaIsLight
+                            ? Brushes.DarkBlue
+                            : Brushes.LightBlue
+                    };
+                    hyperlink.RequestNavigate += (_, e) =>
+                    {
+                        try
+                        {
+                            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)
+                            {
+                                UseShellExecute = true
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLogger.Error("Could not open Markdown link", ex);
+                        }
+                    };
+                    inlines.Add(hyperlink);
+                }
+                else
+                {
+                    inlines.Add(new Run(token));
+                }
+            }
+
+            position = match.Index + match.Length;
+        }
+
+        if (position < text.Length)
+            inlines.Add(new Run(text.Substring(position)));
     }
 
     private void ScrollChatToEnd()
