@@ -2919,9 +2919,9 @@ public partial class MainWindow : Window
         string markdown)
     {
         var lines = (markdown ?? string.Empty)
-            .Replace("\\r\\n", "\\n")
-            .Replace('\\r', '\\n')
-            .Split('\\n');
+            .Replace("\r\n", "\n")
+            .Replace('\r', '\n')
+            .Split('\n');
 
         bool inCodeBlock = false;
         var codeLines = new List<string>();
@@ -2951,7 +2951,6 @@ public partial class MainWindow : Window
             var code = new Paragraph
             {
                 Margin = new Thickness(0, 2, 0, 10),
-                Padding = new Thickness(10),
                 Background = _messageAreaIsLight
                     ? new SolidColorBrush(Color.FromArgb(24, 0, 0, 0))
                     : new SolidColorBrush(Color.FromArgb(36, 255, 255, 255)),
@@ -2991,7 +2990,7 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            var heading = Regex.Match(trimmed, @"^(#{1,6})\\s+(.+)$");
+            var heading = Regex.Match(trimmed, @"^(#{1,6})\s+(.+)$");
             if (heading.Success)
             {
                 FlushParagraph();
@@ -3012,8 +3011,8 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            var bullet = Regex.Match(trimmed, @"^[-*+]\\s+(.+)$");
-            var numbered = Regex.Match(trimmed, @"^\\d+[.)]\\s+(.+)$");
+            var bullet = Regex.Match(trimmed, @"^[-*+]\s+(.+)$");
+            var numbered = Regex.Match(trimmed, @"^\d+[.)]\s+(.+)$");
             if (bullet.Success || numbered.Success)
             {
                 FlushParagraph();
@@ -3092,7 +3091,7 @@ public partial class MainWindow : Window
             }
             else
             {
-                var link = Regex.Match(token, @"^\\[([^\\]]+)\\]\\((https?://[^\\s)]+)\\)$");
+                var link = Regex.Match(token, @"^\[([^\]]+)\]\((https?://[^\s)]+)\)$");
                 if (link.Success)
                 {
                     var hyperlink = new Hyperlink(new Run(link.Groups[1].Value))
