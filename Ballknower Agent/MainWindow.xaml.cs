@@ -35,8 +35,6 @@ public partial class MainWindow : Window
     private const double MessageGap = 16;
     private const double PillAnimationMilliseconds = 600;
 
-    private const int BackdropRefreshMilliseconds = 125;
-
     private readonly AppSettings _settings;
     private readonly List<OpenRouterMessage> _conversation;
     private readonly CommandParser _commandParser;
@@ -46,14 +44,11 @@ public partial class MainWindow : Window
     private readonly TranslateTransform _inputPillTransform;
     private readonly TranslateTransform _messageAreaTransform;
 
-    private readonly DispatcherTimer _backdropTimer;
-
     private SettingsWindow? _settingsWindow;
     private Storyboard? _pillStoryboard;
 
     private bool _isProcessing;
     private bool _hasEnteredChat;
-    private bool _isCapturingBackdrop;
 
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath(
@@ -164,19 +159,12 @@ public partial class MainWindow : Window
         _backdropTimer.Tick +=
             (_, _) => UpdateDesktopBackdrop();
 
-        Loaded +=
-            (_, _) =>
-            {
-                _backdropTimer.Start();
-            };
     }
 
     private void MainWindow_Closed(
         object? sender,
         EventArgs e)
     {
-        _backdropTimer.Stop();
-
         _pillStoryboard?.Stop();
 
         if (_settingsWindow is not null)
@@ -188,22 +176,11 @@ public partial class MainWindow : Window
 
     private void UpdateDesktopBackdrop()
     {
-        if (_isCapturingBackdrop)
+        if (DesktopBackdrop.Source is not null)
             return;
-
-        if (!IsVisible)
-            return;
-
-        _isCapturingBackdrop = true;
 
         try
         {
-            /*
-             * Never capture the screen while this window is visible.
-             * WPF can still composite a transparent/hidden window into
-             * the frame being captured, which creates a feedback loop.
-             * Hide the whole window, capture the real desktop, then show it.
-             */
             Hide();
 
             var bounds =
@@ -234,14 +211,10 @@ public partial class MainWindow : Window
             }
 
             int smallWidth =
-                Math.Max(
-                    1,
-                    screenshot.Width / 4);
+                Math.Max(1, screenshot.Width / 4);
 
             int smallHeight =
-                Math.Max(
-                    1,
-                    screenshot.Height / 4);
+                Math.Max(1, screenshot.Height / 4);
 
             using var small =
                 new DrawingBitmap(
@@ -300,19 +273,12 @@ public partial class MainWindow : Window
                 new BitmapImage();
 
             image.BeginInit();
-
-            image.CacheOption =
-                BitmapCacheOption.OnLoad;
-
-            image.StreamSource =
-                stream;
-
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = stream;
             image.EndInit();
-
             image.Freeze();
 
-            DesktopBackdrop.Source =
-                image;
+            DesktopBackdrop.Source = image;
         }
         catch (Exception ex)
         {
@@ -323,8 +289,6 @@ public partial class MainWindow : Window
         finally
         {
             Show();
-
-            _isCapturingBackdrop = false;
         }
     }
 
