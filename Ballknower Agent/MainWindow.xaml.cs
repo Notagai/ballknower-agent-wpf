@@ -2192,6 +2192,12 @@ public partial class MainWindow : Window
 
                 return;
 
+            case "clear":
+
+                ClearChat();
+
+                return;
+
             case "see":
 
                 UnblurDesktop();
@@ -2259,6 +2265,31 @@ public partial class MainWindow : Window
                 $"Could not launch /{parsed.Command}. " +
                 "Details were saved to the error log.");
         }
+    }
+
+    private void ClearChat()
+    {
+        /*
+         * Keep the system instructions, but remove the
+         * conversation history and visible messages.
+         * The chat window and Ballknower stay open.
+         */
+        if (_conversation.Count > 1)
+        {
+            _conversation.RemoveRange(
+                1,
+                _conversation.Count - 1);
+        }
+
+        MessagePanel.Children.Clear();
+
+        MessageArea.Visibility =
+            Visibility.Visible;
+
+        UpdateMessageAreaPosition();
+        UpdateAllAdaptiveColors();
+
+        ChatInput.Focus();
     }
 
     private void OpenLogs()
