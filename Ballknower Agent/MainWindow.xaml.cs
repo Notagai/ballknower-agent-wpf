@@ -43,6 +43,53 @@ public partial class MainWindow : Window
     private const double PillAnimationMilliseconds = 600;
     private const double WindowFadeMilliseconds = 200;
 
+    /*
+     * Shared animation path for code-driven double properties.
+     * Clear previous clocks, preserve the visible starting value,
+     * and commit the final value after FillBehavior.Stop.
+     */
+    private static void AnimateDouble(
+        Action<AnimationTimeline?> applyAnimation,
+        Action<double> setBaseValue,
+        double from,
+        double to,
+        double durationMilliseconds,
+        IEasingFunction easingFunction,
+        Action? completed = null,
+        EventHandler? currentTimeInvalidated = null)
+    {
+        applyAnimation(null);
+        setBaseValue(from);
+
+        var animation =
+            new DoubleAnimation
+            {
+                From = from,
+                To = to,
+                Duration =
+                    TimeSpan.FromMilliseconds(
+                        durationMilliseconds),
+                FillBehavior = FillBehavior.Stop,
+                EasingFunction = easingFunction
+            };
+
+        if (currentTimeInvalidated is not null)
+        {
+            animation.CurrentTimeInvalidated +=
+                currentTimeInvalidated;
+        }
+
+        animation.Completed +=
+            (_, _) =>
+            {
+                applyAnimation(null);
+                setBaseValue(to);
+                completed?.Invoke();
+            };
+
+        applyAnimation(animation);
+    }
+
     private readonly AppSettings _settings;
     private readonly List<OpenRouterMessage> _conversation;
     private readonly CommandParser _commandParser;
@@ -66,10 +113,9 @@ public partial class MainWindow : Window
 
     private SettingsWindow? _settingsWindow;
 
-    private Storyboard? _pillStoryboard;
-
     private bool _isProcessing;
     private bool _hasEnteredChat;
+    private bool _isPillAnimating;
     private bool _desktopUnblurred;
     private bool _isCapturingBackdrop;
 
@@ -256,33 +302,20 @@ public partial class MainWindow : Window
          */
         if (Opacity < 1)
         {
-            var fadeIn =
-                new DoubleAnimation
+            AnimateDouble(
+                animation =>
+                    BeginAnimation(
+                        Window.OpacityProperty,
+                        animation),
+                value => Opacity = value,
+                Opacity,
+                1,
+                WindowFadeMilliseconds,
+                new QuadraticEase
                 {
-                    From = Opacity,
-                    To = 1,
-                    Duration =
-                        TimeSpan.FromMilliseconds(
-                            WindowFadeMilliseconds),
-
-                    EasingFunction =
-                        new QuadraticEase
-                        {
-                            EasingMode =
-                                EasingMode.EaseOut
-                        }
-                };
-
-            fadeIn.Completed +=
-                (_, _) =>
-                {
-                    Opacity = 1;
-                    _isOpeningWithFade = false;
-                };
-
-            BeginAnimation(
-                Window.OpacityProperty,
-                fadeIn);
+                    EasingMode = EasingMode.EaseOut
+                },
+                () => _isOpeningWithFade = false);
         }
         else
         {
@@ -294,8 +327,6 @@ public partial class MainWindow : Window
         object? sender,
         EventArgs e)
     {
-        _pillStoryboard?.Stop();
-
         if (_settingsWindow is not null)
         {
             _settingsWindow.Close();
@@ -361,44 +392,24 @@ public partial class MainWindow : Window
 
         _isClosingWithFade = true;
 
-        _pillStoryboard?.Stop();
-
-        var fadeOut =
-            new DoubleAnimation
-            {
-                From = Opacity,
-                To = 0,
-                Duration =
-                    TimeSpan.FromMilliseconds(
-                        WindowFadeMilliseconds),
-
-                EasingFunction =
-                    new QuadraticEase
-                    {
-                        EasingMode =
-                            EasingMode.EaseIn
-                    }
-            };
-
-        fadeOut.Completed +=
-            (_, _) =>
-            {
-                _allowClose = true;
-
-                /*
-                 * Remove the animation before the second
-                 * Close() so the window can close normally.
-                 */
+        AnimateDouble(
+            animation =>
                 BeginAnimation(
                     Window.OpacityProperty,
-                    null);
-
+                    animation),
+            value => Opacity = value,
+            Opacity,
+            0,
+            WindowFadeMilliseconds,
+            new QuadraticEase
+            {
+                EasingMode = EasingMode.EaseIn
+            },
+            () =>
+            {
+                _allowClose = true;
                 Close();
-            };
-
-        BeginAnimation(
-            Window.OpacityProperty,
-            fadeOut);
+            });
     }
 
     private void MainWindow_Deactivated(
@@ -589,26 +600,19 @@ public partial class MainWindow : Window
                          */
                         if (!_isOpeningWithFade)
                         {
-                            var fadeIn =
-                                new DoubleAnimation
+                            AnimateDouble(
+                                animation =>
+                                    BeginAnimation(
+                                        Window.OpacityProperty,
+                                        animation),
+                                value => Opacity = value,
+                                Opacity,
+                                1,
+                                WindowFadeMilliseconds,
+                                new QuadraticEase
                                 {
-                                    From = Opacity,
-                                    To = 1,
-                                    Duration =
-                                        TimeSpan.FromMilliseconds(
-                                            WindowFadeMilliseconds),
-
-                                    EasingFunction =
-                                        new QuadraticEase
-                                        {
-                                            EasingMode =
-                                                EasingMode.EaseOut
-                                        }
-                                };
-
-                            BeginAnimation(
-                                Window.OpacityProperty,
-                                fadeIn);
+                                    EasingMode = EasingMode.EaseOut
+                                });
                         }
                     }));
         }
@@ -1737,7 +1741,7 @@ public partial class MainWindow : Window
                 ? height * ChatPillPosition
                 : height * InitialPillPosition;
 
-        if (_pillStoryboard is null)
+        if (!_isPillAnimating)
         {
             _inputPillTransform.Y =
                 targetPosition;
@@ -1813,72 +1817,34 @@ public partial class MainWindow : Window
 
         _hasEnteredChat = true;
 
-        _pillStoryboard?.Stop();
+        _isPillAnimating = true;
 
-        _pillStoryboard = null;
-
-        var animation =
-            new DoubleAnimation
+        AnimateDouble(
+            animation =>
+                _inputPillTransform.BeginAnimation(
+                    TranslateTransform.YProperty,
+                    animation),
+            value => _inputPillTransform.Y = value,
+            startingY,
+            targetY,
+            PillAnimationMilliseconds,
+            new ExponentialEase
             {
-                From =
-                    startingY,
-
-                To =
-                    targetY,
-
-                Duration =
-                    TimeSpan.FromMilliseconds(
-                        PillAnimationMilliseconds),
-
-                FillBehavior =
-                    FillBehavior.Stop,
-
-                EasingFunction =
-                    new ExponentialEase
-                    {
-                        Exponent = 4,
-
-                        EasingMode =
-                            EasingMode.EaseInOut
-                    }
-            };
-
-        animation.CurrentTimeInvalidated +=
-            (_, _) =>
+                Exponent = 4,
+                EasingMode = EasingMode.EaseInOut
+            },
+            () =>
             {
-                UpdateCommandSuggestionPosition();
-                UpdateAllAdaptiveColors();
-            };
-
-        animation.Completed +=
-            (_, _) =>
-            {
-                _inputPillTransform.Y =
-                    targetY;
-
+                _isPillAnimating = false;
                 UpdateMessageAreaPosition();
                 UpdateCommandSuggestionPosition();
                 UpdateAllAdaptiveColors();
-
-                _pillStoryboard = null;
-            };
-
-        _pillStoryboard =
-            new Storyboard();
-
-        _pillStoryboard.Children.Add(
-            animation);
-
-        Storyboard.SetTarget(
-            animation,
-            _inputPillTransform);
-
-        Storyboard.SetTargetProperty(
-            animation,
-            new PropertyPath(
-                TranslateTransform.YProperty));
-
-        _pillStoryboard.Begin();
+            },
+            (_, _) =>
+            {
+                UpdateCommandSuggestionPosition();
+                UpdateAllAdaptiveColors();
+            });
     }
 
     private void MainWindow_PreviewKeyDown(
