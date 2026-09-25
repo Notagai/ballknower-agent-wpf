@@ -3060,7 +3060,7 @@ public partial class MainWindow : Window
     {
         // Supports bold, italic, inline code, and Markdown links.
         var pattern = new Regex(
-            @"(\\*\\*.+?\\*\\*|__.+?__|\\*[^*]+?\\*|_[^_]+?_|\`[^\`]+?\`|\\[[^\\]]+\\]\\(https?://[^\\s)]+\\))");
+            @"(\*\*.+?\*\*|__.+?__|\*[^*]+?\*|_[^_]+?_|`[^`]+?`|\[[^\]]+\]\(https?://[^\s)]+\))");
 
         int position = 0;
         foreach (Match match in pattern.Matches(text))
