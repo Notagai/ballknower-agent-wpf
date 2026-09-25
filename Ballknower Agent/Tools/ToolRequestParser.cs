@@ -168,7 +168,7 @@ public class ToolRequestParser
                 if (node.Name != "arg_key")
                     continue;
 
-                var key = node.InnerText.Trim();
+                var key = node.InnerText?.Trim() ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(key))
                 {
@@ -184,8 +184,8 @@ public class ToolRequestParser
                 {
                     var candidate = root.ChildNodes[j];
 
-                    if (candidate.NodeType ==
-                        XmlNodeType.Whitespace)
+                    if (candidate.NodeType == XmlNodeType.Whitespace ||
+                        candidate.NodeType == XmlNodeType.SignificantWhitespace)
                     {
                         continue;
                     }
@@ -194,7 +194,11 @@ public class ToolRequestParser
                     break;
                 }
 
-                if (valueNode?.Name != "arg_value")
+                if (valueNode is null ||
+                    !string.Equals(
+                    valueNode.Name,
+                    "arg_value",
+                    StringComparison.Ordinal))
                 {
                     error =
                         $"Missing value for argument '{key}'.";

@@ -1,41 +1,41 @@
 ﻿<Window x:Class="Ballknower.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Ballknower"
-        WindowStyle="None"
-        ResizeMode="NoResize"
-        AllowsTransparency="True"
-        Background="Transparent"
-        ShowInTaskbar="False"
-        Topmost="True"
-        WindowState="Maximized">
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            Title="Ballknower"
+            WindowStyle="None"
+            ResizeMode="NoResize"
+            AllowsTransparency="True"
+            Background="Transparent"
+            ShowInTaskbar="False"
+            Topmost="True"
+            WindowState="Maximized">
 
     <Grid x:Name="ContentRoot"
-          Background="Transparent">
+              Background="Transparent">
 
         <!-- Static blurred desktop backdrop -->
         <Image x:Name="DesktopBackdrop"
-               Stretch="Fill"
-               IsHitTestVisible="False"/>
+                   Stretch="Fill"
+                   IsHitTestVisible="False"/>
 
         <!-- Very subtle darkening over the blur -->
         <Border x:Name="BackdropOverlay"
-                Background="#12000000"
-                IsHitTestVisible="False"/>
+                    Background="#12000000"
+                    IsHitTestVisible="False"/>
 
         <!-- Conversation -->
         <Border x:Name="MessageArea"
-                Width="700"
-                Height="400"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Background="Black"
-                CornerRadius="20"
-                Padding="25"
-                Visibility="Collapsed">
+                    Width="700"
+                    Height="400"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Background="Black"
+                    CornerRadius="20"
+                    Padding="25"
+                    Visibility="Collapsed">
 
             <ScrollViewer VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
+                              HorizontalScrollBarVisibility="Disabled">
 
                 <StackPanel x:Name="MessagePanel"/>
 
@@ -44,71 +44,71 @@
 
         <!-- Command autocomplete -->
         <Border x:Name="CommandSuggestions"
-                Width="700"
-                MaxHeight="260"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Background="Black"
-                CornerRadius="18"
-                Padding="8"
-                Visibility="Collapsed">
+                    Width="700"
+                    MaxHeight="260"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Background="Black"
+                    CornerRadius="18"
+                    Padding="8"
+                    Visibility="Collapsed">
 
             <ListBox x:Name="CommandSuggestionList"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     Foreground="White"
-                     SelectionChanged="CommandSuggestionList_SelectionChanged"
-                     MouseDoubleClick="CommandSuggestionList_MouseDoubleClick"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Foreground="White"
+                         SelectionChanged="CommandSuggestionList_SelectionChanged"
+                         MouseLeftButtonUp="CommandSuggestionList_MouseLeftButtonUp"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
 
                         <Setter Property="Padding"
-                                Value="14,10"/>
+                                    Value="14,10"/>
 
                         <Setter Property="Margin"
-                                Value="0,2"/>
+                                    Value="0,2"/>
 
                         <Setter Property="Background"
-                                Value="Transparent"/>
+                                    Value="Transparent"/>
 
                         <Setter Property="Foreground"
-                                Value="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=Foreground}"/>
+                                    Value="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=Foreground}"/>
 
                         <Setter Property="HorizontalContentAlignment"
-                                Value="Stretch"/>
+                                    Value="Stretch"/>
 
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
 
                                     <Border x:Name="SuggestionItemBorder"
-                                            Background="{TemplateBinding Background}"
-                                            CornerRadius="12"
-                                            Padding="{TemplateBinding Padding}">
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="12"
+                                                Padding="{TemplateBinding Padding}">
 
                                         <ContentPresenter
-                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 
                                     </Border>
 
                                     <ControlTemplate.Triggers>
 
                                         <Trigger Property="IsMouseOver"
-                                                 Value="True">
+                                                     Value="True">
                                             <Setter TargetName="SuggestionItemBorder"
-                                                    Property="Background"
-                                                    Value="#22000000"/>
+                                                        Property="Background"
+                                                        Value="#22000000"/>
                                         </Trigger>
 
                                         <Trigger Property="IsSelected"
-                                                 Value="True">
+                                                     Value="True">
                                             <Setter TargetName="SuggestionItemBorder"
-                                                    Property="Background"
-                                                    Value="#33000000"/>
+                                                        Property="Background"
+                                                        Value="#33000000"/>
                                         </Trigger>
 
                                     </ControlTemplate.Triggers>
@@ -131,18 +131,18 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0"
-                                       Text="{Binding Command}"
-                                       FontSize="17"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"
-                                       Margin="4,0,14,0"/>
+                                           Text="{Binding Command}"
+                                           FontSize="17"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Margin="4,0,14,0"/>
 
                             <TextBlock Grid.Column="1"
-                                       Text="{Binding Description}"
-                                       FontSize="14"
-                                       Opacity="0.65"
-                                       VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis"/>
+                                           Text="{Binding Description}"
+                                           FontSize="14"
+                                           Opacity="0.65"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
 
                         </Grid>
 
@@ -154,31 +154,31 @@
 
         <!-- Input pill -->
         <Border x:Name="InputPill"
-                Width="700"
-                Height="70"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Background="Black"
-                CornerRadius="35">
+                    Width="700"
+                    Height="70"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Background="Black"
+                    CornerRadius="35">
 
             <Grid Height="70">
 
                 <TextBox x:Name="ChatInput"
-                         Width="650"
-                         Height="44"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         FontSize="20"
-                         Foreground="White"
-                         CaretBrush="White"
-                         Padding="12,0,12,0"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center"
-                         VerticalContentAlignment="Center"
-                         TextWrapping="NoWrap"
-                         AcceptsReturn="False"
-                         TextChanged="ChatInput_TextChanged"
-                         PreviewKeyDown="ChatInput_PreviewKeyDown"/>
+                             Width="650"
+                             Height="44"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             FontSize="20"
+                             Foreground="White"
+                             CaretBrush="White"
+                             Padding="12,0,12,0"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             TextWrapping="NoWrap"
+                             AcceptsReturn="False"
+                             TextChanged="ChatInput_TextChanged"
+                             PreviewKeyDown="ChatInput_PreviewKeyDown"/>
 
             </Grid>
         </Border>

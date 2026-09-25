@@ -41,6 +41,7 @@ public partial class MainWindow : Window
 
     private const double MessageGap = 16;
     private const double PillAnimationMilliseconds = 600;
+    private const double WindowFadeMilliseconds = 200;
 
     private readonly AppSettings _settings;
     private readonly List<OpenRouterMessage> _conversation;
@@ -77,6 +78,18 @@ public partial class MainWindow : Window
     private bool _messageAreaIsLight;
 
     private bool _isApplyingCommandSuggestion;
+
+    /*
+     * Prevents the close event from starting the fade
+     * more than once.
+     */
+    private bool _isClosingWithFade;
+
+    /*
+     * Prevents the startup fade from being started more
+     * than once.
+     */
+    private bool _isOpeningWithFade;
 
     /*
      * /pin state.
@@ -142,6 +155,9 @@ public partial class MainWindow : Window
 
         SizeChanged +=
             MainWindow_SizeChanged;
+
+        Loaded +=
+            MainWindow_Loaded;
 
         Closed +=
             MainWindow_Closed;
@@ -225,6 +241,55 @@ public partial class MainWindow : Window
             MainWindow_PreviewKeyDown;
     }
 
+    private void MainWindow_Loaded(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_isOpeningWithFade)
+            return;
+
+        _isOpeningWithFade = true;
+
+        /*
+         * The window starts at zero opacity while the
+         * desktop backdrop is prepared.
+         */
+        if (Opacity < 1)
+        {
+            var fadeIn =
+                new DoubleAnimation
+                {
+                    From = Opacity,
+                    To = 1,
+                    Duration =
+                        TimeSpan.FromMilliseconds(
+                            WindowFadeMilliseconds),
+
+                    EasingFunction =
+                        new QuadraticEase
+                        {
+                            EasingMode =
+                                EasingMode.EaseOut
+                        }
+                };
+
+            fadeIn.Completed +=
+                (_, _) =>
+                {
+                    Opacity = 1;
+                    _isOpeningWithFade = false;
+                };
+
+            BeginAnimation(
+                Window.OpacityProperty,
+                fadeIn);
+        }
+        else
+        {
+            _isOpeningWithFade = false;
+        }
+    }
+
     private void MainWindow_Closed(
         object? sender,
         EventArgs e)
@@ -242,39 +307,98 @@ public partial class MainWindow : Window
         object? sender,
         System.ComponentModel.CancelEventArgs e)
     {
-        if (!_isPinned || _allowClose)
+        /*
+         * The second Close() call, after the fade finishes,
+         * is allowed to actually close the window.
+         */
+        if (_isClosingWithFade)
         {
             return;
         }
 
-        var result =
-            WpfMessageBox.Show(
-                "Do you want to close Ballknower?",
-                "Close Ballknower",
-                WpfMessageBoxButton.YesNo,
-                WpfMessageBoxImage.Question);
-
-        if (result ==
-            WpfMessageBoxResult.Yes)
+        /*
+         * If Ballknower is pinned, ask for confirmation.
+         */
+        if (_isPinned && !_allowClose)
         {
-            _allowClose = true;
-            return;
+            var result =
+                WpfMessageBox.Show(
+                    "Do you want to close Ballknower?",
+                    "Close Ballknower",
+                    WpfMessageBoxButton.YesNo,
+                    WpfMessageBoxImage.Question);
+
+            if (result ==
+                WpfMessageBoxResult.Yes)
+            {
+                _allowClose = true;
+            }
+            else
+            {
+                e.Cancel = true;
+
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.ApplicationIdle,
+                    new Action(
+                        () =>
+                        {
+                            if (!IsVisible)
+                                Show();
+
+                            Activate();
+
+                            ChatInput.Focus();
+                        }));
+
+                return;
+            }
         }
 
+        /*
+         * Stop the actual close and perform the fade first.
+         */
         e.Cancel = true;
 
-        Dispatcher.BeginInvoke(
-            DispatcherPriority.ApplicationIdle,
-            new Action(
-                () =>
-                {
-                    if (!IsVisible)
-                        Show();
+        _isClosingWithFade = true;
 
-                    Activate();
+        _pillStoryboard?.Stop();
 
-                    ChatInput.Focus();
-                }));
+        var fadeOut =
+            new DoubleAnimation
+            {
+                From = Opacity,
+                To = 0,
+                Duration =
+                    TimeSpan.FromMilliseconds(
+                        WindowFadeMilliseconds),
+
+                EasingFunction =
+                    new QuadraticEase
+                    {
+                        EasingMode =
+                            EasingMode.EaseIn
+                    }
+            };
+
+        fadeOut.Completed +=
+            (_, _) =>
+            {
+                _allowClose = true;
+
+                /*
+                 * Remove the animation before the second
+                 * Close() so the window can close normally.
+                 */
+                BeginAnimation(
+                    Window.OpacityProperty,
+                    null);
+
+                Close();
+            };
+
+        BeginAnimation(
+            Window.OpacityProperty,
+            fadeOut);
     }
 
     private void MainWindow_Deactivated(
@@ -458,7 +582,34 @@ public partial class MainWindow : Window
                     {
                         UpdateAllAdaptiveColors();
 
-                        Opacity = 1;
+                        /*
+                         * MainWindow_Loaded handles the initial
+                         * fade-in. If the window is already loaded,
+                         * make sure it becomes visible.
+                         */
+                        if (!_isOpeningWithFade)
+                        {
+                            var fadeIn =
+                                new DoubleAnimation
+                                {
+                                    From = Opacity,
+                                    To = 1,
+                                    Duration =
+                                        TimeSpan.FromMilliseconds(
+                                            WindowFadeMilliseconds),
+
+                                    EasingFunction =
+                                        new QuadraticEase
+                                        {
+                                            EasingMode =
+                                                EasingMode.EaseOut
+                                        }
+                                };
+
+                            BeginAnimation(
+                                Window.OpacityProperty,
+                                fadeIn);
+                        }
                     }));
         }
     }
@@ -473,10 +624,18 @@ public partial class MainWindow : Window
 
         try
         {
+            /*
+             * Completely remove Ballknower from the desktop
+             * before taking the screenshot.
+             */
             Opacity = 0;
 
             Hide();
 
+            /*
+             * Give Windows/WPF a chance to finish removing
+             * Ballknower from the visible desktop composition.
+             */
             Dispatcher.Invoke(
                 DispatcherPriority.Render,
                 new Action(() => { }));
@@ -610,6 +769,12 @@ public partial class MainWindow : Window
 
                             Show();
 
+                            /*
+                             * Pinned backdrop refresh should appear
+                             * immediately. It must NOT use the normal
+                             * opening fade, which could cause a flash
+                             * during Alt-Tab.
+                             */
                             Dispatcher.BeginInvoke(
                                 DispatcherPriority.Render,
                                 new Action(
@@ -699,7 +864,7 @@ public partial class MainWindow : Window
                  _settings.Shortcuts)
         {
             string command =
-                shortcut.Key?
+                (shortcut.Key ?? string.Empty)
                     .Trim()
                     .TrimStart('/');
 
@@ -717,6 +882,13 @@ public partial class MainWindow : Window
             {
                 appName =
                     launchPath;
+            }
+
+            if (!appName.EndsWith(
+                    ".exe",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                appName += ".exe";
             }
 
             commands[command] =
@@ -830,8 +1002,18 @@ public partial class MainWindow : Window
 
     private void UpdateCommandSuggestionPosition()
     {
+        if (InputPill.ActualHeight <= 0 ||
+            ContentRoot.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        // Get the pill's actual top position in the window.
         double pillY =
-            _inputPillTransform.Y;
+            InputPill
+                .TransformToVisual(ContentRoot)
+                .Transform(new System.Windows.Point(0, 0))
+                .Y;
 
         double suggestionHeight =
             CommandSuggestions.ActualHeight > 0
@@ -842,14 +1024,13 @@ public partial class MainWindow : Window
                         70,
                         GetEligibleCommands().Count * 58 + 16));
 
+        // Keep the suggestions directly above the pill.
         CommandSuggestions.Margin =
             new Thickness(
                 0,
                 Math.Max(
                     0,
-                    pillY -
-                    suggestionHeight -
-                    12),
+                    pillY - suggestionHeight - 12),
                 0,
                 0);
     }
@@ -902,13 +1083,28 @@ public partial class MainWindow : Window
         UpdateCommandSuggestionColors();
     }
 
-    private void CommandSuggestionList_MouseDoubleClick(
+    private void CommandSuggestionList_MouseLeftButtonUp(
         object sender,
         MouseButtonEventArgs e)
     {
-        ApplySelectedCommandSuggestion();
+        if (e.OriginalSource is DependencyObject source)
+        {
+            var item =
+                ItemsControl.ContainerFromElement(
+                    CommandSuggestionList,
+                    source)
+                as ListBoxItem;
 
-        e.Handled = true;
+            if (item is not null)
+            {
+                CommandSuggestionList.SelectedItem =
+                    item.DataContext;
+
+                ApplySelectedCommandSuggestion();
+
+                e.Handled = true;
+            }
+        }
     }
 
     private void ApplySelectedCommandSuggestion()
@@ -2016,6 +2212,17 @@ public partial class MainWindow : Window
                     FileName = launchPath,
                     UseShellExecute = true
                 });
+
+            /*
+             * If the user command is being executed before
+             * an AI chat has been opened, Ballknower closes
+             * after successfully launching the application.
+             */
+            if (!_hasEnteredChat)
+            {
+                _allowClose = true;
+                Close();
+            }
         }
         catch (Exception ex)
         {
