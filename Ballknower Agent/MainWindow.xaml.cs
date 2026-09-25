@@ -842,6 +842,13 @@ public partial class MainWindow : Window
                         Description = "Opens the Ballknower error logs."
                     },
 
+                ["clear"] =
+                    new CommandSuggestion
+                    {
+                        Command = "clear",
+                        Description = "Clears the current chat."
+                    },
+
                 ["see"] =
                     new CommandSuggestion
                     {
@@ -2198,6 +2205,12 @@ public partial class MainWindow : Window
 
                 return;
 
+            case "confetti":
+
+                ShowConfetti();
+
+                return;
+
             case "see":
 
                 UnblurDesktop();
@@ -2265,6 +2278,104 @@ public partial class MainWindow : Window
                 $"Could not launch /{parsed.Command}. " +
                 "Details were saved to the error log.");
         }
+    }
+
+    private void ShowConfetti()
+    {
+        if (ConfettiCanvas.ActualWidth <= 0 ||
+            ConfettiCanvas.ActualHeight <= 0)
+        {
+            ConfettiCanvas.Visibility = Visibility.Visible;
+            ConfettiCanvas.UpdateLayout();
+        }
+
+        ConfettiCanvas.Children.Clear();
+        ConfettiCanvas.Visibility = Visibility.Visible;
+
+        var random = new Random();
+        var colors = new[]
+        {
+            Colors.HotPink,
+            Colors.Gold,
+            Colors.DeepSkyBlue,
+            Colors.LimeGreen,
+            Colors.Orange,
+            Colors.MediumPurple
+        };
+
+        double width = Math.Max(1, ConfettiCanvas.ActualWidth);
+        double height = Math.Max(1, ConfettiCanvas.ActualHeight);
+
+        for (int i = 0; i < 90; i++)
+        {
+            double size = random.Next(5, 12);
+            var piece = new System.Windows.Shapes.Rectangle
+            {
+                Width = size,
+                Height = size * random.NextDouble() + 3,
+                RadiusX = 1,
+                RadiusY = 1,
+                Fill = new SolidColorBrush(colors[random.Next(colors.Length)]),
+                RenderTransformOrigin = new System.Windows.Point(0.5, 0.5)
+            };
+
+            double startX = random.NextDouble() * width;
+            double endX = startX + random.Next(-180, 181);
+            double endY = height + random.Next(30, 180);
+            double duration = random.Next(1400, 2600);
+
+            var transform = new TranslateTransform();
+            piece.RenderTransform = transform;
+            Canvas.SetLeft(piece, startX);
+            Canvas.SetTop(piece, -random.Next(10, 250));
+            Panel.SetZIndex(piece, 1000);
+            ConfettiCanvas.Children.Add(piece);
+
+            var fall = new DoubleAnimation
+            {
+                From = 0,
+                To = endY + 250,
+                Duration = TimeSpan.FromMilliseconds(duration),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+            };
+
+            var drift = new DoubleAnimation
+            {
+                From = 0,
+                To = endX - startX,
+                Duration = TimeSpan.FromMilliseconds(duration)
+            };
+
+            var spin = new DoubleAnimation
+            {
+                From = 0,
+                To = random.Next(-720, 721),
+                Duration = TimeSpan.FromMilliseconds(duration)
+            };
+
+            var rotate = new RotateTransform();
+            piece.RenderTransform = new TransformGroup
+            {
+                Children = new TransformCollection
+                {
+                    rotate,
+                    transform
+                }
+            };
+
+            fall.Completed += (_, _) => ConfettiCanvas.Children.Remove(piece);
+            transform.BeginAnimation(TranslateTransform.YProperty, fall);
+            transform.BeginAnimation(TranslateTransform.XProperty, drift);
+            rotate.BeginAnimation(RotateTransform.AngleProperty, spin);
+        }
+
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Background,
+            new Action(() =>
+            {
+                if (ConfettiCanvas.Children.Count == 0)
+                    ConfettiCanvas.Visibility = Visibility.Collapsed;
+            }));
     }
 
     private void ClearChat()
@@ -2735,6 +2846,7 @@ public partial class MainWindow : Window
         MessagePanel.Children.Add(
             text);
 
+        ScrollChatToEnd();
         UpdateMessageAreaColor();
     }
 
@@ -2768,7 +2880,15 @@ public partial class MainWindow : Window
         MessagePanel.Children.Add(
             text);
 
+        ScrollChatToEnd();
         UpdateMessageAreaColor();
+    }
+
+    private void ScrollChatToEnd()
+    {
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Loaded,
+            new Action(() => ChatScrollViewer.ScrollToEnd()));
     }
 
     private sealed class CommandSuggestion
