@@ -13,15 +13,6 @@
     <Grid x:Name="ContentRoot"
           Background="Transparent">
 
-        <!-- Live blurred desktop -->
-        <Image x:Name="DesktopBackdrop"
-               Stretch="Fill"
-               IsHitTestVisible="False"/>
-
-        <!-- Very subtle darkening over the blur -->
-        <Border Background="#12000000"
-                IsHitTestVisible="False"/>
-
         <!-- Conversation -->
         <Border x:Name="MessageArea"
                 Width="700"
