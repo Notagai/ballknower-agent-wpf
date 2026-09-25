@@ -199,22 +199,12 @@ public partial class MainWindow : Window
         try
         {
             /*
-             * The window itself must be transparent while we capture,
-             * but the previous backdrop also has to be removed from the
-             * visual tree first. Clearing Source alone is not enough to
-             * guarantee that WPF has presented the change to the desktop
-             * before CopyFromScreen runs.
+             * Never capture the screen while this window is visible.
+             * WPF can still composite a transparent/hidden window into
+             * the frame being captured, which creates a feedback loop.
+             * Hide the whole window, capture the real desktop, then show it.
              */
-            DesktopBackdrop.Visibility =
-                Visibility.Hidden;
-
-            Opacity = 0;
-
-            UpdateLayout();
-
-            Dispatcher.Invoke(
-                DispatcherPriority.Render,
-                new Action(() => { }));
+            Hide();
 
             var bounds =
                 System.Windows.Forms.Screen
@@ -243,11 +233,6 @@ public partial class MainWindow : Window
                     System.Drawing.CopyPixelOperation.SourceCopy);
             }
 
-            /*
-             * Downscale and upscale once to produce the soft backdrop.
-             * This processing is performed entirely on the fresh desktop
-             * capture, never on the previous backdrop image.
-             */
             int smallWidth =
                 Math.Max(
                     1,
@@ -337,10 +322,7 @@ public partial class MainWindow : Window
         }
         finally
         {
-            DesktopBackdrop.Visibility =
-                Visibility.Visible;
-
-            Opacity = 1;
+            Show();
 
             _isCapturingBackdrop = false;
         }
