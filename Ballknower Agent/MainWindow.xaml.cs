@@ -1789,7 +1789,7 @@ public partial class MainWindow : Window
                 messageY);
     }
 
-    private void AnimateInputPillDown()
+    private async Task AnimateInputPillDownAsync()
     {
         double height =
             ContentRoot.ActualHeight;
@@ -1816,8 +1816,11 @@ public partial class MainWindow : Window
         }
 
         _hasEnteredChat = true;
-
         _isPillAnimating = true;
+
+        var completion =
+            new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
 
         AnimateDouble(
             animation =>
@@ -1839,12 +1842,60 @@ public partial class MainWindow : Window
                 UpdateMessageAreaPosition();
                 UpdateCommandSuggestionPosition();
                 UpdateAllAdaptiveColors();
+                completion.SetResult();
             },
             (_, _) =>
             {
                 UpdateCommandSuggestionPosition();
                 UpdateAllAdaptiveColors();
             });
+
+        await completion.Task;
+    }
+
+    private async Task AnimateMessageAreaUpAsync()
+    {
+        double height =
+            ContentRoot.ActualHeight;
+
+        if (height <= 0)
+            return;
+
+        UpdateMessageAreaPosition();
+
+        double targetY =
+            _messageAreaTransform.Y;
+
+        double startingY =
+            height * ChatPillPosition;
+
+        _messageAreaTransform.Y =
+            startingY;
+
+        var completion =
+            new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+        AnimateDouble(
+            animation =>
+                _messageAreaTransform.BeginAnimation(
+                    TranslateTransform.YProperty,
+                    animation),
+            value => _messageAreaTransform.Y = value,
+            startingY,
+            targetY,
+            400,
+            new QuadraticEase
+            {
+                EasingMode = EasingMode.EaseOut
+            },
+            () =>
+            {
+                UpdateAllAdaptiveColors();
+                completion.SetResult();
+            });
+
+        await completion.Task;
     }
 
     private void MainWindow_PreviewKeyDown(
@@ -2002,9 +2053,12 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (!_hasEnteredChat)
+            bool isEnteringChat =
+                !_hasEnteredChat;
+
+            if (isEnteringChat)
             {
-                AnimateInputPillDown();
+                await AnimateInputPillDownAsync();
             }
 
             MessageArea.Visibility =
@@ -2012,6 +2066,11 @@ public partial class MainWindow : Window
 
             UpdateMessageAreaPosition();
             UpdateAllAdaptiveColors();
+
+            if (isEnteringChat)
+            {
+                await AnimateMessageAreaUpAsync();
+            }
 
             AddUserMessage(message);
 
