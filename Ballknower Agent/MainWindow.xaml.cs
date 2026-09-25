@@ -2363,7 +2363,13 @@ public partial class MainWindow : Window
                 }
             };
 
-            fall.Completed += (_, _) => ConfettiCanvas.Children.Remove(piece);
+            fall.Completed += (_, _) =>
+            {
+                ConfettiCanvas.Children.Remove(piece);
+
+                if (ConfettiCanvas.Children.Count == 0)
+                    ConfettiCanvas.Visibility = Visibility.Collapsed;
+            };
             transform.BeginAnimation(TranslateTransform.YProperty, fall);
             transform.BeginAnimation(TranslateTransform.XProperty, drift);
             rotate.BeginAnimation(RotateTransform.AngleProperty, spin);
