@@ -259,6 +259,9 @@ public partial class MainWindow : Window
                     Role = "system",
                     Content =
                         "You are Ballknower, a Windows desktop assistant. " +
+                        "Use Markdown formatting when it improves readability, including " +
+                        "headings, lists, bold text, inline code, fenced code blocks, " +
+                        "and Markdown links. " +
                         "Use the web_search tool when the user asks for current " +
                         "information, research, or facts that need internet access. " +
                         "Use the provided native tools when the user requests " +
