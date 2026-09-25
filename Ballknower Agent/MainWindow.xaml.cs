@@ -1019,12 +1019,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Get the pill's actual top position in the window.
+        // The pill is top-aligned; its Y render transform is
+        // its current position, including during animation.
         double pillY =
-            InputPill
-                .TransformToVisual(ContentRoot)
-                .Transform(new System.Windows.Point(0, 0))
-                .Y;
+            _inputPillTransform.Y;
 
         double suggestionHeight =
             CommandSuggestions.ActualHeight > 0
@@ -2328,7 +2326,7 @@ public partial class MainWindow : Window
             piece.RenderTransform = transform;
             Canvas.SetLeft(piece, startX);
             Canvas.SetTop(piece, -random.Next(10, 250));
-            Panel.SetZIndex(piece, 1000);
+            System.Windows.Controls.Panel.SetZIndex(piece, 1000);
             ConfettiCanvas.Children.Add(piece);
 
             var fall = new DoubleAnimation
