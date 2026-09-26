@@ -590,7 +590,7 @@ public partial class SettingsWindow : Window
                         VerticalAlignment.Center,
 
                     Foreground =
-                        WpfBrushes.White
+                        WpfBrushes.Black
                 };
 
             Grid.SetColumn(
