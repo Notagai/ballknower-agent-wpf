@@ -2438,27 +2438,8 @@ public partial class MainWindow : Window
             AddAssistantMessage(help);
             return;
         }
-        var parsed =
-            _commandParser.Parse(message);
-
         switch (parsed.Command)
         {
-            case "help":
-
-                AddAssistantMessage(
-                    "**Built-in commands**\n\n" +
-                    "- `/help` — Show this command list.\n" +
-                    "- `/settings` — Open settings.\n" +
-                    "- `/logs` — Open error logs.\n" +
-                    "- `/clear` — Clear the current conversation.\n" +
-                    "- `/confetti` — Show confetti.\n" +
-                    "- `/see` — Reveal the desktop without blur.\n" +
-                    "- `/pin` — Keep Ballknower visible while switching apps.\n" +
-                    "- `/unpin` — Hide Ballknower when it loses focus.\n\n" +
-                    "User shortcuts are listed in Settings → Shortcuts.");
-
-                return;
-
             case "settings":
 
                 OpenSettings();
