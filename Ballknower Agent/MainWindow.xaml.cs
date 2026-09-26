@@ -2388,6 +2388,32 @@ public partial class MainWindow : Window
         }
     }
 
+    private static bool IsSystem32Path(string path)
+    {
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            string system32 = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "System32");
+
+            system32 = Path.GetFullPath(system32)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            return fullPath.Equals(system32, StringComparison.OrdinalIgnoreCase) ||
+                fullPath.StartsWith(
+                    system32 + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase) ||
+                fullPath.StartsWith(
+                    system32 + Path.AltDirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private async Task ExecuteShortcutAsync(
         string message)
     {
@@ -2521,6 +2547,14 @@ public partial class MainWindow : Window
 
         try
         {
+            if (IsSystem32Path(launchPath))
+            {
+                AddAssistantMessage(
+                    "Shortcuts to System32 are blocked.");
+
+                return;
+            }
+
             Process.Start(
                 new ProcessStartInfo
                 {
