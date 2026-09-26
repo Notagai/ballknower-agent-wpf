@@ -36,7 +36,8 @@
 
             <ScrollViewer x:Name="ChatScrollViewer"
                               VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
+                              HorizontalScrollBarVisibility="Disabled"
+                              PreviewMouseWheel="ChatScrollViewer_PreviewMouseWheel">
 
                 <StackPanel x:Name="MessagePanel"/>
 
