@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Timer = System.Threading.Timer;
 
 namespace Ballknower;
 
@@ -36,11 +34,8 @@ public sealed class KeyboardShortcutManager : IDisposable
     private readonly LowLevelKeyboardProc _hookCallback;
 
     private IntPtr _hookHandle;
-    private Timer? _holdTimer;
-
     private bool _winHeld;
     private bool _combinationUsed;
-    private bool _longHoldTriggered;
     private bool _winDownReplayed;
     private int _activeWinKey;
     private long _winDownTimestamp;
@@ -163,7 +158,6 @@ public sealed class KeyboardShortcutManager : IDisposable
 
             _winHeld = true;
             _combinationUsed = HasAnotherTrackedKeyDown();
-            _longHoldTriggered = false;
             _winDownReplayed = false;
             _activeWinKey = (int)data.vkCode;
             _winDownTimestamp = Stopwatch.GetTimestamp();
@@ -179,15 +173,6 @@ public sealed class KeyboardShortcutManager : IDisposable
                     wParam,
                     lParam);
             }
-
-            _holdTimer?.Dispose();
-
-            _holdTimer =
-                new Timer(
-                    LongHoldTimerCallback,
-                    null,
-                    HoldMilliseconds,
-                    Timeout.Infinite);
 
             /*
              * Suppress the physical Win-down until we know whether
@@ -207,9 +192,6 @@ public sealed class KeyboardShortcutManager : IDisposable
                     lParam);
             }
 
-            _holdTimer?.Dispose();
-            _holdTimer = null;
-
             /*
              * The timer runs on a thread-pool thread and can be delayed
              * or race with this hook callback. Measure the physical hold
@@ -220,15 +202,10 @@ public sealed class KeyboardShortcutManager : IDisposable
                 Stopwatch.GetElapsedTime(_winDownTimestamp)
                     .TotalMilliseconds >= HoldMilliseconds;
 
-            bool longHold =
-                (_longHoldTriggered || thresholdReached) &&
-                !_combinationUsed;
+            bool longHold = thresholdReached && !_combinationUsed;
 
-            if (longHold && !_longHoldTriggered)
-            {
-                _longHoldTriggered = true;
+            if (longHold)
                 _onLongHold();
-            }
 
             if (!longHold && !_winDownReplayed)
             {
@@ -265,27 +242,6 @@ public sealed class KeyboardShortcutManager : IDisposable
             nCode,
             wParam,
             lParam);
-    }
-
-    private void LongHoldTimerCallback(object? state)
-    {
-        if (_disposed ||
-            !_winHeld ||
-            _combinationUsed ||
-            _longHoldTriggered)
-        {
-            return;
-        }
-
-        _longHoldTriggered = true;
-
-        /*
-         * The physical Win-down was never passed to Windows while this
-         * standalone press was being evaluated. Keep suppressing the
-         * physical Win-up below as well. Avoid injecting Escape or a
-         * synthetic Win-up while the physical Win key remains held.
-         */
-        _onLongHold();
     }
 
     private bool HasAnotherTrackedKeyDown()
@@ -407,9 +363,6 @@ public sealed class KeyboardShortcutManager : IDisposable
             return;
 
         _disposed = true;
-
-        _holdTimer?.Dispose();
-        _holdTimer = null;
 
         if (_hookHandle != IntPtr.Zero)
         {
