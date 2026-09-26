@@ -11,6 +11,7 @@ public partial class App : WpfApplication
     public static bool IsExiting { get; internal set; }
 
     private BackgroundActivity? _backgroundActivity;
+    private KeyboardShortcutManager? _keyboardShortcutManager;
 
     protected override void OnStartup(
         StartupEventArgs e)
@@ -32,6 +33,18 @@ public partial class App : WpfApplication
             new BackgroundActivity(
                 () => MainWindow,
                 ExitApplication);
+
+        _keyboardShortcutManager =
+            new KeyboardShortcutManager(
+                ShowBallknowerFromShortcut);
+    }
+
+    private void ShowBallknowerFromShortcut()
+    {
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Normal,
+            new Action(
+                () => _backgroundActivity?.ShowBallknower()));
     }
 
     public void ExitApplication()
@@ -47,6 +60,9 @@ public partial class App : WpfApplication
     protected override void OnExit(
         ExitEventArgs e)
     {
+        _keyboardShortcutManager?.Dispose();
+        _keyboardShortcutManager = null;
+
         _backgroundActivity?.Dispose();
         _backgroundActivity = null;
 
