@@ -171,6 +171,10 @@ public partial class MainWindow : Window
             Show();
 
         Opacity = 1;
+
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Maximized;
+
         Activate();
         ChatInput.Focus();
     }
