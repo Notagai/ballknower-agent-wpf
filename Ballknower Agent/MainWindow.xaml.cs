@@ -1763,6 +1763,7 @@ public partial class MainWindow : Window
             return;
 
         InputPill.Width = _hasEnteredChat ? ChatPillWidth : InitialPillWidth;
+        ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = _hasEnteredChat ? ChatPillWidth : InitialPillWidth;
 
         double targetPosition =
@@ -1846,6 +1847,7 @@ public partial class MainWindow : Window
 
         _hasEnteredChat = true;
         InputPill.Width = ChatPillWidth;
+        ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = ChatPillWidth;
         _isPillAnimating = true;
 
@@ -2931,7 +2933,7 @@ public partial class MainWindow : Window
             Width = 32, Height = 32, Margin = new Thickness(0, 0, 10, 0),
             CornerRadius = new CornerRadius(16), Background = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
             VerticalAlignment = VerticalAlignment.Bottom,
-            Child = new TextBlock { Text = "B", Foreground = Brushes.White, FontWeight = FontWeights.Bold,
+            Child = new TextBlock { Text = "🏀", FontSize = 19, Foreground = Brushes.White, FontWeight = FontWeights.Bold,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center, VerticalAlignment = System.Windows.VerticalAlignment.Center }
         };
         Grid.SetColumn(avatar, 0);
