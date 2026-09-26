@@ -2163,7 +2163,7 @@ public partial class MainWindow : Window
                     DispatcherPriority.ApplicationIdle,
                     new Action(() =>
                     {
-                        Topmost = _isPinned;
+                        Topmost = !_isPinned;
                         if (!IsVisible)
                             Show();
                         UpdateDesktopBackdrop();
