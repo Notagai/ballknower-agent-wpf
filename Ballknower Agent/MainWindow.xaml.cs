@@ -2129,7 +2129,11 @@ public partial class MainWindow : Window
             {
                 UpdateAllAdaptiveColors();
                 completion.SetResult();
-            });
+            },
+            (_, _) => UpdateMessageAreaColor());
+
+        // Pick the correct adaptive color before the first animated frame.
+        UpdateMessageAreaColor();
 
         await completion.Task;
     }
