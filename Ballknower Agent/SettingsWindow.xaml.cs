@@ -59,6 +59,8 @@ public partial class SettingsWindow : Window
             OpenRouterModel = settings.OpenRouterModel,
             GroqModel = settings.GroqModel,
             StreamResponses = settings.StreamResponses,
+            JailbreakEnabled = settings.JailbreakEnabled,
+            JailbreakPrompt = settings.JailbreakPrompt,
             OpeningShortcut = settings.OpeningShortcut,
             HistoryTokenBudget = settings.HistoryTokenBudget,
             Shortcuts = new Dictionary<string, string>(
@@ -82,6 +84,12 @@ public partial class SettingsWindow : Window
 
         StreamingCheckBox.IsChecked =
             _settings.StreamResponses;
+
+        JailbreakCheckBox.IsChecked = _settings.JailbreakEnabled;
+        JailbreakPromptInput.Text = _settings.JailbreakPrompt;
+        JailbreakPromptPanel.Visibility = _settings.JailbreakEnabled
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         UpdateHistorySlider();
         RefreshShortcutList();
@@ -110,6 +118,15 @@ public partial class SettingsWindow : Window
     }
 
     private void SettingsChanged(object sender, RoutedEventArgs e) => MarkDirty();
+
+    private void JailbreakCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (JailbreakPromptPanel is not null)
+            JailbreakPromptPanel.Visibility = JailbreakCheckBox.IsChecked == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        MarkDirty();
+    }
     private void SettingsChanged(object sender, RoutedEventArgs e, bool unused) => MarkDirty();
     private void MarkDirty()
     {
@@ -751,6 +768,8 @@ public partial class SettingsWindow : Window
 
         _settings.StreamResponses =
             StreamingCheckBox.IsChecked == true;
+        _settings.JailbreakEnabled = JailbreakCheckBox.IsChecked == true;
+        _settings.JailbreakPrompt = JailbreakPromptInput.Text;
 
         var dialog =
             new Microsoft.Win32.SaveFileDialog
@@ -927,6 +946,8 @@ public partial class SettingsWindow : Window
 
         _targetSettings.StreamResponses =
             _settings.StreamResponses;
+        _targetSettings.JailbreakEnabled = _settings.JailbreakEnabled;
+        _targetSettings.JailbreakPrompt = _settings.JailbreakPrompt;
 
         _targetSettings.OpeningShortcut =
             _settings.OpeningShortcut;
