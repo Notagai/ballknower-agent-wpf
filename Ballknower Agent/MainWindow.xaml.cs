@@ -2143,28 +2143,36 @@ public partial class MainWindow : Window
 
         _settingsWindow =
             new SettingsWindow(
-                _settings);
-
-        _settingsWindow.Owner =
-            this;
-
-        _settingsWindow.Topmost =
-            true;
+                _settings)
+            {
+                Owner = this
+            };
 
         _settingsWindow.Closed +=
             (_, _) =>
             {
                 _settingsWindow = null;
 
-                Topmost = true;
+                // Discard the snapshot that may contain Settings
+                // or an old foreground app, then recapture after
+                // the Settings window has fully closed.
+                DesktopBackdrop.Source = null;
+                _desktopUnblurred = false;
 
-                Activate();
-
-                ChatInput.Focus();
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.ApplicationIdle,
+                    new Action(() =>
+                    {
+                        Topmost = _isPinned;
+                        if (!IsVisible)
+                            Show();
+                        UpdateDesktopBackdrop();
+                        Activate();
+                        ChatInput.Focus();
+                    }));
             };
 
         _settingsWindow.Show();
-
         _settingsWindow.Activate();
     }
 
@@ -2388,6 +2396,22 @@ public partial class MainWindow : Window
 
         switch (parsed.Command)
         {
+            case "help":
+
+                AddAssistantMessage(
+                    "**Built-in commands**\n\n" +
+                    "- `/help` — Show this command list.\n" +
+                    "- `/settings` — Open settings.\n" +
+                    "- `/logs` — Open error logs.\n" +
+                    "- `/clear` — Clear the current conversation.\n" +
+                    "- `/confetti` — Show confetti.\n" +
+                    "- `/see` — Reveal the desktop without blur.\n" +
+                    "- `/pin` — Keep Ballknower visible while switching apps.\n" +
+                    "- `/unpin` — Hide Ballknower when it loses focus.\n\n" +
+                    "User shortcuts are listed in Settings → Shortcuts.");
+
+                return;
+
             case "settings":
 
                 OpenSettings();
