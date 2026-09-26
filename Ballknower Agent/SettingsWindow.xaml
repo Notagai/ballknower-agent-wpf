@@ -60,6 +60,12 @@
             <TabItem Header="Shortcuts">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
                     <TextBlock Text="Add or edit a slash command" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="Opening shortcut" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ComboBox x:Name="OpeningShortcutInput" SelectedValuePath="Content" SelectionChanged="OpeningShortcutInput_SelectionChanged" Margin="0,0,0,16">
+                        <ComboBoxItem Content="Alt+Win"/>
+                        <ComboBoxItem Content="Ctrl+Win"/>
+                        <ComboBoxItem Content="Shift+Win"/>
+                    </ComboBox>
                     <TextBlock Text="Built-in commands" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <TextBlock Text="/help — Show command list&#10;/settings — Open settings&#10;/logs — Open error logs&#10;/clear — Clear conversation&#10;/confetti — Show confetti&#10;/see — Reveal desktop without blur&#10;/pin — Stay visible while switching apps&#10;/unpin — Hide when focus is lost" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,16"/>
                     <TextBox x:Name="CommandInput" ToolTip="Command name, e.g. notes" Margin="0,0,0,8" TextChanged="SettingsChanged"/>
