@@ -857,6 +857,11 @@ public partial class SettingsWindow : Window
                 _settings.StreamResponses =
                     importedSettings.StreamResponses;
 
+                _settings.JailbreakEnabled =
+                    importedSettings.JailbreakEnabled;
+                _settings.JailbreakPrompt =
+                    importedSettings.JailbreakPrompt ?? string.Empty;
+
                 _settings.OpeningShortcut =
                     NormalizeOpeningShortcut(
                         importedSettings.OpeningShortcut);
@@ -876,6 +881,15 @@ public partial class SettingsWindow : Window
 
                 StreamingCheckBox.IsChecked =
                     _settings.StreamResponses;
+
+                JailbreakCheckBox.IsChecked =
+                    _settings.JailbreakEnabled;
+                JailbreakPromptInput.Text =
+                    _settings.JailbreakPrompt;
+                JailbreakPromptPanel.Visibility =
+                    _settings.JailbreakEnabled
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
 
                 OpeningShortcutInput.SelectedValue =
                     _settings.OpeningShortcut;
@@ -934,6 +948,10 @@ public partial class SettingsWindow : Window
 
         _settings.StreamResponses =
             StreamingCheckBox.IsChecked == true;
+        _settings.JailbreakEnabled =
+            JailbreakCheckBox.IsChecked == true;
+        _settings.JailbreakPrompt =
+            JailbreakPromptInput.Text;
 
         _targetSettings.AIProvider =
             _settings.AIProvider;
