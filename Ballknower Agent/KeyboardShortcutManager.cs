@@ -164,9 +164,9 @@ public sealed class KeyboardShortcutManager : IDisposable
             _openingShortcut = modifierHeld;
             _activeWinKey = (int)data.vkCode;
 
-            if (altHeld)
+            if (modifierHeld)
             {
-                // Alt+Win is our hotkey. Keep Win suppressed so Start
+                // The configured modifier+Win combination is our hotkey.
                 // does not open; invoke Ballknower when Win is released.
                 return IntPtr.Zero;
             }
