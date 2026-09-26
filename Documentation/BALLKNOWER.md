@@ -98,4 +98,4 @@ Searches the public internet for current information and returns result titles, 
 
 ## Documentation policy
 
-This is the canonical, single-page documentation for Ballknower. **Every new built-in tool or built-in slash command must be documented here when added**, unless explicitly exempted. `/confetti` is currently the sole exception and is intentionally omitted. User-created/configured commands are not documented individually. Keep this page and the repository README in sync as the application evolves.
+This is the canonical, single-page documentation for Ballknower. **Every new built-in tool or built-in slash command must be documented here when added**, unless explicitly exempted. User-created/configured commands are not documented individually. Keep this page and the repository README in sync as the application evolves.
