@@ -73,13 +73,7 @@ public sealed class BackgroundActivity : IDisposable
         if (!window.IsVisible)
             window.Show();
 
-        window.Opacity = 1;
-        window.Activate();
-
-        if (window.WindowState == WindowState.Minimized)
-            window.WindowState = WindowState.Maximized;
-
-        window.ChatInput.Focus();
+        window.FocusBallknower();
     }
 
     public void Dispose()
