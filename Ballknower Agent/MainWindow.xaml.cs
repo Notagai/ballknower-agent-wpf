@@ -447,6 +447,7 @@ public partial class MainWindow : Window
             }
 
             e.Cancel = true;
+            ResetToInitialState();
             Hide();
             Opacity = 1;
             return;
@@ -479,6 +480,53 @@ public partial class MainWindow : Window
             });
     }
 
+    private void ResetToInitialState()
+    {
+        _isPillAnimating = false;
+        _hasEnteredChat = false;
+
+        _inputPillTransform.BeginAnimation(
+            TranslateTransform.YProperty,
+            null);
+
+        _messageAreaTransform.BeginAnimation(
+            TranslateTransform.YProperty,
+            null);
+
+        InputPill.Width = InitialPillWidth;
+        ChatInput.Width = InitialPillWidth - 50;
+        MessageArea.Width = InitialPillWidth;
+
+        double height = ContentRoot.ActualHeight;
+
+        if (height > 0)
+        {
+            _inputPillTransform.Y =
+                height * InitialPillPosition;
+
+            _messageAreaTransform.Y =
+                0;
+        }
+        else
+        {
+            _inputPillTransform.Y = 0;
+            _messageAreaTransform.Y = 0;
+        }
+
+        ChatInput.Clear();
+        HideCommandSuggestions();
+        MessagePanel.Children.Clear();
+
+        while (_conversation.Count > 1)
+        {
+            _conversation.RemoveAt(_conversation.Count - 1);
+        }
+
+        UpdateMessageAreaPosition();
+        UpdateCommandSuggestionPosition();
+        UpdateAllAdaptiveColors();
+    }
+
     private void MainWindow_Deactivated(
         object? sender,
         EventArgs e)
@@ -500,6 +548,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        ResetToInitialState();
         Hide();
     }
 
