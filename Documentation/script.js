@@ -19,3 +19,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   sections.forEach(section => observer.observe(section));
 });
+
+// Reveal sections as they enter view; keep content visible if motion is reduced.
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!reduceMotion && "IntersectionObserver" in window) {
+  const revealTargets = document.querySelectorAll(".feature-card, .quote-panel, .bottom-cta, .section-heading");
+  revealTargets.forEach(el => el.classList.add("reveal-ready"));
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-revealed");
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  revealTargets.forEach(el => revealObserver.observe(el));
+}
