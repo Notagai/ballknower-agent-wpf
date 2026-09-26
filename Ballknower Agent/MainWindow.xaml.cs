@@ -1734,16 +1734,61 @@ public partial class MainWindow : Window
     private void UpdateMessageTextColors(
         bool lightBackground)
     {
-        foreach (var child in
-                 MessagePanel.Children)
+        Brush textBrush =
+            lightBackground
+                ? _blackTextBrush
+                : _whiteTextBrush;
+
+        foreach (var child in MessagePanel.Children)
         {
-            if (child is TextBlock textBlock)
+            if (child is not Grid row)
+                continue;
+
+            foreach (var element in row.Children)
             {
-                textBlock.Foreground =
-                    lightBackground
-                        ? _blackTextBrush
-                        : _whiteTextBrush;
+                if (element is not FlowDocumentScrollViewer viewer ||
+                    viewer.Document is not FlowDocument document)
+                {
+                    continue;
+                }
+
+                viewer.Foreground = textBrush;
+
+                foreach (var block in document.Blocks)
+                {
+                    if (block is not Paragraph paragraph)
+                        continue;
+
+                    paragraph.Foreground = textBrush;
+
+                    foreach (var inline in paragraph.Inlines)
+                        UpdateInlineColor(inline, lightBackground, textBrush);
+                }
             }
+        }
+    }
+
+    private static void UpdateInlineColor(
+        Inline inline,
+        bool lightBackground,
+        Brush textBrush)
+    {
+        if (inline is Hyperlink hyperlink)
+        {
+            hyperlink.Foreground =
+                lightBackground
+                    ? Brushes.DarkBlue
+                    : Brushes.LightBlue;
+        }
+        else if (inline is Run run)
+        {
+            run.Foreground = textBrush;
+        }
+
+        if (inline is Span span)
+        {
+            foreach (var child in span.Inlines)
+                UpdateInlineColor(child, lightBackground, textBrush);
         }
     }
 
