@@ -421,12 +421,8 @@ public partial class MainWindow : Window
                         WpfMessageBoxButton.YesNo,
                         WpfMessageBoxImage.Question);
 
-                if (result ==
+                if (result !=
                     WpfMessageBoxResult.Yes)
-                {
-                    App.IsExiting = true;
-                }
-                else
                 {
                     e.Cancel = true;
 
@@ -444,13 +440,22 @@ public partial class MainWindow : Window
 
                     return;
                 }
-            }
 
-            e.Cancel = true;
-            ResetToInitialState();
-            Hide();
-            Opacity = 1;
-            return;
+                /*
+                 * A confirmed close is an application exit, not a
+                 * hide-to-tray operation. Leave App.IsExiting true
+                 * and fall through to the explicit fade-out below.
+                 */
+                App.IsExiting = true;
+            }
+            else
+            {
+                e.Cancel = true;
+                ResetToInitialState();
+                Hide();
+                Opacity = 1;
+                return;
+            }
         }
 
         /*
