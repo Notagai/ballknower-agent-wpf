@@ -2932,7 +2932,7 @@ public partial class MainWindow : Window
             CornerRadius = new CornerRadius(16), Background = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
             VerticalAlignment = VerticalAlignment.Bottom,
             Child = new TextBlock { Text = "B", Foreground = Brushes.White, FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center, VerticalAlignment = System.Windows.VerticalAlignment.Center }
         };
         Grid.SetColumn(avatar, 0);
         Grid.SetColumn(viewer, 1);
