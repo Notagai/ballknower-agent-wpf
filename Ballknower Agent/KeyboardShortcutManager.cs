@@ -255,14 +255,27 @@ public sealed class KeyboardShortcutManager : IDisposable
 
     private bool HasAnotherKeyDown()
     {
-        return IsKeyDown(System.Windows.Forms.Keys.LControlKey) ||
-               IsKeyDown(System.Windows.Forms.Keys.RControlKey) ||
-               IsKeyDown(System.Windows.Forms.Keys.LShiftKey) ||
-               IsKeyDown(System.Windows.Forms.Keys.RShiftKey) ||
-               IsKeyDown(System.Windows.Forms.Keys.LMenu) ||
-               IsKeyDown(System.Windows.Forms.Keys.RMenu) ||
-               IsKeyDown(System.Windows.Forms.Keys.LWin) ||
-               IsKeyDown(System.Windows.Forms.Keys.RWin);
+        /*
+         * Check the other keyboard keys as well as the common
+         * modifiers. This covers cases such as holding a letter
+         * key and then pressing Win.
+         */
+        for (int virtualKey = 1; virtualKey < 256; virtualKey++)
+        {
+            if (virtualKey == VK_LWIN ||
+                virtualKey == VK_RWIN)
+            {
+                continue;
+            }
+
+            if (IsKeyDown(
+                    (System.Windows.Forms.Keys)virtualKey))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsKeyDown(System.Windows.Forms.Keys key)
