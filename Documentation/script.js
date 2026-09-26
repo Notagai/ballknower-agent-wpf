@@ -78,17 +78,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!frame) frame = requestAnimationFrame(animateTowardTarget);
   }
 
-  world.addEventListener("wheel", event => {
-    if (!desktop.matches || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+  // Listen at document level so wheel input still works when the pointer is
+  // over a panel's nested content (or another non-scrollable child).
+  document.addEventListener("wheel", event => {
+    if (!desktop.matches || !world.contains(event.target)) return;
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
     if (world.scrollWidth <= world.clientWidth) return;
     event.preventDefault();
     target = Math.max(0, Math.min(
-      target + event.deltaY * 0.42,
+      target + event.deltaY * 0.75,
       world.scrollWidth - world.clientWidth
     ));
     if (!frame) frame = requestAnimationFrame(animateTowardTarget);
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(settleOnNearestSlide, 260);
+    settleTimer = setTimeout(settleOnNearestSlide, 320);
   }, { passive: false });
 
   world.addEventListener("scroll", () => {
