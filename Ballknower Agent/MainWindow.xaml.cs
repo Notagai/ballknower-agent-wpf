@@ -467,11 +467,16 @@ public partial class MainWindow : Window
                 }
 
                 /*
-                 * A confirmed close is an application exit, not a
-                 * hide-to-tray operation. Leave App.IsExiting true
-                 * and fall through to the explicit fade-out below.
+                 * A confirmed close of a pinned window hides only the
+                 * overlay. Keep the background process and shortcut alive.
+                 * Explicit shutdown (for example, /shutdown) sets
+                 * App.IsExiting and still follows the exit path below.
                  */
-                App.IsExiting = true;
+                e.Cancel = true;
+                ResetToInitialState();
+                Hide();
+                Opacity = 1;
+                return;
             }
             else
             {
