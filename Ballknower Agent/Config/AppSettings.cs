@@ -14,6 +14,8 @@ public class AppSettings
 
     public bool StreamResponses { get; set; } = true;
 
+    public string OpeningShortcut { get; set; } = "Alt+Win";
+
     // Approximate conversation history budget per AI request.
     // Does not include the model's response or all tool overhead.
     public int HistoryTokenBudget { get; set; } = 2000;
