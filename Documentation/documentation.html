@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131b">
+  <title>Documentation — Ballknower</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="brand-mark">🏀</span><span>Ballknower</span></a>
+    <nav class="nav" aria-label="Main navigation"><a class="nav-link" href="index.html">Home</a><a class="nav-link active" href="documentation.html" aria-current="page">Documentation</a></nav>
+    <a class="github-link" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="docs-layout">
+    <aside class="docs-sidebar">
+      <div class="sidebar-title">ON THIS PAGE</div>
+      <a href="#overview">Overview</a><a href="#getting-started">Getting started</a><a href="#interface">Interface</a><a href="#commands">Built-in commands</a><a href="#tools">AI tools</a><a href="#security">Keys & security</a><a href="#notes">File path notes</a>
+      <div class="sidebar-note"><span class="status-dot"></span> Living documentation<br><small>Updated as features evolve.</small></div>
+    </aside>
+    <article class="docs-content">
+      <div class="eyebrow">BALLKNOWER KNOWLEDGE BASE</div>
+      <h1>Documentation<span class="title-period">.</span></h1>
+      <p class="docs-lead">A practical guide to Ballknower: a lightweight Windows desktop assistant built with WPF and .NET 8.</p>
+      <div class="callout"><strong>Project status</strong><p>This site is a static documentation front end. The roadmap is intentionally not public. Feature behavior may evolve as the app develops.</p></div>
+
+      <section id="overview" class="doc-section"><h2>Overview</h2><p>Ballknower combines an AI chat interface with local desktop tools and a floating, blurred desktop experience. It is designed to be useful without taking over your workspace.</p><div class="tag-row"><span class="tag">Windows</span><span class="tag">WPF</span><span class="tag">.NET 8</span><span class="tag">BYOK</span></div></section>
+      <section id="getting-started" class="doc-section"><h2>Getting started</h2><ol><li>Open <code>Ballknower Agent.slnx</code> in Visual Studio.</li><li>Ensure the .NET 8 SDK and Windows desktop development support are installed.</li><li>Set <strong>Ballknower Agent</strong> as the startup project, then build and run.</li><li>Type into the pill-shaped input. Enter a message to chat, or type <code>/</code> to browse built-in commands.</li></ol><p>To run a built build outside Visual Studio, launch the executable from the project's build output folder. Keep the surrounding output files together.</p></section>
+      <section id="interface" class="doc-section"><h2>Interface</h2><ul><li><strong>Floating input:</strong> the main entry point for chat and commands.</li><li><strong>Chat:</strong> user messages appear on the right; assistant messages appear on the left.</li><li><strong>Command suggestions:</strong> typing <code>/</code> opens autocomplete. Select a suggestion with the keyboard or mouse.</li><li><strong>Markdown:</strong> assistant responses support headings, lists, blockquotes, bold, italic, inline code, fenced code blocks, and clickable HTTP(S) Markdown links.</li><li><strong>Adaptive presentation:</strong> text colors adapt to the backdrop, with background blur for a glass-like appearance.</li><li><strong><code>/see</code>:</strong> reveals the desktop without the blur.</li></ul></section>
+      <section id="commands" class="doc-section"><h2>Built-in commands</h2><p>Commands start with a slash. Names are case-insensitive; supported arguments follow the command name.</p><div class="table-wrap"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+      <tr><td><code>/settings</code></td><td>Opens Ballknower settings.</td></tr><tr><td><code>/logs</code></td><td>Opens the Ballknower error logs.</td></tr><tr><td><code>/clear</code></td><td>Clears the current chat while preserving the system prompt.</td></tr><tr><td><code>/see</code></td><td>Shows the desktop without the blur.</td></tr><tr><td><code>/pin</code></td><td>Keeps Ballknower visible while switching apps.</td></tr><tr><td><code>/unpin</code></td><td>Returns to hiding Ballknower when it loses focus.</td></tr></tbody></table></div>
+      <h3>Configured shortcuts</h3><p>If a command is not built in, Ballknower checks user-configured shortcuts in settings. A configured shortcut is invoked as <code>/shortcutname</code>. Names and launch targets depend on your settings and are not listed individually.</p></section>
+      <section id="tools" class="doc-section"><h2>AI tools</h2><p>The assistant can call registered tools in response to natural-language requests. These names are internal tool identifiers, not slash commands.</p>
+      <div class="tool-card"><h3><code>create_file</code></h3><p>Creates a text file and parent directories as needed.</p><dl><dt>Arguments</dt><dd><code>path</code>, <code>content</code></dd><dt>Confirmation</dt><dd>Not required. Existing files may be overwritten.</dd></dl></div>
+      <div class="tool-card"><h3><code>delete_file</code></h3><p>Deletes a file at the requested path.</p><dl><dt>Arguments</dt><dd><code>path</code></dd><dt>Confirmation</dt><dd>Required before execution.</dd></dl></div>
+      <div class="tool-card"><h3><code>read_file</code></h3><p>Reads text from an existing file; it is not a general binary-file viewer.</p><dl><dt>Arguments</dt><dd><code>path</code></dd><dt>Confirmation</dt><dd>Not required.</dd></dl></div>
+      <div class="tool-card"><h3><code>list_directory</code></h3><p>Lists immediate files and subdirectories (not recursive), up to 200 entries.</p><dl><dt>Arguments</dt><dd><code>path</code></dd><dt>Confirmation</dt><dd>Not required.</dd></dl></div>
+      <div class="tool-card"><h3><code>move_file</code></h3><p>Moves or renames an existing file. Creates the destination directory if needed and does not overwrite an existing file.</p><dl><dt>Arguments</dt><dd><code>source</code>, <code>destination</code></dd><dt>Confirmation</dt><dd>Required before execution.</dd></dl></div>
+      <div class="tool-card"><h3>Shortcut creation & app launching</h3><p>Ballknower can create shortcuts and open applications through its desktop tooling. Exact available options depend on the app's current implementation and settings.</p></div>
+      <div class="tool-card"><h3><code>web_search</code></h3><p>Searches the public internet and returns result titles, URLs, and snippets. It is a search tool, not unrestricted browsing or webpage downloading.</p><dl><dt>Arguments</dt><dd><code>query</code> — concise query, capped at 400 characters</dd><dt>Results</dt><dd>Up to five results</dd><dt>Confirmation</dt><dd>Not required</dd></dl></div></section>
+      <section id="security" class="doc-section"><h2>API keys & security</h2><p>Ballknower uses a bring-your-own-key model. Saved credentials are protected using Windows Data Protection API (DPAPI). Treat API keys as sensitive and never commit them to source control.</p></section>
+      <section id="notes" class="doc-section"><h2>File path notes</h2><ul><li>Use familiar-folder aliases such as <code>~/Desktop</code>, <code>~/Documents</code>, and <code>~/Downloads</code> where supported.</li><li>Use full paths for source and destination paths when requested.</li><li>File operations may fail because of missing paths, permissions, invalid destinations, or operating-system errors.</li></ul><p class="muted">Documentation policy: built-in tools and slash commands should be documented as they are added. User-configured commands are not listed individually.</p></section>
+      <div class="docs-end"><span>🏀</span><p>That’s the current lay of the land.</p><a href="index.html">Back to Home →</a></div>
+    </article>
+  </main>
+  <footer class="site-footer"><a class="brand" href="index.html"><span class="brand-mark">🏀</span><span>Ballknower</span></a><span>Windows · WPF · .NET 8</span><span>Made for a more personal desktop.</span></footer>
+</body>
+</html>
