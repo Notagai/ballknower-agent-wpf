@@ -74,7 +74,7 @@
                         <ComboBoxItem Content="Shift+Win"/>
                     </ComboBox>
                     <TextBlock Text="Built-in commands" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <TextBlock Text="/help — Show command list&#10;/settings — Open settings&#10;/logs — Open error logs&#10;/clear — Clear conversation&#10;/confetti — Show confetti&#10;/see — Reveal desktop without blur&#10;/pin — Stay visible while switching apps&#10;/unpin — Hide when focus is lost" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <TextBlock Text="/help — Show command list&#10;/settings — Open settings&#10;/logs — Open error logs&#10;/clear — Clear conversation&#10;/confetti — Show confetti&#10;/see — Reveal desktop without blur&#10;/pin — Stay visible while switching apps&#10;/unpin — Hide when focus is lost&#10;/shutdown — Exit Ballknower and stop the background process" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,16"/>
                     <TextBox x:Name="CommandInput" ToolTip="Command name, e.g. notes" Margin="0,0,0,8" TextChanged="SettingsChanged"/>
                     <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <TextBox x:Name="PathInput" Grid.Column="0" TextChanged="SettingsChanged"/>
