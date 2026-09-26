@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Ballknower;
@@ -49,7 +50,7 @@ public sealed class KeyboardShortcutManager : IDisposable
         _hookCallback = HookCallback;
 
         using Process process = Process.GetCurrentProcess();
-        using ProcessModule? module = process.MainModule;
+        ProcessModule? module = process.MainModule;
 
         IntPtr moduleHandle =
             module is null
@@ -238,6 +239,11 @@ public sealed class KeyboardShortcutManager : IDisposable
             nCode,
             wParam,
             lParam);
+    }
+
+    private bool IsAltTrackedDown()
+    {
+        return _keysDown[0x12] || _keysDown[0xA4] || _keysDown[0xA5];
     }
 
     private bool HasAnotherTrackedKeyDown()
