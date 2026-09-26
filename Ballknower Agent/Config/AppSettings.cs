@@ -12,7 +12,11 @@ public class AppSettings
     public string GroqModel { get; set; } =
         "openai/gpt-oss-120b";
 
-    public bool StreamResponses { get; set; } = true;\n\n    public bool JailbreakEnabled { get; set; } = false;\n\n    public string JailbreakPrompt { get; set; } = string.Empty;
+    public bool StreamResponses { get; set; } = true;
+
+    public bool JailbreakEnabled { get; set; } = false;
+
+    public string JailbreakPrompt { get; set; } = string.Empty;
 
     public string OpeningShortcut { get; set; } = "Alt+Win";
 
