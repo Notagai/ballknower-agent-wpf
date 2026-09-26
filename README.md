@@ -25,9 +25,9 @@ Give the assistant practical ways to help with everyday tasks:
 - **Background blur** gives the window a polished, glass-like presence over your desktop.
 - A compact, modern interface designed to feel at home on Windows.
 
-## 📚 Documentation
+## 🌐 Website & Documentation
 
-See the [Ballknower documentation](Documentation/BALLKNOWER.md) for setup notes, interface details, built-in commands, and registered AI tools.
+Visit the [Ballknower website](https://notagai.github.io/ballknower-agent-wpf/) for the project overview and documentation.
 
 ## 🧰 Project
 
