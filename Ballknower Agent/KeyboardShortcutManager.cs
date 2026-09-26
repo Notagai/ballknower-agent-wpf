@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Timer = System.Threading.Timer;
 
 namespace Ballknower;
 
