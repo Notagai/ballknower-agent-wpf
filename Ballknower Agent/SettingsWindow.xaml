@@ -44,7 +44,7 @@
                     <StackPanel x:Name="JailbreakPromptPanel" Visibility="Collapsed">
                         <TextBlock Text="Jailbreak prompt" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
                         <TextBox x:Name="JailbreakPromptInput" MinHeight="120" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="SettingsChanged"/>
-                        <TextBlock Text="Prepended to the first user message sent after launching Ballknower." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        <TextBlock Text="When enabled, the prompt is prepended to the first user message after launch. AI tool access is restricted to web search only; local file and other AI tools are blocked by the app." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                 </StackPanel></ScrollViewer>
             </TabItem>
