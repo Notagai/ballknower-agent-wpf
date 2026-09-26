@@ -227,7 +227,6 @@ public sealed class KeyboardShortcutManager : IDisposable
 
             _winHeld = false;
             _combinationUsed = false;
-            _longHoldTriggered = false;
             _winDownReplayed = false;
             _activeWinKey = 0;
 
