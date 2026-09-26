@@ -496,6 +496,7 @@ public partial class MainWindow : Window
         InputPill.Width = InitialPillWidth;
         ChatInput.Width = InitialPillWidth - 50;
         MessageArea.Width = InitialPillWidth;
+        MessageArea.Visibility = Visibility.Collapsed;
 
         double height = ContentRoot.ActualHeight;
 
@@ -1992,6 +1993,7 @@ public partial class MainWindow : Window
         InputPill.Width = ChatPillWidth;
         ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = ChatPillWidth;
+        MessageArea.Visibility = Visibility.Visible;
         _isPillAnimating = true;
 
         var completion =
