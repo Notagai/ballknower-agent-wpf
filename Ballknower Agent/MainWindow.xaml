@@ -25,7 +25,7 @@
 
         <!-- Conversation -->
         <Border x:Name="MessageArea"
-                    Width="700"
+                    Width="1400"
                     Height="400"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Top"
