@@ -2417,7 +2417,8 @@ public partial class MainWindow : Window
                 "- /confetti — Show confetti.\n" +
                 "- /see — Reveal the desktop without blur.\n" +
                 "- /pin — Keep Ballknower visible while switching apps.\n" +
-                "- /unpin — Hide Ballknower when it loses focus.\n" +\n                "- /shutdown — Shut down Ballknower and its background input handler.\n\n";
+                "- /unpin — Hide Ballknower when it loses focus.\n" +
+                "- /shutdown — Shut down Ballknower and its background input handler.\n\n";
 
             if (_settings.Shortcuts.Count > 0)
             {
@@ -2502,7 +2503,7 @@ public partial class MainWindow : Window
 
                 if (result == WpfMessageBoxResult.Yes)
                 {
-                    ((App)Application.Current).ExitApplication();
+                    ((App)System.Windows.Application.Current).ExitApplication();
                 }
 
                 return;
