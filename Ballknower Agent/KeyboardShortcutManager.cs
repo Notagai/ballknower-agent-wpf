@@ -43,6 +43,7 @@ public sealed class KeyboardShortcutManager : IDisposable
     private bool _longHoldTriggered;
     private bool _winDownReplayed;
     private int _activeWinKey;
+    private long _winDownTimestamp;
 
     private bool _disposed;
 
@@ -156,6 +157,7 @@ public sealed class KeyboardShortcutManager : IDisposable
             _longHoldTriggered = false;
             _winDownReplayed = false;
             _activeWinKey = (int)data.vkCode;
+            _winDownTimestamp = Stopwatch.GetTimestamp();
 
             if (_combinationUsed)
             {
@@ -199,9 +201,25 @@ public sealed class KeyboardShortcutManager : IDisposable
             _holdTimer?.Dispose();
             _holdTimer = null;
 
+            /*
+             * The timer runs on a thread-pool thread and can be delayed
+             * or race with this hook callback. Measure the physical hold
+             * duration here too, so releasing after the threshold never
+             * replays Win-down and accidentally opens Start.
+             */
+            bool thresholdReached =
+                Stopwatch.GetElapsedTime(_winDownTimestamp)
+                    .TotalMilliseconds >= HoldMilliseconds;
+
             bool longHold =
-                _longHoldTriggered &&
+                (_longHoldTriggered || thresholdReached) &&
                 !_combinationUsed;
+
+            if (longHold && !_longHoldTriggered)
+            {
+                _longHoldTriggered = true;
+                _onLongHold();
+            }
 
             if (!longHold && !_winDownReplayed)
             {
