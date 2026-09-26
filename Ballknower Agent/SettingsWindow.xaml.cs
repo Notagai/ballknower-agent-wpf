@@ -149,7 +149,7 @@ public partial class SettingsWindow : Window
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (_allowClose || !_isDirty) return;
-        var result = WpfMessageBox.Show("You have unsaved changes. Discard them and close Settings?", "Unsaved Changes", WpfMessageBoxButton.YesNo, WpfMessageBoxImage.Warning);
+        var result = WpfMessageBox.Show(this, "You have unsaved changes. Discard them and close Settings?", "Unsaved Changes", WpfMessageBoxButton.YesNo, WpfMessageBoxImage.Warning);
         if (result != MessageBoxResult.Yes) e.Cancel = true;
     }
 
@@ -570,7 +570,7 @@ public partial class SettingsWindow : Window
                         VerticalAlignment.Center,
 
                     Foreground =
-                        WpfBrushes.White
+                        WpfBrushes.Black
                 };
 
             Grid.SetColumn(
