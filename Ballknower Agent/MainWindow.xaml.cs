@@ -369,48 +369,53 @@ public partial class MainWindow : Window
         }
 
         /*
-         * If Ballknower is pinned, ask for confirmation.
+         * A normal window close now means "hide Ballknower".
+         * The process stays alive in the background so global
+         * shortcuts can continue to work.
          */
-        if (_isPinned && !_allowClose)
+        if (!App.IsExiting)
         {
-            var result =
-                WpfMessageBox.Show(
-                    "Do you want to close Ballknower?",
-                    "Close Ballknower",
-                    WpfMessageBoxButton.YesNo,
-                    WpfMessageBoxImage.Question);
-
-            if (result ==
-                WpfMessageBoxResult.Yes)
+            if (_isPinned && !_allowClose)
             {
-                _allowClose = true;
+                var result =
+                    WpfMessageBox.Show(
+                        "Do you want to close Ballknower?",
+                        "Close Ballknower",
+                        WpfMessageBoxButton.YesNo,
+                        WpfMessageBoxImage.Question);
+
+                if (result !=
+                    WpfMessageBoxResult.Yes)
+                {
+                    e.Cancel = true;
+
+                    Dispatcher.BeginInvoke(
+                        DispatcherPriority.ApplicationIdle,
+                        new Action(
+                            () =>
+                            {
+                                if (!IsVisible)
+                                    Show();
+
+                                Activate();
+                                ChatInput.Focus();
+                            }));
+
+                    return;
+                }
             }
-            else
-            {
-                e.Cancel = true;
 
-                Dispatcher.BeginInvoke(
-                    DispatcherPriority.ApplicationIdle,
-                    new Action(
-                        () =>
-                        {
-                            if (!IsVisible)
-                                Show();
-
-                            Activate();
-
-                            ChatInput.Focus();
-                        }));
-
-                return;
-            }
+            e.Cancel = true;
+            Hide();
+            Opacity = 1;
+            return;
         }
 
         /*
-         * Stop the actual close and perform the fade first.
+         * Explicit application exit: preserve the existing
+         * fade-out before the WPF process terminates.
          */
         e.Cancel = true;
-
         _isClosingWithFade = true;
 
         AnimateDouble(
