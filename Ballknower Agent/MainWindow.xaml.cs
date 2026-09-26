@@ -398,8 +398,12 @@ public partial class MainWindow : Window
                         WpfMessageBoxButton.YesNo,
                         WpfMessageBoxImage.Question);
 
-                if (result !=
+                if (result ==
                     WpfMessageBoxResult.Yes)
+                {
+                    App.IsExiting = true;
+                }
+                else
                 {
                     e.Cancel = true;
 
