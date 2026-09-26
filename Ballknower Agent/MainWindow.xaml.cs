@@ -2120,11 +2120,7 @@ public partial class MainWindow : Window
             {
                 EasingMode = EasingMode.EaseIn
             },
-            () =>
-            {
-                Opacity = 1;
-                Close();
-            });
+            () => Close());
 
         e.Handled = true;
     }
