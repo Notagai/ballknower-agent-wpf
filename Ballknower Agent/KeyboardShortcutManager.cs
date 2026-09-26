@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Ballknower;
@@ -27,7 +26,6 @@ public sealed class KeyboardShortcutManager : IDisposable
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
 
-    private const int HoldMilliseconds = 1000;
 
     private readonly Action _onLongHold;
     private readonly LowLevelKeyboardProc _hookCallback;
@@ -36,8 +34,8 @@ public sealed class KeyboardShortcutManager : IDisposable
     private bool _winHeld;
     private bool _combinationUsed;
     private bool _winDownReplayed;
+    private bool _altWinShortcut;
     private int _activeWinKey;
-    private long _winDownTimestamp;
     private readonly bool[] _keysDown = new bool[256];
 
     private bool _disposed;
@@ -159,8 +157,8 @@ public sealed class KeyboardShortcutManager : IDisposable
             bool altHeld = IsAltTrackedDown();
             _combinationUsed = HasAnotherTrackedKeyDown() && !altHeld;
             _winDownReplayed = false;
+            _altWinShortcut = altHeld;
             _activeWinKey = (int)data.vkCode;
-            _winDownTimestamp = Stopwatch.GetTimestamp();
 
             if (altHeld)
             {
@@ -199,24 +197,13 @@ public sealed class KeyboardShortcutManager : IDisposable
                     lParam);
             }
 
-            /*
-             * The timer runs on a thread-pool thread and can be delayed
-             * or race with this hook callback. Measure the physical hold
-             * duration here too, so releasing after the threshold never
-             * replays Win-down and accidentally opens Start.
-             */
-            bool altWinHotkey = IsAltTrackedDown() && !_combinationUsed;
-            bool thresholdReached =
-                Stopwatch.GetElapsedTime(_winDownTimestamp)
-                    .TotalMilliseconds >= HoldMilliseconds;
+            /* Decide whether this was the Alt+Win shortcut. */
+            bool triggerHotkey = _altWinShortcut && !_combinationUsed;
 
-            bool longHold = thresholdReached && !_combinationUsed;
-            bool triggerHotkey = altWinHotkey;
-
-            if (longHold || triggerHotkey)
+            if (triggerHotkey)
                 _onLongHold();
 
-            if (!longHold && !triggerHotkey && !_winDownReplayed)
+            if (!triggerHotkey && !_winDownReplayed)
             {
                 /*
                  * A short standalone Win press should behave like a
@@ -238,6 +225,7 @@ public sealed class KeyboardShortcutManager : IDisposable
             _combinationUsed = false;
             _winDownReplayed = false;
             _activeWinKey = 0;
+            _altWinShortcut = false;
 
             /*
              * For a long hold, both Win-down and Win-up were suppressed.
@@ -250,11 +238,6 @@ public sealed class KeyboardShortcutManager : IDisposable
             nCode,
             wParam,
             lParam);
-    }
-
-    private bool IsAltTrackedDown()
-    {
-        return _keysDown[0x12] || _keysDown[0xA4] || _keysDown[0xA5];
     }
 
     private bool HasAnotherTrackedKeyDown()
