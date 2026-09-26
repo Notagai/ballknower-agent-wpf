@@ -1009,6 +1009,13 @@ public partial class MainWindow : Window
             new Dictionary<string, CommandSuggestion>(
                 StringComparer.OrdinalIgnoreCase)
             {
+                ["help"] =
+                    new CommandSuggestion
+                    {
+                        Command = "help",
+                        Description = "Shows the built-in and configured commands."
+                    },
+
                 ["settings"] =
                     new CommandSuggestion
                     {
@@ -1049,6 +1056,20 @@ public partial class MainWindow : Window
                     {
                         Command = "unpin",
                         Description = "Makes Ballknower hide when it loses focus."
+                    },
+
+                ["confetti"] =
+                    new CommandSuggestion
+                    {
+                        Command = "confetti",
+                        Description = "Shows confetti."
+                    },
+
+                ["shutdown"] =
+                    new CommandSuggestion
+                    {
+                        Command = "shutdown",
+                        Description = "Exits Ballknower and stops the background process."
                     }
             };
 
