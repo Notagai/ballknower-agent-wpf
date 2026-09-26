@@ -859,7 +859,6 @@ public partial class SettingsWindow : Window
         object sender,
         RoutedEventArgs e)
     {
-        _allowClose = true;
         Close();
     }
 }
