@@ -205,6 +205,7 @@ public partial class SettingsWindow : Window
 
         _settings.HistoryTokenBudget =
             HistoryBudgets[index];
+        MarkDirty();
 
         HistoryBudgetLabel.Text =
             $"{_settings.HistoryTokenBudget:N0} tokens";
@@ -796,6 +797,7 @@ public partial class SettingsWindow : Window
             {
                 _isInitializing = false;
             }
+            MarkDirty();
         }
         catch (JsonException)
         {
