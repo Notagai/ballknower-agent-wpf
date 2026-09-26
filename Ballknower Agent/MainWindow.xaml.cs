@@ -164,6 +164,9 @@ public partial class MainWindow : Window
      */
     private bool _ignoreShortcutDeactivation;
 
+    public string OpeningShortcut =>
+        _settings.OpeningShortcut;
+
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath(
         ref Guid rfid,
