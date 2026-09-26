@@ -38,7 +38,14 @@
                         <Button Content="Test Prompt" Click="TestPromptButton_Click" Padding="14,5"/>
                         <TextBlock x:Name="PromptTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
                     </StackPanel>
-                    <TextBlock Text="The prompt test sends a short request to the selected provider and model; usage may incur a small API charge." FontSize="12" Opacity="0.65" TextWrapping="Wrap"/>
+                    <TextBlock Text="The prompt test sends a short request to the selected provider and model; usage may incur a small API charge." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                    <TextBlock Text="Advanced" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="JailbreakCheckBox" Content="Jailbreak" Foreground="White" Margin="0,0,0,8" Checked="JailbreakCheckBox_Changed" Unchecked="JailbreakCheckBox_Changed"/>
+                    <StackPanel x:Name="JailbreakPromptPanel" Visibility="Collapsed">
+                        <TextBlock Text="Jailbreak prompt" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBox x:Name="JailbreakPromptInput" MinHeight="120" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="SettingsChanged"/>
+                        <TextBlock Text="Prepended to the first user message sent after launching Ballknower." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
                 </StackPanel></ScrollViewer>
             </TabItem>
             <TabItem Header="Conversation">
