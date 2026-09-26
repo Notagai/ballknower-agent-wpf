@@ -35,3 +35,18 @@ if (!reduceMotion && "IntersectionObserver" in window) {
   }, { threshold: 0.12 });
   revealTargets.forEach(el => revealObserver.observe(el));
 }
+
+
+// Desktop horizontal story: translate vertical wheel input into sideways scrolling.
+// Touch, trackpad horizontal gestures, and the mobile stacked layout remain native.
+document.addEventListener("DOMContentLoaded", () => {
+  const world = document.querySelector(".side-world");
+  if (!world) return;
+  const desktop = window.matchMedia("(min-width: 801px)");
+  world.addEventListener("wheel", event => {
+    if (!desktop.matches || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    if (world.scrollWidth <= world.clientWidth) return;
+    event.preventDefault();
+    world.scrollBy({ left: event.deltaY, behavior: "auto" });
+  }, { passive: false });
+});
