@@ -158,6 +158,12 @@ public partial class MainWindow : Window
      */
     private bool _allowClose;
 
+    /*
+     * Prevent the global Win-key shortcut from immediately hiding
+     * Ballknower if Windows briefly gives focus to the Start menu.
+     */
+    private bool _ignoreShortcutDeactivation;
+
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath(
         ref Guid rfid,
@@ -167,6 +173,8 @@ public partial class MainWindow : Window
 
     public void FocusBallknower()
     {
+        _ignoreShortcutDeactivation = true;
+
         if (!IsVisible)
             Show();
 
@@ -177,6 +185,10 @@ public partial class MainWindow : Window
 
         Activate();
         ChatInput.Focus();
+
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Input,
+            new Action(() => _ignoreShortcutDeactivation = false));
     }
 
     public MainWindow()
@@ -460,8 +472,11 @@ public partial class MainWindow : Window
         object? sender,
         EventArgs e)
     {
-        if (_isCapturingBackdrop)
+        if (_isCapturingBackdrop ||
+            _ignoreShortcutDeactivation)
+        {
             return;
+        }
 
         if (_settingsWindow is not null &&
             _settingsWindow.IsVisible)
