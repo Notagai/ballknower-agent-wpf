@@ -2388,25 +2388,43 @@ public partial class MainWindow : Window
         }
     }
 
+    private static bool IsUnderDirectory(
+        string path,
+        string directory)
+    {
+        return path.Equals(
+                   directory,
+                   StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith(
+                directory + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith(
+                directory + Path.AltDirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool IsSystem32Path(string path)
     {
         try
         {
             string fullPath = Path.GetFullPath(path);
-            string system32 = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
-                "System32");
+            string windowsDirectory =
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows);
 
-            system32 = Path.GetFullPath(system32)
-                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string system32 = Path.GetFullPath(
+                Path.Combine(windowsDirectory, "System32"))
+                .TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar);
 
-            return fullPath.Equals(system32, StringComparison.OrdinalIgnoreCase) ||
-                fullPath.StartsWith(
-                    system32 + Path.DirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase) ||
-                fullPath.StartsWith(
-                    system32 + Path.AltDirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase);
+            string sysWow64 = Path.GetFullPath(
+                Path.Combine(windowsDirectory, "SysWOW64"))
+                .TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar);
+
+            return IsUnderDirectory(fullPath, system32) ||
+                IsUnderDirectory(fullPath, sysWow64);
         }
         catch
         {
