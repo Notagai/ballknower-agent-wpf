@@ -2126,6 +2126,11 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    public void OpenSettingsFromTray()
+    {
+        OpenSettings();
+    }
+
     private void OpenSettings()
     {
         if (_settingsWindow is not null)
