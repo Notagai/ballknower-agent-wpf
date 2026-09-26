@@ -255,16 +255,9 @@ public sealed class KeyboardShortcutManager : IDisposable
         /*
          * The physical Win-down was never passed to Windows while this
          * standalone press was being evaluated. Keep suppressing the
-         * physical Win-up below as well. Do not synthesize a Win-up:
-         * SendInput changes the system input stream and can race with
-         * the shell's handling of a still-held physical Win key.
+         * physical Win-up below as well. Avoid injecting Escape or a
+         * synthetic Win-up while the physical Win key remains held.
          */
-        /*
-         * If Start has appeared despite the low-level suppression,
-         * dismiss it before Ballknower takes focus.
-         */
-        SendKeyTap(VK_ESCAPE);
-
         _onLongHold();
     }
 
