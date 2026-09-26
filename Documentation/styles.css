@@ -37,3 +37,11 @@
   .side-world{overscroll-behavior-x:contain}
   .world-panel{transform-style:preserve-3d}
 }
+
+/* Slow, eased slide navigation with a gentle settle point. */
+@media(min-width:801px){
+  .side-world{scroll-snap-type:x mandatory;scroll-behavior:smooth;scroll-padding-inline:0}
+  .world-panel{scroll-snap-align:center;scroll-snap-stop:always}
+  .world-panel{transition:filter .65s ease,opacity .65s ease}
+}
+@media(prefers-reduced-motion:reduce){.side-world{scroll-behavior:auto}.world-panel{transition:none}}
