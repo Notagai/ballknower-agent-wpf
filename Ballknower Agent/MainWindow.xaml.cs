@@ -165,6 +165,16 @@ public partial class MainWindow : Window
         IntPtr hToken,
         out IntPtr ppszPath);
 
+    public void FocusBallknower()
+    {
+        if (!IsVisible)
+            Show();
+
+        Opacity = 1;
+        Activate();
+        ChatInput.Focus();
+    }
+
     public MainWindow()
     {
         InitializeComponent();
