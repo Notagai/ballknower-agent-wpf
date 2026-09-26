@@ -2103,7 +2103,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        Close();
+        /*
+         * Fade the visible window before asking the normal close
+         * handler to hide it (or show the pinned-close confirmation).
+         */
+        AnimateDouble(
+            animation =>
+                BeginAnimation(
+                    Window.OpacityProperty,
+                    animation),
+            value => Opacity = value,
+            Opacity,
+            0,
+            WindowFadeMilliseconds,
+            new QuadraticEase
+            {
+                EasingMode = EasingMode.EaseIn
+            },
+            () =>
+            {
+                Opacity = 1;
+                Close();
+            });
 
         e.Handled = true;
     }
