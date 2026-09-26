@@ -390,6 +390,32 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private static bool IsSystem32Path(string path)
+    {
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            string system32 = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "System32");
+
+            system32 = Path.GetFullPath(system32)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            return fullPath.Equals(system32, StringComparison.OrdinalIgnoreCase) ||
+                fullPath.StartsWith(
+                    system32 + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase) ||
+                fullPath.StartsWith(
+                    system32 + Path.AltDirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private void AddShortcutButton_Click(
         object sender,
         RoutedEventArgs e)
@@ -405,6 +431,17 @@ public partial class SettingsWindow : Window
         if (string.IsNullOrWhiteSpace(command) ||
             string.IsNullOrWhiteSpace(path))
         {
+            return;
+        }
+
+        if (IsSystem32Path(path))
+        {
+            WpfMessageBox.Show(
+                this,
+                "Shortcuts to System32 are blocked.",
+                "Shortcut blocked",
+                WpfMessageBoxButton.OK,
+                WpfMessageBoxImage.Warning);
             return;
         }
 
