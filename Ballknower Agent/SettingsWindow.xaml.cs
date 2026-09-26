@@ -4,6 +4,10 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Threading.Tasks;
 using System.Text.Json;
 
 using System.Windows;
@@ -37,6 +41,9 @@ public partial class SettingsWindow : Window
 
     private string? _editingCommand;
     private bool _isInitializing;
+    private bool _isDirty;
+    private bool _allowClose;
+    private static readonly HttpClient TestHttp = new() { Timeout = TimeSpan.FromSeconds(20) };
 
     public SettingsWindow(AppSettings settings)
     {
@@ -75,6 +82,75 @@ public partial class SettingsWindow : Window
         RefreshShortcutList();
 
         _isInitializing = false;
+    }
+
+    private void SettingsChanged(object sender, RoutedEventArgs e) => MarkDirty();
+    private void SettingsChanged(object sender, RoutedEventArgs e, bool unused) => MarkDirty();
+    private void MarkDirty()
+    {
+        if (_isInitializing) return;
+        _isDirty = true;
+        if (UnsavedChangesText is not null) UnsavedChangesText.Visibility = Visibility.Visible;
+        KeyTestStatus.Text = "○ Not tested"; PromptTestStatus.Text = "○ Not tested";
+    }
+
+    private async void TestKeyButton_Click(object sender, RoutedEventArgs e)
+    {
+        var key = ApiKeyInput.Password.Trim();
+        if (string.IsNullOrWhiteSpace(key)) { KeyTestStatus.Text = "✗ Enter an API key"; return; }
+        KeyTestStatus.Text = "Testing…";
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, _settings.AIProvider == "Groq" ? "https://api.groq.com/openai/v1/models" : "https://openrouter.ai/api/v1/auth/key");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            using var response = await TestHttp.SendAsync(request);
+            KeyTestStatus.Text = response.IsSuccessStatusCode ? "✓ Key accepted" : $"✗ Rejected ({(int)response.StatusCode})";
+        }
+        catch (Exception ex) { KeyTestStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : "Connection failed"); }
+    }
+
+    private async void TestPromptButton_Click(object sender, RoutedEventArgs e)
+    {
+        var key = ApiKeyInput.Password.Trim(); var model = ModelInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(model)) { PromptTestStatus.Text = "✗ Enter a key and model"; return; }
+        PromptTestStatus.Text = "Testing…";
+        try
+        {
+            var endpoint = _settings.AIProvider == "Groq" ? "https://api.groq.com/openai/v1/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
+            var body = JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_tokens = 20, stream = false });
+            using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            if (_settings.AIProvider == "OpenRouter") request.Headers.Add("X-Title", "Ballknower");
+            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+            using var response = await TestHttp.SendAsync(request);
+            PromptTestStatus.Text = response.IsSuccessStatusCode ? "✓ Prompt succeeded" : $"✗ Failed ({(int)response.StatusCode})";
+        }
+        catch (Exception ex) { PromptTestStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : "Connection failed"); }
+    }
+
+    private void TestConversationButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveCurrentHistoryBudget();
+        ConversationTestStatus.Text = _settings.HistoryTokenBudget > 0 ? "✓ Conversation settings valid" : "✗ Invalid history budget";
+    }
+
+    private void TestShortcutButton_Click(object sender, RoutedEventArgs e)
+    {
+        var command = CommandInput.Text.Trim().TrimStart('/'); var path = PathInput.Text.Trim();
+        ShortcutTestStatus.Text = !string.IsNullOrWhiteSpace(command) && !command.Contains(' ') && File.Exists(path) ? "✓ Command and executable are valid" : "✗ Enter a command and an existing executable path";
+    }
+
+    private void TestDataButton_Click(object sender, RoutedEventArgs e)
+    {
+        try { SaveCurrentModel(); SaveCurrentHistoryBudget(); _settings.StreamResponses = StreamingCheckBox.IsChecked == true; var json = JsonSerializer.Serialize(_settings); var copy = JsonSerializer.Deserialize<AppSettings>(json); DataTestStatus.Text = copy is not null && copy.AIProvider == _settings.AIProvider ? "✓ Settings serialize and reload" : "✗ Settings round-trip failed"; }
+        catch { DataTestStatus.Text = "✗ Settings could not be serialized"; }
+    }
+
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_allowClose || !_isDirty) return;
+        var result = WpfMessageBox.Show("You have unsaved changes. Discard them and close Settings?", "Unsaved Changes", WpfMessageBoxButton.YesNo, WpfMessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes) e.Cancel = true;
     }
 
     private static int NormalizeHistoryBudget(int value)
@@ -186,7 +262,7 @@ public partial class SettingsWindow : Window
         SaveCurrentApiKeyToMemory();
 
         _settings.AIProvider = provider;
-
+        MarkDirty();
         UpdateProviderUI();
     }
 
@@ -308,8 +384,8 @@ public partial class SettingsWindow : Window
 
         if (dialog.ShowDialog() == true)
         {
-            PathInput.Text =
-                dialog.FileName;
+            PathInput.Text = dialog.FileName;
+            MarkDirty();
         }
     }
 
@@ -356,6 +432,7 @@ public partial class SettingsWindow : Window
             Visibility.Collapsed;
 
         RefreshShortcutList();
+        MarkDirty();
     }
 
     private void CancelEditButton_Click(
@@ -420,6 +497,7 @@ public partial class SettingsWindow : Window
         }
 
         _settings.Shortcuts.Remove(command);
+        MarkDirty();
 
         if (_editingCommand == command)
         {
@@ -712,6 +790,7 @@ public partial class SettingsWindow : Window
                     Visibility.Collapsed;
 
                 RefreshShortcutList();
+                MarkDirty();
             }
             finally
             {
@@ -769,7 +848,8 @@ public partial class SettingsWindow : Window
 
         _settingsStore.Save(
             _targetSettings);
-
+        _isDirty = false;
+        _allowClose = true;
         Close();
     }
 
@@ -777,6 +857,7 @@ public partial class SettingsWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        _allowClose = true;
         Close();
     }
 }
