@@ -2417,7 +2417,7 @@ public partial class MainWindow : Window
                 "- /confetti — Show confetti.\n" +
                 "- /see — Reveal the desktop without blur.\n" +
                 "- /pin — Keep Ballknower visible while switching apps.\n" +
-                "- /unpin — Hide Ballknower when it loses focus.\n\n";
+                "- /unpin — Hide Ballknower when it loses focus.\n" +\n                "- /shutdown — Shut down Ballknower and its background input handler.\n\n";
 
             if (_settings.Shortcuts.Count > 0)
             {
@@ -2487,6 +2487,23 @@ public partial class MainWindow : Window
 
                 AddAssistantMessage(
                     "Unpinned. Ballknower will hide when it loses focus.");
+
+                return;
+
+            case "shutdown":
+
+                var result =
+                    WpfMessageBox.Show(
+                        this,
+                        "Shut down Ballknower completely? This will close Ballknower and stop its background input handler.",
+                        "Shut down Ballknower",
+                        WpfMessageBoxButton.YesNo,
+                        WpfMessageBoxImage.Question);
+
+                if (result == WpfMessageBoxResult.Yes)
+                {
+                    ((App)Application.Current).ExitApplication();
+                }
 
                 return;
         }
