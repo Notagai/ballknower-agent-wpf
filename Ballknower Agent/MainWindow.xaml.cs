@@ -44,6 +44,8 @@ public partial class MainWindow : Window
 {
     private const double InitialPillPosition = 0.30;
     private const double ChatPillPosition = 0.65;
+    private const double InitialPillWidth = 700;
+    private const double ChatPillWidth = 1400;
 
     private const double MessageGap = 16;
     private const double PillAnimationMilliseconds = 600;
@@ -1053,12 +1055,12 @@ public partial class MainWindow : Window
                         GetEligibleCommands().Count * 58 + 16));
 
         // Keep the suggestions directly above the pill.
+        double pillLeft = (ContentRoot.ActualWidth - InputPill.ActualWidth) / 2;
+        CommandSuggestions.HorizontalAlignment = HorizontalAlignment.Left;
         CommandSuggestions.Margin =
             new Thickness(
-                0,
-                Math.Max(
-                    0,
-                    pillY - suggestionHeight - 12),
+                Math.Max(0, pillLeft),
+                Math.Max(0, pillY - suggestionHeight - 12),
                 0,
                 0);
     }
@@ -1760,6 +1762,9 @@ public partial class MainWindow : Window
         if (height <= 0)
             return;
 
+        InputPill.Width = _hasEnteredChat ? ChatPillWidth : InitialPillWidth;
+        MessageArea.Width = _hasEnteredChat ? ChatPillWidth : InitialPillWidth;
+
         double targetPosition =
             _hasEnteredChat
                 ? height * ChatPillPosition
@@ -1840,6 +1845,8 @@ public partial class MainWindow : Window
         }
 
         _hasEnteredChat = true;
+        InputPill.Width = ChatPillWidth;
+        MessageArea.Width = ChatPillWidth;
         _isPillAnimating = true;
 
         var completion =
@@ -2839,36 +2846,38 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddUserMessage(
-        string message)
+    private void AddUserMessage(string message)
     {
-        var text =
-            new TextBlock
+        var row = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var bubble = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
+            CornerRadius = new CornerRadius(18, 18, 4, 18),
+            Padding = new Thickness(16, 10, 16, 10),
+            MaxWidth = Math.Max(250, MessageArea.ActualWidth * 0.68),
+            Child = new TextBlock
             {
-                Text =
-                    "You: " + message,
-
-                FontSize = 18,
-
-                Foreground =
-                    _messageAreaIsLight
-                        ? _blackTextBrush
-                        : _whiteTextBrush,
-
-                TextWrapping =
-                    TextWrapping.Wrap,
-
-                Margin =
-                    new Thickness(
-                        0,
-                        0,
-                        0,
-                        12)
-            };
-
-        MessagePanel.Children.Add(
-            text);
-
+                Text = message, FontSize = 18, Foreground = Brushes.White,
+                TextWrapping = TextWrapping.Wrap
+            }
+        };
+        Grid.SetColumn(bubble, 1);
+        row.Children.Add(bubble);
+        var avatar = new Border
+        {
+            Width = 32, Height = 32, Margin = new Thickness(10, 0, 0, 0),
+            CornerRadius = new CornerRadius(16), Background = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Child = new TextBlock { Text = "Y", Foreground = Brushes.White, FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+        };
+        Grid.SetColumn(avatar, 2);
+        row.Children.Add(avatar);
+        MessagePanel.Children.Add(row);
         ScrollChatToEnd();
         UpdateMessageAreaColor();
     }
@@ -2895,9 +2904,6 @@ public partial class MainWindow : Window
                         : _whiteTextBrush
             };
 
-        title.Inlines.Add(new Run("Ballknower:"));
-        document.Blocks.Add(title);
-
         AddMarkdownBlocks(document, message);
 
         var viewer =
@@ -2917,7 +2923,23 @@ public partial class MainWindow : Window
                 IsHitTestVisible = true
             };
 
-        MessagePanel.Children.Add(viewer);
+        var row = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var avatar = new Border
+        {
+            Width = 32, Height = 32, Margin = new Thickness(0, 0, 10, 0),
+            CornerRadius = new CornerRadius(16), Background = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Child = new TextBlock { Text = "B", Foreground = Brushes.White, FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+        };
+        Grid.SetColumn(avatar, 0);
+        Grid.SetColumn(viewer, 1);
+        viewer.Margin = new Thickness(0);
+        row.Children.Add(avatar);
+        row.Children.Add(viewer);
+        MessagePanel.Children.Add(row);
         ScrollChatToEnd();
         UpdateMessageAreaColor();
     }
