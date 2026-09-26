@@ -426,6 +426,7 @@ public partial class MainWindow : Window
                 if (result !=
                     WpfMessageBoxResult.Yes)
                 {
+                    Opacity = 1;
                     e.Cancel = true;
 
                     Dispatcher.BeginInvoke(
