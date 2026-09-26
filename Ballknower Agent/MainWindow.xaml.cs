@@ -402,6 +402,8 @@ public partial class MainWindow : Window
          */
         if (_isClosingWithFade)
         {
+            // The fade has completed; allow this second Close() call.
+            e.Cancel = false;
             return;
         }
 
