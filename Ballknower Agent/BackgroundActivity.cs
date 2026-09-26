@@ -70,9 +70,7 @@ public sealed class BackgroundActivity : IDisposable
         if (window is null)
             return;
 
-        if (!window.IsVisible)
-            window.Show();
-
+        window.RefreshDesktopBackdropForReopen();
         window.FocusBallknower();
     }
 
