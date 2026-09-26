@@ -51,6 +51,8 @@ public partial class MainWindow : Window
     private const double PillAnimationMilliseconds = 600;
     private const double WindowFadeMilliseconds = 200;
 
+    private bool _jailbreakPromptPending = true;
+
     /*
      * Shared animation path for code-driven double properties.
      * Clear previous clocks, preserve the visible starting value,
@@ -2369,11 +2371,24 @@ public partial class MainWindow : Window
             int conversationStart =
                 _conversation.Count;
 
+            string requestMessage = message;
+            if (_jailbreakPromptPending)
+            {
+                if (_settings.JailbreakEnabled &&
+                    !string.IsNullOrWhiteSpace(_settings.JailbreakPrompt))
+                {
+                    requestMessage = _settings.JailbreakPrompt.Trim() +
+                        Environment.NewLine + Environment.NewLine + message;
+                }
+
+                _jailbreakPromptPending = false;
+            }
+
             _conversation.Add(
                 new OpenRouterMessage
                 {
                     Role = "user",
-                    Content = message
+                    Content = requestMessage
                 });
 
             try
