@@ -5,10 +5,9 @@ using System.Runtime.InteropServices;
 namespace Ballknower;
 
 /// <summary>
-/// Global Win-key shortcut:
-/// - tap Win: replay the normal Win press so Start opens
-/// - hold Win for one second: suppress Win and open Ballknower
-/// - Win + another key: preserve the normal Windows shortcut
+/// Global Alt+Win shortcut:
+/// - hold Alt, then press and release Win to open Ballknower
+/// - other Win combinations retain their normal Windows behavior
 /// </summary>
 public sealed class KeyboardShortcutManager : IDisposable
 {
@@ -157,10 +156,18 @@ public sealed class KeyboardShortcutManager : IDisposable
             }
 
             _winHeld = true;
-            _combinationUsed = HasAnotherTrackedKeyDown();
+            bool altHeld = IsAltTrackedDown();
+            _combinationUsed = HasAnotherTrackedKeyDown() && !altHeld;
             _winDownReplayed = false;
             _activeWinKey = (int)data.vkCode;
             _winDownTimestamp = Stopwatch.GetTimestamp();
+
+            if (altHeld)
+            {
+                // Alt+Win is our hotkey. Keep Win suppressed so Start
+                // does not open; invoke Ballknower when Win is released.
+                return IntPtr.Zero;
+            }
 
             if (_combinationUsed)
             {
@@ -198,16 +205,18 @@ public sealed class KeyboardShortcutManager : IDisposable
              * duration here too, so releasing after the threshold never
              * replays Win-down and accidentally opens Start.
              */
+            bool altWinHotkey = IsAltTrackedDown() && !_combinationUsed;
             bool thresholdReached =
                 Stopwatch.GetElapsedTime(_winDownTimestamp)
                     .TotalMilliseconds >= HoldMilliseconds;
 
             bool longHold = thresholdReached && !_combinationUsed;
+            bool triggerHotkey = altWinHotkey;
 
-            if (longHold)
+            if (longHold || triggerHotkey)
                 _onLongHold();
 
-            if (!longHold && !_winDownReplayed)
+            if (!longHold && !triggerHotkey && !_winDownReplayed)
             {
                 /*
                  * A short standalone Win press should behave like a
@@ -243,6 +252,11 @@ public sealed class KeyboardShortcutManager : IDisposable
             lParam);
     }
 
+    private bool IsAltTrackedDown()
+    {
+        return _keysDown[0x12] || _keysDown[0xA4] || _keysDown[0xA5];
+    }
+
     private bool HasAnotherTrackedKeyDown()
     {
         /*
@@ -253,7 +267,10 @@ public sealed class KeyboardShortcutManager : IDisposable
         for (int virtualKey = 1; virtualKey < _keysDown.Length; virtualKey++)
         {
             if (virtualKey == VK_LWIN ||
-                virtualKey == VK_RWIN)
+                virtualKey == VK_RWIN ||
+                virtualKey == 0x12 ||
+                virtualKey == 0xA4 ||
+                virtualKey == 0xA5)
             {
                 continue;
             }
