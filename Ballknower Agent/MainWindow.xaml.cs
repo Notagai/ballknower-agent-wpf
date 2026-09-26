@@ -1056,7 +1056,7 @@ public partial class MainWindow : Window
 
         // Keep the suggestions directly above the pill.
         double pillLeft = (ContentRoot.ActualWidth - InputPill.ActualWidth) / 2;
-        CommandSuggestions.HorizontalAlignment = HorizontalAlignment.Left;
+        CommandSuggestions.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
         CommandSuggestions.Margin =
             new Thickness(
                 Math.Max(0, pillLeft),
@@ -2873,7 +2873,7 @@ public partial class MainWindow : Window
             CornerRadius = new CornerRadius(16), Background = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
             VerticalAlignment = VerticalAlignment.Bottom,
             Child = new TextBlock { Text = "Y", Foreground = Brushes.White, FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center, VerticalAlignment = System.Windows.VerticalAlignment.Center }
         };
         Grid.SetColumn(avatar, 2);
         row.Children.Add(avatar);
