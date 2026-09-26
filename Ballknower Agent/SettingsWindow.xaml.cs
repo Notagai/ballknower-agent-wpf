@@ -59,6 +59,7 @@ public partial class SettingsWindow : Window
             OpenRouterModel = settings.OpenRouterModel,
             GroqModel = settings.GroqModel,
             StreamResponses = settings.StreamResponses,
+            OpeningShortcut = settings.OpeningShortcut,
             HistoryTokenBudget = settings.HistoryTokenBudget,
             Shortcuts = new Dictionary<string, string>(
                 settings.Shortcuts)
@@ -73,6 +74,10 @@ public partial class SettingsWindow : Window
         ProviderInput.SelectedValue =
             _settings.AIProvider;
 
+        OpeningShortcutInput.SelectedValue =
+            NormalizeOpeningShortcut(
+                _settings.OpeningShortcut);
+
         UpdateProviderUI();
 
         StreamingCheckBox.IsChecked =
@@ -82,6 +87,26 @@ public partial class SettingsWindow : Window
         RefreshShortcutList();
 
         _isInitializing = false;
+    }
+
+    private static string NormalizeOpeningShortcut(string shortcut)
+    {
+        return shortcut is "Ctrl+Win" or "Shift+Win"
+            ? shortcut
+            : "Alt+Win";
+    }
+
+    private void OpeningShortcutInput_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_isInitializing ||
+            OpeningShortcutInput.SelectedValue is not string shortcut)
+            return;
+
+        _settings.OpeningShortcut =
+            NormalizeOpeningShortcut(shortcut);
+        MarkDirty();
     }
 
     private void SettingsChanged(object sender, RoutedEventArgs e) => MarkDirty();
@@ -813,6 +838,10 @@ public partial class SettingsWindow : Window
                 _settings.StreamResponses =
                     importedSettings.StreamResponses;
 
+                _settings.OpeningShortcut =
+                    NormalizeOpeningShortcut(
+                        importedSettings.OpeningShortcut);
+
                 _settings.HistoryTokenBudget =
                     NormalizeHistoryBudget(
                         importedSettings.HistoryTokenBudget);
@@ -828,6 +857,9 @@ public partial class SettingsWindow : Window
 
                 StreamingCheckBox.IsChecked =
                     _settings.StreamResponses;
+
+                OpeningShortcutInput.SelectedValue =
+                    _settings.OpeningShortcut;
 
                 UpdateHistorySlider();
 
@@ -896,6 +928,9 @@ public partial class SettingsWindow : Window
         _targetSettings.StreamResponses =
             _settings.StreamResponses;
 
+        _targetSettings.OpeningShortcut =
+            _settings.OpeningShortcut;
+
         _targetSettings.HistoryTokenBudget =
             _settings.HistoryTokenBudget;
 
@@ -905,6 +940,10 @@ public partial class SettingsWindow : Window
 
         _settingsStore.Save(
             _targetSettings);
+
+        (System.Windows.Application.Current as App)?
+            .UpdateOpeningShortcut(
+                _settings.OpeningShortcut);
         _isDirty = false;
         _allowClose = true;
         Close();
