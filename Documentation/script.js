@@ -37,16 +37,69 @@ if (!reduceMotion && "IntersectionObserver" in window) {
 }
 
 
-// Desktop horizontal story: translate vertical wheel input into sideways scrolling.
-// Touch, trackpad horizontal gestures, and the mobile stacked layout remain native.
+// Desktop horizontal story: ease wheel input into a slower glide, then
+// settle on the nearest slide after the user pauses. Touch and mobile stay native.
 document.addEventListener("DOMContentLoaded", () => {
   const world = document.querySelector(".side-world");
   if (!world) return;
+
   const desktop = window.matchMedia("(min-width: 801px)");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let target = world.scrollLeft;
+  let frame = 0;
+  let settleTimer = 0;
+
+  const slides = () => [...world.querySelectorAll(".world-panel")];
+
+  function animateTowardTarget() {
+    const distance = target - world.scrollLeft;
+    if (Math.abs(distance) < 0.6) {
+      world.scrollLeft = target;
+      frame = 0;
+      return;
+    }
+    world.scrollLeft += distance * (reduceMotion.matches ? 1 : 0.075);
+    frame = requestAnimationFrame(animateTowardTarget);
+  }
+
+  function settleOnNearestSlide() {
+    const panels = slides();
+    if (!panels.length) return;
+    const worldCenter = world.scrollLeft + world.clientWidth / 2;
+    const nearest = panels.reduce((best, panel) => {
+      const center = panel.offsetLeft + panel.offsetWidth / 2;
+      return Math.abs(center - worldCenter) < Math.abs(best.offsetLeft + best.offsetWidth / 2 - worldCenter)
+        ? panel : best;
+    }, panels[0]);
+    target = Math.max(0, Math.min(
+      nearest.offsetLeft + nearest.offsetWidth / 2 - world.clientWidth / 2,
+      world.scrollWidth - world.clientWidth
+    ));
+    if (!frame) frame = requestAnimationFrame(animateTowardTarget);
+  }
+
   world.addEventListener("wheel", event => {
     if (!desktop.matches || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
     if (world.scrollWidth <= world.clientWidth) return;
     event.preventDefault();
-    world.scrollBy({ left: event.deltaY, behavior: "auto" });
+    target = Math.max(0, Math.min(
+      target + event.deltaY * 0.42,
+      world.scrollWidth - world.clientWidth
+    ));
+    if (!frame) frame = requestAnimationFrame(animateTowardTarget);
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settleOnNearestSlide, 260);
   }, { passive: false });
+
+  world.addEventListener("scroll", () => {
+    if (!desktop.matches) return;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settleOnNearestSlide, 260);
+  }, { passive: true });
+
+  window.addEventListener("resize", () => {
+    target = world.scrollLeft;
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+  });
 });
