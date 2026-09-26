@@ -37,6 +37,12 @@ public sealed class BackgroundActivity : IDisposable
         openItem.Click +=
             (_, _) => ShowBallknower();
 
+        var settingsItem =
+            new FormsMenuItem("Settings");
+
+        settingsItem.Click +=
+            (_, _) => OpenSettings();
+
         var exitItem =
             new FormsMenuItem("Exit Ballknower");
 
@@ -44,6 +50,7 @@ public sealed class BackgroundActivity : IDisposable
             (_, _) => _exitApplication();
 
         _contextMenu.Items.Add(openItem);
+        _contextMenu.Items.Add(settingsItem);
         _contextMenu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         _contextMenu.Items.Add(exitItem);
 
@@ -58,6 +65,16 @@ public sealed class BackgroundActivity : IDisposable
 
         _notifyIcon.DoubleClick +=
             (_, _) => ShowBallknower();
+    }
+
+    public void OpenSettings()
+    {
+        if (_disposed)
+            return;
+
+        var window = _getMainWindow();
+
+        window?.OpenSettingsFromTray();
     }
 
     public void ShowBallknower()
