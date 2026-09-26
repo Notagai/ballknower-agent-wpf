@@ -23,6 +23,7 @@ public sealed class KeyboardShortcutManager : IDisposable
 
     private const int VK_LWIN = 0x5B;
     private const int VK_RWIN = 0x5C;
+    private const int VK_ESCAPE = 0x1B;
 
     private const uint LLKHF_INJECTED = 0x00000010;
 
@@ -251,6 +252,14 @@ public sealed class KeyboardShortcutManager : IDisposable
 
         _longHoldTriggered = true;
 
+        /*
+         * If the shell has already opened Start while the physical
+         * Win key was being held, close it before handing focus to
+         * Ballknower. The Escape event is injected and ignored by
+         * this hook, so it does not affect the shortcut state.
+         */
+        SendKeyTap(VK_ESCAPE);
+
         _onLongHold();
     }
 
@@ -296,6 +305,45 @@ public sealed class KeyboardShortcutManager : IDisposable
         SendWinInput(
             (ushort)virtualKey,
             keyUp: true);
+    }
+
+    private static void SendKeyTap(int virtualKey)
+    {
+        SendKeyInput((ushort)virtualKey, keyUp: false);
+        SendKeyInput((ushort)virtualKey, keyUp: true);
+    }
+
+    private static void SendKeyInput(
+        ushort virtualKey,
+        bool keyUp)
+    {
+        var input =
+            new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                U = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = virtualKey,
+                        wScan = 0,
+                        dwFlags = keyUp
+                            ? KEYEVENTF_KEYUP
+                            : 0,
+                        time = 0,
+                        dwExtraInfo = UIntPtr.Zero
+                    }
+                }
+            };
+
+        if (SendInput(
+                1,
+                new[] { input },
+                Marshal.SizeOf<INPUT>()) == 0)
+        {
+            Debug.WriteLine(
+                "Ballknower could not replay a keyboard event.");
+        }
     }
 
     private static void SendWinInput(
