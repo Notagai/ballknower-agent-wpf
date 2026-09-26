@@ -35,17 +35,20 @@ public sealed class KeyboardShortcutManager : IDisposable
     private bool _winHeld;
     private bool _combinationUsed;
     private bool _winDownReplayed;
-    private bool _altWinShortcut;
+    private bool _openingShortcut;
+    private string _openingShortcutModifier = "Alt";
     private int _activeWinKey;
     private readonly bool[] _keysDown = new bool[256];
 
     private bool _disposed;
 
-    public KeyboardShortcutManager(Action onLongHold)
+    public KeyboardShortcutManager(Action onLongHold, string openingShortcut = "Alt+Win")
     {
         _onLongHold =
             onLongHold ??
             throw new ArgumentNullException(nameof(onLongHold));
+
+        SetOpeningShortcut(openingShortcut);
 
         _hookCallback = HookCallback;
 
@@ -155,10 +158,10 @@ public sealed class KeyboardShortcutManager : IDisposable
             }
 
             _winHeld = true;
-            bool altHeld = IsAltTrackedDown();
-            _combinationUsed = HasAnotherTrackedKeyDown() && !altHeld;
+            bool modifierHeld = IsOpeningModifierTrackedDown();
+            _combinationUsed = HasAnotherTrackedKeyDown() && !modifierHeld;
             _winDownReplayed = false;
-            _altWinShortcut = altHeld;
+            _openingShortcut = modifierHeld;
             _activeWinKey = (int)data.vkCode;
 
             if (altHeld)
@@ -198,8 +201,8 @@ public sealed class KeyboardShortcutManager : IDisposable
                     lParam);
             }
 
-            /* Decide whether this was the Alt+Win shortcut. */
-            bool triggerHotkey = _altWinShortcut && !_combinationUsed;
+            /* Decide whether this was the configured opening shortcut. */
+            bool triggerHotkey = _openingShortcut && !_combinationUsed;
 
             if (triggerHotkey)
                 _onLongHold();
@@ -226,7 +229,7 @@ public sealed class KeyboardShortcutManager : IDisposable
             _combinationUsed = false;
             _winDownReplayed = false;
             _activeWinKey = 0;
-            _altWinShortcut = false;
+            _openingShortcut = false;
 
             /*
              * For a long hold, both Win-down and Win-up were suppressed.
@@ -241,9 +244,24 @@ public sealed class KeyboardShortcutManager : IDisposable
             lParam);
     }
 
-    private bool IsAltTrackedDown()
+    private bool IsOpeningModifierTrackedDown()
     {
-        return _keysDown[0x12] || _keysDown[0xA4] || _keysDown[0xA5];
+        return _openingShortcutModifier switch
+        {
+            "Ctrl" => _keysDown[0x11] || _keysDown[0xA2] || _keysDown[0xA3],
+            "Shift" => _keysDown[0x10] || _keysDown[0xA0] || _keysDown[0xA1],
+            _ => _keysDown[0x12] || _keysDown[0xA4] || _keysDown[0xA5]
+        };
+    }
+
+    public void SetOpeningShortcut(string openingShortcut)
+    {
+        _openingShortcutModifier = openingShortcut switch
+        {
+            "Ctrl+Win" => "Ctrl",
+            "Shift+Win" => "Shift",
+            _ => "Alt"
+        };
     }
 
     private bool HasAnotherTrackedKeyDown()
