@@ -2860,6 +2860,10 @@ public partial class MainWindow : Window
                     ? _settings.OpenRouterModel
                     : _settings.GroqModel;
 
+            // Enforce the Jailbreak tool allowlist before advertising tools or executing calls.
+            _toolRegistry.WebSearchOnlyMode =
+                _settings.JailbreakEnabled;
+
             var requestMessages =
                 ConversationHistoryManager.BuildRequest(
                     _conversation,
