@@ -126,6 +126,7 @@ public partial class MainWindow : Window
     private bool _isPillAnimating;
     private bool _desktopUnblurred;
     private bool _isCapturingBackdrop;
+    private bool _backdropCaptureRetryScheduled;
 
     private bool _isRefreshingPinnedBackdrop;
     private bool _inputIsLight;
@@ -167,6 +168,20 @@ public partial class MainWindow : Window
     public string OpeningShortcut =>
         _settings.OpeningShortcut;
 
+    private const int VkMenu = 0x12;
+    private const int VkLWin = 0x5B;
+    private const int VkRWin = 0x5C;
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    private static bool IsSystemSwitcherKeyDown()
+    {
+        return (GetAsyncKeyState(VkMenu) & 0x8000) != 0 ||
+               (GetAsyncKeyState(VkLWin) & 0x8000) != 0 ||
+               (GetAsyncKeyState(VkRWin) & 0x8000) != 0;
+    }
+
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath(
         ref Guid rfid,
@@ -186,6 +201,7 @@ public partial class MainWindow : Window
         if (WindowState == WindowState.Minimized)
             WindowState = WindowState.Maximized;
 
+        Topmost = true;
         Activate();
         ChatInput.Focus();
 
@@ -198,6 +214,7 @@ public partial class MainWindow : Window
     {
         _desktopUnblurred = false;
         DesktopBackdrop.Source = null;
+        Topmost = true;
 
         if (!IsVisible)
             Show();
@@ -560,6 +577,9 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Drop out of the topmost desktop layer before hiding so Alt+Tab
+        // can fully hand focus and visual control back to the selected app.
+        Topmost = false;
         ResetToInitialState();
         Hide();
     }
@@ -590,6 +610,28 @@ public partial class MainWindow : Window
 
         if (DesktopBackdrop.Source is not null)
             return;
+
+        // Alt+Tab and the opening hotkey both involve Alt/Win being held.
+        // Do not capture while Windows is showing its switcher; otherwise
+        // that overlay becomes part of the blurred desktop snapshot.
+        if (IsSystemSwitcherKeyDown())
+        {
+            if (!_backdropCaptureRetryScheduled)
+            {
+                _backdropCaptureRetryScheduled = true;
+
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.ApplicationIdle,
+                    new Action(
+                        () =>
+                        {
+                            _backdropCaptureRetryScheduled = false;
+                            UpdateDesktopBackdrop();
+                        }));
+            }
+
+            return;
+        }
 
         try
         {
@@ -714,6 +756,7 @@ public partial class MainWindow : Window
         finally
         {
             _isCapturingBackdrop = false;
+            _backdropCaptureRetryScheduled = false;
 
             Show();
 
