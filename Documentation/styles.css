@@ -21,3 +21,19 @@
 @media(max-width:800px){.side-world{height:auto;min-height:0;display:block;overflow:visible;scroll-snap-type:none}.world-panel{min-height:90svh;padding:65px 24px;flex-direction:column;gap:25px}.world-hero{padding-top:55px}.world-panel:before{inset:3% 4%}.ball-stage{width:min(65vw,330px);height:min(65vw,330px)}.world-features{display:flex}.world-features .feature-grid{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.control-orb{width:min(55vw,280px)}.panel-number{bottom:18px}.side-hint{margin-top:25px}}
 @media(max-width:540px){.world-panel{padding:55px 22px;min-height:unset}.world-hero{min-height:calc(100svh - 70px)}.world-panel h1{font-size:clamp(40px,12vw,58px)}.world-panel h2{font-size:42px}.world-features .feature-grid{grid-template-columns:1fr}.world-features .feature-card{padding:18px}.ball-stage{min-width:220px;min-height:220px}.finish-card{padding:30px 20px}.finish-card .hero-actions{flex-direction:column}.home-page .site-footer{margin-top:15px}}
 @media(prefers-reduced-motion:reduce){.basketball,.ball-shadow,.ball-stage,.ball-orbit,.spark,.control-orb,.control-orb i,.side-hint b{animation:none!important}}
+
+
+/* Mobile keeps the familiar centered, vertically stacked landing-page rhythm. */
+@media(max-width:800px){
+  .world-hero .panel-copy,.world-control .panel-copy{text-align:center;margin-inline:auto}
+  .world-hero .eyebrow,.world-control .eyebrow{justify-content:center}
+  .world-hero .hero-actions{justify-content:center}
+  .world-hero .hero-copy,.world-control .panel-intro{margin-inline:auto}
+  .world-control .mini-tags{justify-content:center}
+  .world-features .panel-copy{text-align:center;margin:0 auto}
+  .world-features .panel-intro{margin-inline:auto}
+}
+@media(min-width:801px){
+  .side-world{overscroll-behavior-x:contain}
+  .world-panel{transform-style:preserve-3d}
+}
