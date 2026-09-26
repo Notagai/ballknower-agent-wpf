@@ -8,7 +8,7 @@ namespace Ballknower;
 
 public partial class App : WpfApplication
 {
-    public static bool IsExiting { get; private set; }
+    public static bool IsExiting { get; internal set; }
 
     private BackgroundActivity? _backgroundActivity;
 
