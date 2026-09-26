@@ -187,8 +187,19 @@ public partial class MainWindow : Window
         ChatInput.Focus();
 
         Dispatcher.BeginInvoke(
-            DispatcherPriority.Input,
+            DispatcherPriority.ApplicationIdle,
             new Action(() => _ignoreShortcutDeactivation = false));
+    }
+
+    public void RefreshDesktopBackdropForReopen()
+    {
+        _desktopUnblurred = false;
+        DesktopBackdrop.Source = null;
+
+        if (!IsVisible)
+            Show();
+
+        UpdateDesktopBackdrop();
     }
 
     public MainWindow()
