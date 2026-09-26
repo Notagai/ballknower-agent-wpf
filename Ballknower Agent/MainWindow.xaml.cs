@@ -2264,7 +2264,7 @@ public partial class MainWindow : Window
         {
             if (_commandParser.IsCommand(message))
             {
-                ExecuteShortcut(message);
+                await ExecuteShortcutAsync(message);
 
                 return;
             }
@@ -2388,9 +2388,56 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ExecuteShortcut(
+    private async Task ExecuteShortcutAsync(
         string message)
     {
+        var parsed =
+            _commandParser.Parse(message);
+
+        if (parsed.Command == "help")
+        {
+            bool isEnteringChat = !_hasEnteredChat;
+
+            if (isEnteringChat)
+                await AnimateInputPillDownAsync();
+
+            MessageArea.Visibility = Visibility.Visible;
+            UpdateMessageAreaPosition();
+            UpdateAllAdaptiveColors();
+
+            if (isEnteringChat)
+                await AnimateMessageAreaUpAsync();
+
+            string help =
+                "**Slash commands**\n\n" +
+                "- /help — Show this command list.\n" +
+                "- /settings — Open settings.\n" +
+                "- /logs — Open error logs.\n" +
+                "- /clear — Clear the current conversation.\n" +
+                "- /confetti — Show confetti.\n" +
+                "- /see — Reveal the desktop without blur.\n" +
+                "- /pin — Keep Ballknower visible while switching apps.\n" +
+                "- /unpin — Hide Ballknower when it loses focus.\n\n";
+
+            if (_settings.Shortcuts.Count > 0)
+            {
+                help += "**User shortcuts**\n\n";
+
+                foreach (var shortcut in _settings.Shortcuts)
+                {
+                    help +=
+                        $"- /{shortcut.Key} — Launch " +
+                        $"{Path.GetFileName(shortcut.Value)}.\n";
+                }
+            }
+            else
+            {
+                help += "No user shortcuts are configured.";
+            }
+
+            AddAssistantMessage(help);
+            return;
+        }
         var parsed =
             _commandParser.Parse(message);
 
