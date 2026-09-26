@@ -2047,7 +2047,7 @@ public partial class MainWindow : Window
         InputPill.Width = ChatPillWidth;
         ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = ChatPillWidth;
-        MessageArea.Visibility = Visibility.Visible;
+        MessageArea.Visibility = Visibility.Collapsed;
         _isPillAnimating = true;
 
         var completion =
@@ -2103,6 +2103,10 @@ public partial class MainWindow : Window
 
         _messageAreaTransform.Y =
             startingY;
+
+        // Reveal the panel only after positioning it at the pill,
+        // preventing a frame at its previous layout position.
+        MessageArea.Visibility = Visibility.Visible;
 
         var completion =
             new TaskCompletionSource(
@@ -3503,6 +3507,17 @@ public partial class MainWindow : Window
 
         if (position < text.Length)
             inlines.Add(new Run(text.Substring(position)));
+    }
+
+    private void ChatScrollViewer_PreviewMouseWheel(
+        object sender,
+        MouseWheelEventArgs e)
+    {
+        // Ensure wheel input scrolls the conversation even when a
+        // message control inside the viewer handles the wheel first.
+        ChatScrollViewer.ScrollToVerticalOffset(
+            ChatScrollViewer.VerticalOffset - e.Delta);
+        e.Handled = true;
     }
 
     private void ScrollChatToEnd()
