@@ -44,6 +44,7 @@ public sealed class KeyboardShortcutManager : IDisposable
     private bool _winDownReplayed;
     private int _activeWinKey;
     private long _winDownTimestamp;
+    private readonly bool[] _keysDown = new bool[256];
 
     private bool _disposed;
 
@@ -117,6 +118,14 @@ public sealed class KeyboardShortcutManager : IDisposable
 
         if (!isWin)
         {
+            if (data.vkCode < _keysDown.Length)
+            {
+                if (isDown)
+                    _keysDown[data.vkCode] = true;
+                else if (isUp)
+                    _keysDown[data.vkCode] = false;
+            }
+
             if (isDown && _winHeld)
             {
                 _combinationUsed = true;
@@ -153,7 +162,7 @@ public sealed class KeyboardShortcutManager : IDisposable
             }
 
             _winHeld = true;
-            _combinationUsed = HasAnotherKeyDown();
+            _combinationUsed = HasAnotherTrackedKeyDown();
             _longHoldTriggered = false;
             _winDownReplayed = false;
             _activeWinKey = (int)data.vkCode;
@@ -279,14 +288,14 @@ public sealed class KeyboardShortcutManager : IDisposable
         _onLongHold();
     }
 
-    private bool HasAnotherKeyDown()
+    private bool HasAnotherTrackedKeyDown()
     {
         /*
-         * Check the other keyboard keys as well as the common
-         * modifiers. This covers cases such as holding a letter
-         * key and then pressing Win.
+         * Use key events observed by this hook rather than
+         * GetAsyncKeyState, which can be unreliable inside a
+         * low-level keyboard hook callback.
          */
-        for (int virtualKey = 1; virtualKey < 256; virtualKey++)
+        for (int virtualKey = 1; virtualKey < _keysDown.Length; virtualKey++)
         {
             if (virtualKey == VK_LWIN ||
                 virtualKey == VK_RWIN)
@@ -294,11 +303,8 @@ public sealed class KeyboardShortcutManager : IDisposable
                 continue;
             }
 
-            if (IsKeyDown(
-                    (System.Windows.Forms.Keys)virtualKey))
-            {
+            if (_keysDown[virtualKey])
                 return true;
-            }
         }
 
         return false;
