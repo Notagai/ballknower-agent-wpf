@@ -31,7 +31,7 @@ public partial class App : WpfApplication
 
         _backgroundActivity =
             new BackgroundActivity(
-                () => MainWindow,
+                () => MainWindow as MainWindow,
                 ExitApplication);
 
         _keyboardShortcutManager =
