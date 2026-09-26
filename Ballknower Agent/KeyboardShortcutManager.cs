@@ -253,10 +253,19 @@ public sealed class KeyboardShortcutManager : IDisposable
         _longHoldTriggered = true;
 
         /*
-         * If the shell has already opened Start while the physical
-         * Win key was being held, close it before handing focus to
-         * Ballknower. The Escape event is injected and ignored by
-         * this hook, so it does not affect the shortcut state.
+         * Mark the Win press as finished for the Windows shell before
+         * opening Ballknower. The physical key is still held, but its
+         * eventual key-up remains suppressed below. This prevents the
+         * shell from opening Start after Ballknower has already appeared.
+         */
+        SendWinInput(
+            (ushort)_activeWinKey,
+            keyUp: true);
+
+        /*
+         * If Start has already appeared, close it before handing focus
+         * to Ballknower. The Escape event is injected and ignored by
+         * this hook, so it does not affect shortcut state.
          */
         SendKeyTap(VK_ESCAPE);
 
