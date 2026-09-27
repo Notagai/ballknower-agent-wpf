@@ -12,6 +12,9 @@ public class AppSettings
     public string GroqModel { get; set; } =
         "openai/gpt-oss-120b";
 
+    public string OpenAIModel { get; set; } =
+        "gpt-4o-mini";
+
     public bool StreamResponses { get; set; } = true;
 
     public bool JailbreakEnabled { get; set; } = false;
