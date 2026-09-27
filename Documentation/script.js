@@ -107,3 +107,19 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", updateDepth);
   updateDepth();
 });
+
+/* Fade between the site's Home / About / Documentation tabs. */
+document.addEventListener("DOMContentLoaded", () => {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) return;
+  document.querySelectorAll('.site-header .nav a[href], a.button[href]').forEach(link => {
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || !/\\.html$/.test(url.pathname) || url.pathname === location.pathname) return;
+    link.addEventListener("click", event => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      document.body.classList.add("page-leaving");
+      setTimeout(() => location.href = url.href, 150);
+    });
+  });
+});
