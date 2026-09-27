@@ -197,14 +197,14 @@ public partial class SettingsWindow : Window
                 Height = 180,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 ResizeMode = ResizeMode.NoResize,
-                Background = new SolidColorBrush(Color.FromRgb(24, 24, 24)),
+                Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(24, 24, 24)),
                 Foreground = WpfBrushes.White
             };
             var panel = new StackPanel { Margin = new Thickness(16) };
-            var combo = new ComboBox { ItemsSource = models, SelectedItem = models.Contains(ModelInput.Text.Trim()) ? ModelInput.Text.Trim() : models[0], Margin = new Thickness(0, 0, 0, 14), MinHeight = 28 };
+            var combo = new System.Windows.Controls.ComboBox { ItemsSource = models, SelectedItem = models.Contains(ModelInput.Text.Trim()) ? ModelInput.Text.Trim() : models[0], Margin = new Thickness(0, 0, 0, 14), MinHeight = 28 };
             panel.Children.Add(new TextBlock { Text = "Models available to this API key:", Margin = new Thickness(0, 0, 0, 8) });
             panel.Children.Add(combo);
-            var choose = new WpfButton { Content = "Use Selected Model", HorizontalAlignment = HorizontalAlignment.Right, Padding = new Thickness(14, 5), IsDefault = true };
+            var choose = new WpfButton { Content = "Use Selected Model", HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Padding = new Thickness(14, 5, 14, 5), IsDefault = true };
             choose.Click += (_, _) => picker.DialogResult = true;
             panel.Children.Add(choose);
             picker.Content = panel;
