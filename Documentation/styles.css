@@ -45,3 +45,12 @@
   .world-panel{transition:filter .65s ease,opacity .65s ease}
 }
 @media(prefers-reduced-motion:reduce){.side-world{scroll-behavior:auto}.world-panel{transition:none}}
+
+
+/* Scroll-reactive 3D atmosphere for the home story. */
+@media(min-width:801px){
+  .home-page .world-panel:after{content:"";position:absolute;width:42vw;height:42vw;max-width:620px;max-height:620px;border:1px solid #a9c4ff10;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%) rotate(calc(var(--scroll-progress,0) * 35deg));box-shadow:0 0 90px #8aa7ff08,inset 0 0 90px #8aa7ff05;pointer-events:none;z-index:-1;transition:transform .15s linear}
+  .home-page .world-panel .panel-copy,.home-page .world-panel .ball-stage,.home-page .world-panel .feature-grid,.home-page .world-panel .control-orb,.home-page .world-panel .finish-card{transform:translate3d(calc(var(--scroll-progress,0) * -28px),0,0) rotateY(calc(var(--scroll-progress,0) * -2deg));transition:transform .15s linear}
+  .home-page .world-panel .ball-stage{transform:translate3d(calc(var(--scroll-progress,0) * 24px),calc(var(--scroll-progress,0) * -8px),0) rotateY(calc(var(--scroll-progress,0) * 5deg));}
+}
+.home-page .side-world::-webkit-scrollbar{height:7px}.home-page .side-world::-webkit-scrollbar-thumb{background:#718ac766;border-radius:99px}.home-page .side-world::-webkit-scrollbar-track{background:transparent}
