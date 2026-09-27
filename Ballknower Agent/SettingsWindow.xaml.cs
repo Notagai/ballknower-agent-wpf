@@ -153,7 +153,7 @@ public partial class SettingsWindow : Window
                 _ => "https://openrouter.ai/api/v1/auth/key"
             };
             using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-            if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            if (_settings.AIProvider != "Gemini") if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             using var response = await TestHttp.SendAsync(request);
             KeyTestStatus.Text = response.IsSuccessStatusCode ? "✓ Key accepted" : $"✗ Rejected ({(int)response.StatusCode})";
         }
