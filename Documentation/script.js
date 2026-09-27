@@ -106,3 +106,30 @@ document.addEventListener("DOMContentLoaded", () => {
     frame = 0;
   });
 });
+
+
+// Give the home panels a lightweight scroll-linked depth effect. This stays
+// JS-driven rather than forcing layout work, and is disabled for reduced motion.
+document.addEventListener("DOMContentLoaded", () => {
+  const world = document.querySelector(".side-world");
+  if (!world || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const panels = [...world.querySelectorAll(".world-panel")];
+  let ticking = false;
+  const updateDepth = () => {
+    ticking = false;
+    const center = world.scrollLeft + world.clientWidth / 2;
+    panels.forEach(panel => {
+      const panelCenter = panel.offsetLeft + panel.offsetWidth / 2;
+      const distance = (panelCenter - center) / Math.max(world.clientWidth, 1);
+      panel.style.setProperty("--scroll-progress", Math.max(-1, Math.min(1, distance)));
+    });
+  };
+  world.addEventListener("scroll", () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(updateDepth);
+    }
+  }, { passive: true });
+  window.addEventListener("resize", updateDepth);
+  updateDepth();
+});
