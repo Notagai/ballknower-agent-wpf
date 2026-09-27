@@ -35,11 +35,16 @@ public sealed class GeminiClient : IAiClient
 
         var systemText = string.Join("\n", messages.Where(m => m.Role == "system").Select(m => m.Content));
         var declarations = _toolRegistry.GetAiToolDefinitions()
-            .Select(t => new
+            .Select(tool =>
             {
-                name = t.function.name,
-                description = t.function.description,
-                parameters = t.function.parameters
+                var definition = JsonSerializer.SerializeToElement(tool);
+                var function = definition.GetProperty("function");
+                return new
+                {
+                    name = function.GetProperty("name").GetString(),
+                    description = function.GetProperty("description").GetString(),
+                    parameters = function.GetProperty("parameters")
+                };
             }).ToArray();
 
         var requestBody = new
