@@ -2385,14 +2385,12 @@ public partial class MainWindow : Window
             }
 
             IAiClient client =
-                _settings.AIProvider ==
-                "OpenRouter"
-                    ? new OpenRouterClient(
-                        apiKey,
-                        _toolRegistry)
-                    : new GroqClient(
-                        apiKey,
-                        _toolRegistry);
+                _settings.AIProvider switch
+                {
+                    "OpenRouter" => new OpenRouterClient(apiKey, _toolRegistry),
+                    "OpenAI" => new OpenAIClient(apiKey, _toolRegistry),
+                    _ => new GroqClient(apiKey, _toolRegistry)
+                };
 
             int conversationStart =
                 _conversation.Count;
@@ -2881,10 +2879,12 @@ public partial class MainWindow : Window
         while (true)
         {
             string model =
-                _settings.AIProvider ==
-                "OpenRouter"
-                    ? _settings.OpenRouterModel
-                    : _settings.GroqModel;
+                _settings.AIProvider switch
+                {
+                    "OpenRouter" => _settings.OpenRouterModel,
+                    "OpenAI" => _settings.OpenAIModel,
+                    _ => _settings.GroqModel
+                };
 
             // Enforce the Jailbreak tool allowlist before advertising tools or executing calls.
             _toolRegistry.WebSearchOnlyMode =
