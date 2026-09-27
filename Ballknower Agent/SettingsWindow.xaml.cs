@@ -153,7 +153,7 @@ public partial class SettingsWindow : Window
                 _ => "https://openrouter.ai/api/v1/auth/key"
             };
             using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-            if (_settings.AIProvider != "Gemini") if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             using var response = await TestHttp.SendAsync(request);
             KeyTestStatus.Text = response.IsSuccessStatusCode ? "✓ Key accepted" : $"✗ Rejected ({(int)response.StatusCode})";
         }
@@ -178,11 +178,12 @@ public partial class SettingsWindow : Window
                 ? JsonSerializer.Serialize(new { contents = new[] { new { parts = new[] { new { text = "Reply with exactly: Ballknower test OK" } } } }, generationConfig = new { maxOutputTokens = 20 } })
                 : JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_tokens = 20, stream = false });
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             if (_settings.AIProvider == "OpenRouter") request.Headers.Add("X-Title", "Ballknower");
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
             using var response = await TestHttp.SendAsync(request);
-            PromptTestStatus.Text = response.IsSuccessStatusCode ? "✓ Prompt succeeded" : $"✗ Failed ({(int)response.StatusCode})";
+            var responseBody = await response.Content.ReadAsStringAsync();
+            PromptTestStatus.Text = response.IsSuccessStatusCode ? "✓ Prompt succeeded" : $"✗ Failed ({(int)response.StatusCode}): {responseBody}";
         }
         catch (Exception ex) { PromptTestStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : "Connection failed"); }
     }
@@ -856,7 +857,11 @@ public partial class SettingsWindow : Window
             if (importedSettings.AIProvider !=
                     "Groq" &&
                 importedSettings.AIProvider !=
-                    "OpenRouter")
+                    "OpenRouter" &&
+                importedSettings.AIProvider !=
+                    "OpenAI" &&
+                importedSettings.AIProvider !=
+                    "Gemini")
             {
                 throw new JsonException(
                     "Unsupported AI provider.");
@@ -874,6 +879,9 @@ public partial class SettingsWindow : Window
 
                 _settings.GroqModel =
                     importedSettings.GroqModel;
+
+                _settings.OpenAIModel = importedSettings.OpenAIModel;
+                _settings.GeminiModel = importedSettings.GeminiModel;
 
                 _settings.StreamResponses =
                     importedSettings.StreamResponses;
@@ -982,6 +990,9 @@ public partial class SettingsWindow : Window
 
         _targetSettings.GroqModel =
             _settings.GroqModel;
+
+        _targetSettings.OpenAIModel = _settings.OpenAIModel;
+        _targetSettings.GeminiModel = _settings.GeminiModel;
 
         _targetSettings.StreamResponses =
             _settings.StreamResponses;
