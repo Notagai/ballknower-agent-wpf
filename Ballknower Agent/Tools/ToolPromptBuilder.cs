@@ -102,11 +102,11 @@ public class ToolPromptBuilder
         builder.AppendLine();
         builder.AppendLine("TOOL EXECUTION AND CONFIRMATION:");
         builder.AppendLine(
-            "Creating and deleting ordinary user files are supported actions.");
+            "File creation, deletion, and moves require user confirmation. Creating never overwrites an existing file.");
         builder.AppendLine(
-            "When the user asks to delete a file, request the delete_file tool.");
+            "When the user asks to create, delete, or move a file, request the corresponding tool.");
         builder.AppendLine(
-            "The application will show the user a confirmation dialog before deletion.");
+            "The application shows a confirmation dialog before file creation, deletion, or moving; move dialogs include source and destination.");
         builder.AppendLine(
             "Do not claim a file was deleted until the tool returns a successful result.");
         builder.AppendLine(
