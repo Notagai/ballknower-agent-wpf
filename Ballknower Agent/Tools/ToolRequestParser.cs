@@ -127,7 +127,7 @@ public class ToolRequestParser
             var root = document.DocumentElement;
 
             if (root is null ||
-                root.Name != "tool_call")
+                !string.Equals(root.Name, "tool_call", StringComparison.OrdinalIgnoreCase))
             {
                 error = "Missing tool_call element.";
                 return false;
