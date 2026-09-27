@@ -15,6 +15,9 @@ public class AppSettings
     public string OpenAIModel { get; set; } =
         "gpt-4o-mini";
 
+    public string GeminiModel { get; set; } =
+        "gemini-2.5-flash";
+
     public bool StreamResponses { get; set; } = true;
 
     public bool JailbreakEnabled { get; set; } = false;
