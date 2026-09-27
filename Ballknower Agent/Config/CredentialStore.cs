@@ -73,7 +73,8 @@ public class CredentialStore
     {
         if (provider != "Groq" &&
             provider != "OpenRouter" &&
-            provider != "OpenAI")
+            provider != "OpenAI" &&
+            provider != "Gemini")
         {
             throw new ArgumentException(
                 "Unsupported AI provider.",
