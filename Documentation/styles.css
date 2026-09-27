@@ -57,3 +57,19 @@
 
 /* Continuous horizontal scrolling: no snap points or forced slide settling. */
 @media(min-width:801px){.side-world{scroll-snap-type:none!important;scroll-behavior:auto!important}.world-panel{scroll-snap-align:none!important;scroll-snap-stop:normal!important}}
+
+
+/* One continuous atmosphere across the full horizontal story; tighter panel rhythm. */
+@media(min-width:801px){
+  .side-world{position:relative;isolation:isolate;background:linear-gradient(110deg,#0d1017 0%,#111522 22%,#151426 48%,#101827 73%,#0d1017 100%)}
+  .side-world:before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:0 auto 0 0;width:400%;background:radial-gradient(ellipse at 12% 45%,#597fff20 0,transparent 28%),radial-gradient(ellipse at 38% 58%,#9d69f41a 0,transparent 27%),radial-gradient(ellipse at 63% 35%,#597fff1a 0,transparent 30%),radial-gradient(ellipse at 88% 60%,#9d69f41a 0,transparent 28%);filter:blur(30px);animation:long-atmosphere 42s ease-in-out infinite alternate}
+  .world-panel{padding-inline:clamp(22px,3.5vw,52px);gap:clamp(22px,4vw,64px);background:transparent!important}
+  .world-panel:before,.home-page .world-panel:after{display:none!important}
+}
+@keyframes long-atmosphere{from{transform:translate3d(-1.5%,0,0) scale(1)}to{transform:translate3d(1.5%,0,0) scale(1.03)}}
+@media(max-width:800px){
+  .world-panel{gap:20px}
+  .world-panel:before,.home-page .world-panel:after{display:none!important}
+  .world-control,.world-finish{background:transparent!important}
+}
+@media(prefers-reduced-motion:reduce){.side-world:before{animation:none!important}}
