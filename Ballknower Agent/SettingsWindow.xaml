@@ -23,7 +23,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
                     <TextBlock Text="AI Provider" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <ComboBox x:Name="ProviderInput" SelectedValuePath="Content" SelectionChanged="ProviderInput_SelectionChanged" Margin="0,0,0,16">
-                        <ComboBoxItem Content="Groq"/><ComboBoxItem Content="OpenRouter"/><ComboBoxItem Content="OpenAI"/>
+                        <ComboBoxItem Content="Groq"/><ComboBoxItem Content="OpenRouter"/><ComboBoxItem Content="OpenAI"/><ComboBoxItem Content="Gemini"/>
                     </ComboBox>
                     <TextBlock x:Name="ApiKeyLabel" Text="Groq API Key" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <PasswordBox x:Name="ApiKeyInput" PasswordChanged="SettingsChanged" Margin="0,0,0,8"/>
