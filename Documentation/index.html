@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0d1017">
-  <meta name="description" content="Ballknower — Your desktop. Your AI. Your control.">
-  <title>Ballknower — Your desktop. Your AI. Your control.</title>
+  <meta name="description" content="Ballknower is a floating Windows AI assistant with chat, desktop tools, slash commands, and configurable controls.">
+  <title>Ballknower — AI, within reach</title>
   <link rel="stylesheet" href="styles.css"><script src="script.js" defer></script>
 </head>
 <body class="home-page">
@@ -16,33 +16,42 @@
   </header>
   <main class="side-world" aria-label="Ballknower overview">
     <section class="world-panel world-hero" id="home">
-      <div class="panel-copy"><div class="eyebrow"><span class="status-dot"></span> A desktop assistant for Windows</div>
-        <h1>Your desktop.<br><span class="gradient-text">Your AI. Your control.</span></h1>
-        <p class="hero-copy">AI chat, practical desktop tools, and a beautifully adaptive interface—all in one focused space.</p>
-        <div class="hero-actions"><a class="button button-primary" href="documentation.html">Explore documentation <span>→</span></a><a class="button button-quiet" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">View source ↗</a></div>
+      <div class="panel-copy"><div class="eyebrow"><span class="status-dot"></span> A Windows desktop companion</div>
+        <h1>AI that fits<br><span class="gradient-text">your desktop.</span></h1>
+        <p class="hero-copy">A floating chat, useful desktop tools, and quick commands—ready when you need them, out of the way when you don't.</p>
+        <div class="hero-actions"><a class="button button-primary" href="documentation.html">Explore the features <span>→</span></a><a class="button button-quiet" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">View source ↗</a></div>
         <p class="side-hint"><span>SCROLL</span> or swipe sideways to explore <b>→</b></p>
       </div>
       <div class="ball-stage" aria-hidden="true"><div class="ball-shadow"></div><div class="basketball"><div class="ball-seam seam-one"></div><div class="ball-seam seam-two"></div><div class="ball-seam seam-three"></div></div><div class="ball-orbit orbit-one"></div><div class="ball-orbit orbit-two"></div><span class="spark spark-one">✦</span><span class="spark spark-two">✧</span></div>
-      <span class="panel-number">01 / 04</span>
+      <span class="panel-number">01 / 05</span>
     </section>
-    <section class="world-panel world-features" id="capabilities">
-      <div class="panel-copy"><div class="eyebrow">CAPABILITIES</div><h2>Small footprint.<br><span class="gradient-text">Big possibilities.</span></h2><p class="panel-intro">A toolkit for the things you do every day, without another busy dashboard.</p></div>
+    <section class="world-panel world-features" id="chat">
+      <div class="panel-copy"><div class="eyebrow">THINK, MAKE, GET THINGS DONE</div><h2>Conversation<br><span class="gradient-text">with context.</span></h2><p class="panel-intro">Bring your own API key and choose Groq or OpenRouter. Tune streaming and conversation-history budget to suit the way you work.</p></div>
       <div class="feature-grid">
-        <article class="feature-card"><span class="feature-icon">✦</span><h3>AI chat & memory</h3><p>Keep conversation context close at hand, with adjustable history and streaming responses.</p></article>
-        <article class="feature-card"><span class="feature-icon">⌘</span><h3>Desktop tools</h3><p>Read, create, move, and manage files, launch apps, and use custom shortcuts.</p></article>
-        <article class="feature-card"><span class="feature-icon">◐</span><h3>Adaptive interface</h3><p>Blurred glass, adaptive colors, and subtle motion.</p></article>
-        <article class="feature-card"><span class="feature-icon">⌨</span><h3>Quick access</h3><p>Slash-command autocomplete plus a configurable global shortcut.</p></article>
-      </div><span class="panel-number">02 / 04</span>
+        <article class="feature-card"><span class="feature-icon">✦</span><h3>AI chat</h3><p>Ask questions, brainstorm, and work through tasks in a focused floating interface.</p></article>
+        <article class="feature-card"><span class="feature-icon">◷</span><h3>Conversation memory</h3><p>Adjust how much prior conversation is included with each request.</p></article>
+        <article class="feature-card"><span class="feature-icon">⇢</span><h3>Streaming responses</h3><p>Enable streamed replies and follow the response as it arrives.</p></article>
+        <article class="feature-card"><span class="feature-icon">⚙</span><h3>Choose your model</h3><p>Configure your provider, model, and API key in settings.</p></article>
+      </div><span class="panel-number">02 / 05</span>
     </section>
-    <section class="world-panel world-control" id="control">
+    <section class="world-panel world-control" id="desktop">
       <div class="control-orb" aria-hidden="true"><div class="orb-core">🏀</div><i></i><i></i><i></i></div>
-      <div class="panel-copy"><div class="eyebrow">MADE TO FIT YOUR FLOW</div><h2>Your desktop.<br><span class="gradient-text">Your rules.</span></h2><p class="panel-intro">Choose Groq or OpenRouter, bring your own API key, tune conversation history and streaming, and configure custom commands. API keys are protected locally with Windows DPAPI.</p><div class="mini-tags"><span>BYOK</span><span>Windows DPAPI</span><span>Custom commands</span></div></div>
-      <span class="panel-number">03 / 04</span>
+      <div class="panel-copy"><div class="eyebrow">TOOLS FOR YOUR WORKFLOW</div><h2>From chat<br><span class="gradient-text">to desktop.</span></h2><p class="panel-intro">Ballknower's tools can work with local files, launch apps, and help manage everyday desktop tasks. Create custom slash shortcuts for programs you use often.</p><div class="mini-tags"><span>File tools</span><span>App launching</span><span>Custom shortcuts</span><span>Web search</span></div></div>
+      <span class="panel-number">03 / 05</span>
     </section>
-    <section class="world-panel world-finish" id="explore">
-      <div class="finish-card"><div class="eyebrow">TAKE A CLOSER LOOK</div><h2>Curious?<br><span class="gradient-text">Keep exploring.</span></h2><p>Setup, commands, tools, and implementation notes live in the documentation.</p><div class="hero-actions"><a class="button button-primary" href="documentation.html">Read the docs <span>→</span></a><a class="button button-quiet" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">Explore on GitHub ↗</a></div></div>
-      <span class="panel-number">04 / 04</span>
+    <section class="world-panel world-features" id="quick-access">
+      <div class="panel-copy"><div class="eyebrow">LESS FRICTION, MORE FLOW</div><h2>There when<br><span class="gradient-text">you need it.</span></h2><p class="panel-intro">Bring Ballknower forward with a configurable global shortcut. Use slash commands to control the app without digging through menus.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon">⌨</span><h3>Global shortcut</h3><p>Use the configurable modifier + Windows key combination to reopen or focus the overlay.</p></article>
+        <article class="feature-card"><span class="feature-icon">/</span><h3>Command autocomplete</h3><p>Type a slash to browse available built-in commands and configured shortcuts.</p></article>
+        <article class="feature-card"><span class="feature-icon">📌</span><h3>Pin when needed</h3><p>Keep the overlay visible while switching between apps, then unpin to restore focus-aware hiding.</p></article>
+        <article class="feature-card"><span class="feature-icon">◌</span><h3>Desktop reveal</h3><p>Use <code>/see</code> to reveal the desktop without the blur effect.</p></article>
+      </div><span class="panel-number">04 / 05</span>
+    </section>
+    <section class="world-panel world-finish" id="your-setup">
+      <div class="finish-card"><div class="eyebrow">YOUR SETUP, YOUR CHOICES</div><h2>Make it<br><span class="gradient-text">your own.</span></h2><p>Configure providers, models, shortcuts, and conversation settings. API keys are protected locally with Windows DPAPI. An optional advanced prompt and tool restriction are available in settings.</p><div class="mini-tags" style="justify-content:center"><span>Groq</span><span>OpenRouter</span><span>Windows DPAPI</span><span>Advanced settings</span></div><div class="hero-actions"><a class="button button-primary" href="documentation.html">Read the documentation <span>→</span></a><a class="button button-quiet" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">Explore on GitHub ↗</a></div></div>
+      <span class="panel-number">05 / 05</span>
     </section>
   </main>
-  <footer class="site-footer"><a class="brand" href="index.html"><span class="brand-mark">🏀</span><span>Ballknower</span></a><span>Windows · WPF · .NET 8</span><span>Made for a more personal desktop.</span></footer>
+  <footer class="site-footer"><a class="brand" href="index.html"><span class="brand-mark">🏀</span><span>Ballknower</span></a><span>Windows · WPF · .NET 8</span><span>AI and desktop tools, in your flow.</span></footer>
 </body></html>
