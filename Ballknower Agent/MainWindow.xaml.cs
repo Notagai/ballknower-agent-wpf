@@ -2389,6 +2389,7 @@ public partial class MainWindow : Window
                 {
                     "OpenRouter" => new OpenRouterClient(apiKey, _toolRegistry),
                     "OpenAI" => new OpenAIClient(apiKey, _toolRegistry),
+                    "Gemini" => new GeminiClient(apiKey, _toolRegistry),
                     _ => new GroqClient(apiKey, _toolRegistry)
                 };
 
