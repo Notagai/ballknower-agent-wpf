@@ -59,6 +59,7 @@ public partial class SettingsWindow : Window
             OpenRouterModel = settings.OpenRouterModel,
             GroqModel = settings.GroqModel,
             OpenAIModel = settings.OpenAIModel,
+            GeminiModel = settings.GeminiModel,
             StreamResponses = settings.StreamResponses,
             JailbreakEnabled = settings.JailbreakEnabled,
             JailbreakPrompt = settings.JailbreakPrompt,
@@ -148,10 +149,11 @@ public partial class SettingsWindow : Window
             {
                 "Groq" => "https://api.groq.com/openai/v1/models",
                 "OpenAI" => "https://api.openai.com/v1/models",
+                "Gemini" => $"https://generativelanguage.googleapis.com/v1beta/models?key={Uri.EscapeDataString(key)}",
                 _ => "https://openrouter.ai/api/v1/auth/key"
             };
             using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             using var response = await TestHttp.SendAsync(request);
             KeyTestStatus.Text = response.IsSuccessStatusCode ? "✓ Key accepted" : $"✗ Rejected ({(int)response.StatusCode})";
         }
@@ -169,9 +171,12 @@ public partial class SettingsWindow : Window
             {
                 "Groq" => "https://api.groq.com/openai/v1/chat/completions",
                 "OpenAI" => "https://api.openai.com/v1/chat/completions",
+                "Gemini" => $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(key)}",
                 _ => "https://openrouter.ai/api/v1/chat/completions"
             };
-            var body = JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_tokens = 20, stream = false });
+            var body = _settings.AIProvider == "Gemini"
+                ? JsonSerializer.Serialize(new { contents = new[] { new { parts = new[] { new { text = "Reply with exactly: Ballknower test OK" } } } }, generationConfig = new { maxOutputTokens = 20 } })
+                : JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_tokens = 20, stream = false });
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             if (_settings.AIProvider == "OpenRouter") request.Headers.Add("X-Title", "Ballknower");
@@ -282,6 +287,7 @@ public partial class SettingsWindow : Window
         LoadApiKey("Groq");
         LoadApiKey("OpenRouter");
         LoadApiKey("OpenAI");
+        LoadApiKey("Gemini");
     }
 
     private void LoadApiKey(string provider)
@@ -310,7 +316,8 @@ public partial class SettingsWindow : Window
 
         if (provider != "Groq" &&
             provider != "OpenRouter" &&
-            provider != "OpenAI")
+            provider != "OpenAI" &&
+            provider != "Gemini")
         {
             return;
         }
@@ -336,6 +343,12 @@ public partial class SettingsWindow : Window
             ModelLabel.Text = "OpenAI Model";
             ModelInput.Text = _settings.OpenAIModel;
             ApiKeyLabel.Text = "OpenAI API Key";
+        }
+        else if (_settings.AIProvider == "Gemini")
+        {
+            ModelLabel.Text = "Gemini Model";
+            ModelInput.Text = _settings.GeminiModel;
+            ApiKeyLabel.Text = "Google AI Studio API Key";
         }
         else
         {
@@ -381,6 +394,7 @@ public partial class SettingsWindow : Window
         SaveApiKey("Groq");
         SaveApiKey("OpenRouter");
         SaveApiKey("OpenAI");
+        SaveApiKey("Gemini");
     }
 
     private void SaveApiKey(string provider)
