@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-
 using System.Windows;
-
 using WpfMessageBox = System.Windows.MessageBox;
 using WpfMessageBoxButton = System.Windows.MessageBoxButton;
 using WpfMessageBoxImage = System.Windows.MessageBoxImage;
@@ -13,104 +11,46 @@ namespace Ballknower.Tools;
 public class ToolExecutor
 {
     private readonly ToolRegistry _registry;
+    public ToolExecutor(ToolRegistry registry) => _registry = registry;
 
-    public ToolExecutor(
-        ToolRegistry registry)
+    public async Task<ToolResult> ExecuteAsync(string toolName, Dictionary<string, string> arguments)
     {
-        _registry = registry;
+        if (!_registry.TryGetTool(toolName, out var tool) || tool is null)
+            return new ToolResult { Tool = toolName, Success = false, Message = "Tool does not exist or is unavailable." };
+
+        if (tool.Definition.RequiresConfirmation &&
+            !await RequestConfirmationAsync(tool, arguments))
+            return new ToolResult { Tool = toolName, Success = false, Message = "The user cancelled the tool execution." };
+
+        return await tool.ExecuteAsync(arguments);
     }
 
-    public async Task<ToolResult> ExecuteAsync(
-        string toolName,
-        Dictionary<string, string> arguments)
+    private Task<bool> RequestConfirmationAsync(ITool tool, Dictionary<string, string> arguments)
     {
-        if (!_registry.TryGetTool(
-                toolName,
-                out var tool))
-        {
-            return new ToolResult
-            {
-                Tool = toolName,
-                Success = false,
-                Message =
-                    $"Tool '{toolName}' does not exist."
-            };
-        }
-
-        if (tool is null)
-        {
-            return new ToolResult
-            {
-                Tool = toolName,
-                Success = false,
-                Message =
-                    $"Tool '{toolName}' could not be loaded."
-            };
-        }
-
-        if (tool.Definition.RequiresConfirmation)
-        {
-            var confirmed =
-                await RequestConfirmationAsync(
-                    tool,
-                    arguments);
-
-            if (!confirmed)
-            {
-                return new ToolResult
-                {
-                    Tool = toolName,
-                    Success = false,
-                    Message =
-                        "The user cancelled the tool execution."
-                };
-            }
-        }
-
-        return await tool.ExecuteAsync(
-            arguments);
+        var result = WpfMessageBox.Show(BuildConfirmationMessage(tool, arguments), "Confirm Action",
+            WpfMessageBoxButton.OKCancel, WpfMessageBoxImage.Question);
+        return Task.FromResult(result == WpfMessageBoxResult.OK);
     }
 
-    private Task<bool> RequestConfirmationAsync(
-        ITool tool,
-        Dictionary<string, string> arguments)
+    private string BuildConfirmationMessage(ITool tool, Dictionary<string, string> arguments)
     {
-        string message =
-            BuildConfirmationMessage(
-                tool,
-                arguments);
-
-        var result =
-            WpfMessageBox.Show(
-                message,
-                "Confirm Action",
-                WpfMessageBoxButton.OKCancel,
-                WpfMessageBoxImage.Question);
-
-        return Task.FromResult(
-            result ==
-            WpfMessageBoxResult.OK);
-    }
-
-    private string BuildConfirmationMessage(
-        ITool tool,
-        Dictionary<string, string> arguments)
-    {
-        if (tool.Definition.Name ==
-                "delete_file" &&
-            arguments.TryGetValue(
-                "path",
-                out var path))
+        var name = tool.Definition.Name;
+        if (name == "move_file")
         {
-            return
-                "Ballknower wants to delete this file:\n\n" +
-                path +
-                "\n\nDo you want to allow this action?";
+            arguments.TryGetValue("source", out var source);
+            arguments.TryGetValue("destination", out var destination);
+            return $"Ballknower wants to move/rename this file:\n\nFrom: {source}\nTo: {destination}\n\nNo existing destination will be overwritten. Continue?";
         }
-
-        return
-            $"Ballknower wants to execute " +
-            $"'{tool.Definition.Name}'.\n\n" +
-            "Do you want to allow this action?";
+        if (name == "create_file")
+        {
+            arguments.TryGetValue("path", out var path);
+            return $"Ballknower wants to create a new file (existing files will not be overwritten):\n\n{path}\n\nAllow this action?";
+        }
+        if (name == "delete_file")
+        {
+            arguments.TryGetValue("path", out var path);
+            return $"Ballknower wants to delete this file:\n\n{path}\n\nAllow this action?";
+        }
+        return $"Ballknower wants to execute '{name}'.\n\nAllow this action?";
     }
 }
