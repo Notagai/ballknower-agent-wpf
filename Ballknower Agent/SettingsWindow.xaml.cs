@@ -58,6 +58,7 @@ public partial class SettingsWindow : Window
             AIProvider = settings.AIProvider,
             OpenRouterModel = settings.OpenRouterModel,
             GroqModel = settings.GroqModel,
+            OpenAIModel = settings.OpenAIModel,
             StreamResponses = settings.StreamResponses,
             JailbreakEnabled = settings.JailbreakEnabled,
             JailbreakPrompt = settings.JailbreakPrompt,
@@ -143,7 +144,13 @@ public partial class SettingsWindow : Window
         KeyTestStatus.Text = "Testing…";
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, _settings.AIProvider == "Groq" ? "https://api.groq.com/openai/v1/models" : "https://openrouter.ai/api/v1/auth/key");
+            var endpoint = _settings.AIProvider switch
+            {
+                "Groq" => "https://api.groq.com/openai/v1/models",
+                "OpenAI" => "https://api.openai.com/v1/models",
+                _ => "https://openrouter.ai/api/v1/auth/key"
+            };
+            using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             using var response = await TestHttp.SendAsync(request);
             KeyTestStatus.Text = response.IsSuccessStatusCode ? "✓ Key accepted" : $"✗ Rejected ({(int)response.StatusCode})";
@@ -158,7 +165,12 @@ public partial class SettingsWindow : Window
         PromptTestStatus.Text = "Testing…";
         try
         {
-            var endpoint = _settings.AIProvider == "Groq" ? "https://api.groq.com/openai/v1/chat/completions" : "https://openrouter.ai/api/v1/chat/completions";
+            var endpoint = _settings.AIProvider switch
+            {
+                "Groq" => "https://api.groq.com/openai/v1/chat/completions",
+                "OpenAI" => "https://api.openai.com/v1/chat/completions",
+                _ => "https://openrouter.ai/api/v1/chat/completions"
+            };
             var body = JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_tokens = 20, stream = false });
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
@@ -269,6 +281,7 @@ public partial class SettingsWindow : Window
     {
         LoadApiKey("Groq");
         LoadApiKey("OpenRouter");
+        LoadApiKey("OpenAI");
     }
 
     private void LoadApiKey(string provider)
@@ -296,7 +309,8 @@ public partial class SettingsWindow : Window
         }
 
         if (provider != "Groq" &&
-            provider != "OpenRouter")
+            provider != "OpenRouter" &&
+            provider != "OpenAI")
         {
             return;
         }
@@ -311,28 +325,23 @@ public partial class SettingsWindow : Window
 
     private void UpdateProviderUI()
     {
-        if (_settings.AIProvider ==
-            "OpenRouter")
+        if (_settings.AIProvider == "OpenRouter")
         {
-            ModelLabel.Text =
-                "OpenRouter Model";
-
-            ModelInput.Text =
-                _settings.OpenRouterModel;
-
-            ApiKeyLabel.Text =
-                "OpenRouter API Key";
+            ModelLabel.Text = "OpenRouter Model";
+            ModelInput.Text = _settings.OpenRouterModel;
+            ApiKeyLabel.Text = "OpenRouter API Key";
+        }
+        else if (_settings.AIProvider == "OpenAI")
+        {
+            ModelLabel.Text = "OpenAI Model";
+            ModelInput.Text = _settings.OpenAIModel;
+            ApiKeyLabel.Text = "OpenAI API Key";
         }
         else
         {
-            ModelLabel.Text =
-                "Groq Model";
-
-            ModelInput.Text =
-                _settings.GroqModel;
-
-            ApiKeyLabel.Text =
-                "Groq API Key";
+            ModelLabel.Text = "Groq Model";
+            ModelInput.Text = _settings.GroqModel;
+            ApiKeyLabel.Text = "Groq API Key";
         }
 
         LoadCurrentApiKeyToUI();
@@ -371,6 +380,7 @@ public partial class SettingsWindow : Window
 
         SaveApiKey("Groq");
         SaveApiKey("OpenRouter");
+        SaveApiKey("OpenAI");
     }
 
     private void SaveApiKey(string provider)
@@ -395,17 +405,12 @@ public partial class SettingsWindow : Window
         var model =
             ModelInput.Text.Trim();
 
-        if (_settings.AIProvider ==
-            "OpenRouter")
-        {
-            _settings.OpenRouterModel =
-                model;
-        }
+        if (_settings.AIProvider == "OpenRouter")
+            _settings.OpenRouterModel = model;
+        else if (_settings.AIProvider == "OpenAI")
+            _settings.OpenAIModel = model;
         else
-        {
-            _settings.GroqModel =
-                model;
-        }
+            _settings.GroqModel = model;
     }
 
     private void BrowseButton_Click(
