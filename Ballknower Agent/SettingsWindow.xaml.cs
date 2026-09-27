@@ -423,6 +423,8 @@ public partial class SettingsWindow : Window
             _settings.OpenRouterModel = model;
         else if (_settings.AIProvider == "OpenAI")
             _settings.OpenAIModel = model;
+        else if (_settings.AIProvider == "Gemini")
+            _settings.GeminiModel = model;
         else
             _settings.GroqModel = model;
     }
