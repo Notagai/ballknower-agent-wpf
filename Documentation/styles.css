@@ -54,3 +54,6 @@
   .home-page .world-panel .ball-stage{transform:translate3d(calc(var(--scroll-progress,0) * 24px),calc(var(--scroll-progress,0) * -8px),0) rotateY(calc(var(--scroll-progress,0) * 5deg));}
 }
 .home-page .side-world::-webkit-scrollbar{height:7px}.home-page .side-world::-webkit-scrollbar-thumb{background:#718ac766;border-radius:99px}.home-page .side-world::-webkit-scrollbar-track{background:transparent}
+
+/* Continuous horizontal scrolling: no snap points or forced slide settling. */
+@media(min-width:801px){.side-world{scroll-snap-type:none!important;scroll-behavior:auto!important}.world-panel{scroll-snap-align:none!important;scroll-snap-stop:normal!important}}
