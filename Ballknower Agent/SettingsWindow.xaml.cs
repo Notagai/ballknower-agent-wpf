@@ -138,6 +138,94 @@ public partial class SettingsWindow : Window
         KeyTestStatus.Text = "○ Not tested"; PromptTestStatus.Text = "○ Not tested";
     }
 
+    private async void FetchGeminiModelsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var key = ApiKeyInput.Password.Trim();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            PromptTestStatus.Text = "Enter your Gemini API key first.";
+            return;
+        }
+
+        FetchGeminiModelsButton.IsEnabled = false;
+        FetchGeminiModelsButton.Content = "Fetching…";
+        try
+        {
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models?key={Uri.EscapeDataString(key)}";
+            var models = new List<string>();
+            string? pageToken = null;
+            do
+            {
+                var pageUrl = url + (string.IsNullOrWhiteSpace(pageToken) ? "" : "&pageToken=" + Uri.EscapeDataString(pageToken));
+                using var response = await TestHttp.GetAsync(pageUrl);
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Google API returned {(int)response.StatusCode}: {body}");
+
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("models", out var items) && items.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in items.EnumerateArray())
+                    {
+                        var supportsGenerate = item.TryGetProperty("supportedGenerationMethods", out var methods) &&
+                            methods.ValueKind == JsonValueKind.Array &&
+                            System.Linq.Enumerable.Any(methods.EnumerateArray(), m => m.GetString() == "generateContent");
+                        if (supportsGenerate && item.TryGetProperty("name", out var nameElement))
+                        {
+                            var name = nameElement.GetString();
+                            if (!string.IsNullOrWhiteSpace(name))
+                                models.Add(name.StartsWith("models/", StringComparison.Ordinal) ? name.Substring("models/".Length) : name);
+                        }
+                    }
+                }
+                pageToken = doc.RootElement.TryGetProperty("nextPageToken", out var token) ? token.GetString() : null;
+            } while (!string.IsNullOrWhiteSpace(pageToken));
+
+            models = models.Distinct(StringComparer.Ordinal).OrderBy(m => m, StringComparer.OrdinalIgnoreCase).ToList();
+            if (models.Count == 0)
+            {
+                WpfMessageBox.Show(this, "Google returned no models supporting generateContent for this key.", "Gemini Models", WpfMessageBoxButton.OK, WpfMessageBoxImage.Information);
+                return;
+            }
+
+            var picker = new Window
+            {
+                Title = "Choose a Gemini Model",
+                Owner = this,
+                Width = 460,
+                Height = 180,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ResizeMode = ResizeMode.NoResize,
+                Background = new SolidColorBrush(Color.FromRgb(24, 24, 24)),
+                Foreground = WpfBrushes.White
+            };
+            var panel = new StackPanel { Margin = new Thickness(16) };
+            var combo = new ComboBox { ItemsSource = models, SelectedItem = models.Contains(ModelInput.Text.Trim()) ? ModelInput.Text.Trim() : models[0], Margin = new Thickness(0, 0, 0, 14), MinHeight = 28 };
+            panel.Children.Add(new TextBlock { Text = "Models available to this API key:", Margin = new Thickness(0, 0, 0, 8) });
+            panel.Children.Add(combo);
+            var choose = new WpfButton { Content = "Use Selected Model", HorizontalAlignment = HorizontalAlignment.Right, Padding = new Thickness(14, 5), IsDefault = true };
+            choose.Click += (_, _) => picker.DialogResult = true;
+            panel.Children.Add(choose);
+            picker.Content = panel;
+            if (picker.ShowDialog() == true && combo.SelectedItem is string selected)
+            {
+                ModelInput.Text = selected;
+                SaveCurrentModel();
+                MarkDirty();
+                PromptTestStatus.Text = "Model selected — click Test Prompt to verify it.";
+            }
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this, "Could not fetch Gemini models.\n\n" + ex.Message, "Gemini Models", WpfMessageBoxButton.OK, WpfMessageBoxImage.Error);
+        }
+        finally
+        {
+            FetchGeminiModelsButton.IsEnabled = true;
+            FetchGeminiModelsButton.Content = "Fetch Available Gemini Models";
+        }
+    }
+
     private async void TestKeyButton_Click(object sender, RoutedEventArgs e)
     {
         var key = ApiKeyInput.Password.Trim();
@@ -358,6 +446,7 @@ public partial class SettingsWindow : Window
             ApiKeyLabel.Text = "Groq API Key";
         }
 
+        FetchGeminiModelsButton.Visibility = _settings.AIProvider == "Gemini" ? Visibility.Visible : Visibility.Collapsed;
         LoadCurrentApiKeyToUI();
     }
 
