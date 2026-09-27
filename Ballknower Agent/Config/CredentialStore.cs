@@ -72,7 +72,8 @@ public class CredentialStore
     private static void ValidateProvider(string provider)
     {
         if (provider != "Groq" &&
-            provider != "OpenRouter")
+            provider != "OpenRouter" &&
+            provider != "OpenAI")
         {
             throw new ArgumentException(
                 "Unsupported AI provider.",
