@@ -73,3 +73,21 @@
   .world-control,.world-finish{background:transparent!important}
 }
 @media(prefers-reduced-motion:reduce){.side-world:before{animation:none!important}}
+
+
+/* Continuous horizontal canvas: content flows across one long scene instead
+   of behaving like a sequence of full-screen slides. */
+@media(min-width:801px){
+  .side-world{height:calc(100svh - 78px);min-height:620px;align-items:stretch;gap:clamp(36px,5vw,76px);padding:0 clamp(30px,5vw,80px);width:100%;overflow-x:auto}
+  .world-panel{flex:0 0 auto;width:auto;min-width:0;min-height:100%;padding:55px 0;justify-content:flex-start;gap:clamp(30px,4vw,70px);overflow:visible}
+  .world-hero{width:min(1120px,calc(100vw - 160px))}
+  .world-features{width:min(1120px,calc(100vw - 160px));display:grid;grid-template-columns:minmax(250px,.7fr) minmax(420px,1.3fr)}
+  .world-control{width:min(1050px,calc(100vw - 160px))}
+  .world-finish{width:min(850px,calc(100vw - 160px))}
+  .panel-number{display:none}
+  .world-panel:before{display:none}
+}
+@media(max-width:800px){
+  .side-world{display:block;height:auto;min-height:0;overflow:visible;padding:0}
+  .world-panel{width:auto;min-width:0}
+}
