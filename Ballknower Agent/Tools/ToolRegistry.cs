@@ -22,6 +22,16 @@ public class ToolRegistry
         string name,
         out ITool? tool)
     {
+        // Once web search is actually invoked, lock the remainder of this
+        // turn to web search only. The caller resets WebSearchOnlyMode at
+        // the start of the next user turn, so this is a per-turn capability
+        // boundary rather than a permanent restriction.
+        if (!WebSearchOnlyMode &&
+            name == "web_search")
+        {
+            WebSearchOnlyMode = true;
+        }
+
         if (WebSearchOnlyMode && name != "web_search")
         {
             tool = null;
