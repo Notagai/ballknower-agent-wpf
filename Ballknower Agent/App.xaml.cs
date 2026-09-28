@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 using WpfApplication = System.Windows.Application;
 
@@ -17,11 +18,28 @@ public partial class App : WpfApplication
         StartupEventArgs e)
     {
         base.OnStartup(e);
+        RegisterForWindowsStartup();
 
         Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,
             new Action(
                 InitializeBackgroundActivity));
+    }
+
+    private static void RegisterForWindowsStartup()
+    {
+        const string runKeyPath = @"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        const string valueName = "Ballknower";
+
+        try
+        {
+            using var runKey = Registry.CurrentUser.CreateSubKey(runKeyPath);
+            runKey?.SetValue(valueName, $"\\\"{Environment.ProcessPath}\\\"");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Unable to register Ballknower for Windows startup: {ex}");
+        }
     }
 
     private void InitializeBackgroundActivity()
