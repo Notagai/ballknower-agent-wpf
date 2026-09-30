@@ -56,17 +56,63 @@ public class ToolExecutor
     {
         try
         {
-            var result = WpfMessageBox.Show(
-                BuildConfirmationMessage(tool, arguments),
-                "Confirm Action",
-                WpfMessageBoxButton.OKCancel,
-                WpfMessageBoxImage.Question);
+            var owner = Application.Current?.MainWindow;
+            var dialog = new Window
+            {
+                Title = "Confirm Action",
+                Width = 520,
+                SizeToContent = SizeToContent.Height,
+                MinHeight = 220,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = owner is null
+                    ? WindowStartupLocation.CenterScreen
+                    : WindowStartupLocation.CenterOwner,
+                ShowInTaskbar = false,
+                Owner = owner
+            };
 
-            return result == WpfMessageBoxResult.OK;
+            var panel = new StackPanel { Margin = new Thickness(20) };
+            panel.Children.Add(new TextBlock
+            {
+                Text = BuildConfirmationMessage(tool, arguments),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 20)
+            });
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            var cancel = new Button
+            {
+                Content = "Cancel",
+                MinWidth = 90,
+                Margin = new Thickness(8, 0, 0, 0),
+                IsCancel = true
+            };
+
+            var allow = new Button
+            {
+                Content = "Allow",
+                MinWidth = 90,
+                IsDefault = true
+            };
+
+            allow.Click += (_, _) => dialog.DialogResult = true;
+            cancel.Click += (_, _) => dialog.DialogResult = false;
+
+            buttons.Children.Add(cancel);
+            buttons.Children.Add(allow);
+            panel.Children.Add(buttons);
+            dialog.Content = panel;
+
+            return dialog.ShowDialog() == true;
         }
         catch (Exception ex)
         {
-            AppLogger.Error("Confirmation MessageBox failed", ex);
+            AppLogger.Error("Confirmation dialog failed", ex);
             return false;
         }
     }
