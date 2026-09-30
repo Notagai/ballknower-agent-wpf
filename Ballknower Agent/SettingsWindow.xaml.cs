@@ -1,4 +1,5 @@
 ﻿using Ballknower.Config;
+using Ballknower.Google;
 using Microsoft.Win32;
 
 using System;
@@ -39,6 +40,7 @@ public partial class SettingsWindow : Window
     private readonly SettingsStore _settingsStore;
     private readonly CredentialStore _credentialStore;
     private readonly Dictionary<string, string> _apiKeys;
+    private readonly GoogleDriveService _googleDriveService;
 
     private string? _editingCommand;
     private bool _isInitializing;
@@ -46,13 +48,14 @@ public partial class SettingsWindow : Window
     private bool _allowClose;
     private static readonly HttpClient TestHttp = new() { Timeout = TimeSpan.FromSeconds(20) };
 
-    public SettingsWindow(AppSettings settings)
+    public SettingsWindow(AppSettings settings, GoogleDriveService googleDriveService)
     {
         InitializeComponent();
 
         _isInitializing = true;
 
         _targetSettings = settings;
+        _googleDriveService = googleDriveService;
 
         _settings = new AppSettings
         {
@@ -96,6 +99,7 @@ public partial class SettingsWindow : Window
 
         UpdateHistorySlider();
         RefreshShortcutList();
+        RefreshGoogleDriveStatus();
 
         _isInitializing = false;
     }
@@ -1108,6 +1112,83 @@ public partial class SettingsWindow : Window
         _isDirty = false;
         _allowClose = true;
         Close();
+    }
+
+
+    private void RefreshGoogleDriveStatus()
+    {
+        bool connected = _googleDriveService.IsConnected;
+        GoogleDriveStatusText.Text = connected ? "● Connected" : "○ Not connected";
+        GoogleDriveStatusText.Foreground = connected ? WpfBrushes.LightGreen : WpfBrushes.LightGray;
+        GoogleDriveConnectButton.IsEnabled = !connected;
+        GoogleDriveTestButton.IsEnabled = connected;
+        GoogleDriveDisconnectButton.IsEnabled = connected;
+        if (!connected)
+            GoogleDriveAccountText.Text = "";
+    }
+
+    private async void GoogleDriveConnectButton_Click(object sender, RoutedEventArgs e)
+    {
+        GoogleDriveConnectButton.IsEnabled = false;
+        GoogleDriveTestButton.IsEnabled = false;
+        GoogleDriveDisconnectButton.IsEnabled = false;
+        GoogleDriveErrorText.Visibility = Visibility.Collapsed;
+        GoogleDriveErrorText.Text = "";
+
+        try
+        {
+            await _googleDriveService.ConnectAsync();
+            RefreshGoogleDriveStatus();
+            var tested = await _googleDriveService.TestConnectionAsync();
+            if (!tested)
+                throw new InvalidOperationException("Google Drive connected, but the connection test failed.");
+            GoogleDriveStatusText.Text = "● Connected and tested";
+            GoogleDriveStatusText.Foreground = WpfBrushes.LightGreen;
+        }
+        catch (Exception ex)
+        {
+            GoogleDriveErrorText.Text = "Google Drive connection failed: " + ex.Message;
+            GoogleDriveErrorText.Visibility = Visibility.Visible;
+            RefreshGoogleDriveStatus();
+        }
+    }
+
+    private async void GoogleDriveTestButton_Click(object sender, RoutedEventArgs e)
+    {
+        GoogleDriveErrorText.Visibility = Visibility.Collapsed;
+        GoogleDriveTestButton.IsEnabled = false;
+        try
+        {
+            if (!await _googleDriveService.TestConnectionAsync())
+                throw new InvalidOperationException("Google Drive did not respond successfully.");
+            GoogleDriveStatusText.Text = "● Connected and tested";
+            GoogleDriveStatusText.Foreground = WpfBrushes.LightGreen;
+        }
+        catch (Exception ex)
+        {
+            GoogleDriveErrorText.Text = "Google Drive test failed: " + ex.Message;
+            GoogleDriveErrorText.Visibility = Visibility.Visible;
+            RefreshGoogleDriveStatus();
+        }
+        finally
+        {
+            GoogleDriveTestButton.IsEnabled = _googleDriveService.IsConnected;
+        }
+    }
+
+    private async void GoogleDriveDisconnectButton_Click(object sender, RoutedEventArgs e)
+    {
+        GoogleDriveErrorText.Visibility = Visibility.Collapsed;
+        try
+        {
+            await _googleDriveService.DisconnectAsync();
+            RefreshGoogleDriveStatus();
+        }
+        catch (Exception ex)
+        {
+            GoogleDriveErrorText.Text = "Google Drive disconnect failed: " + ex.Message;
+            GoogleDriveErrorText.Visibility = Visibility.Visible;
+        }
     }
 
     private void CancelButton_Click(
