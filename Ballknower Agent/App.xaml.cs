@@ -34,7 +34,7 @@ public partial class App : WpfApplication
         try
         {
             using var runKey = Registry.CurrentUser.CreateSubKey(runKeyPath);
-            runKey?.SetValue(valueName, $"\\"{Environment.ProcessPath}\\"");
+            runKey?.SetValue(valueName, string.Concat('"', Environment.ProcessPath, '"'));
         }
         catch (Exception ex)
         {
