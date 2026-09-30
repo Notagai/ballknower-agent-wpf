@@ -12,7 +12,7 @@ namespace Ballknower.Google;
 
 public sealed class GoogleDriveService
 {
-    private static readonly string[] Scopes = { DriveService.Scope.DriveReadonly };
+    private static readonly string[] Scopes = { DriveService.Scope.Drive };
     private readonly string _appFolder;
     private DriveService? _drive;
 
@@ -56,25 +56,40 @@ public sealed class GoogleDriveService
         if (_drive is not null) return;
         var clientSecretsPath = FindClientSecretsPath();
         var clientSecrets = await GoogleClientSecrets.FromFileAsync(clientSecretsPath, CancellationToken.None);
-        var tokenStore = new EncryptedDataStore(Path.Combine(_appFolder, "google-token"));
-        var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(clientSecrets.Secrets, Scopes, "default", CancellationToken.None, tokenStore, new LocalServerCodeReceiver());
-        _drive = new DriveService(new BaseClientService.Initializer { HttpClientInitializer = credential, ApplicationName = "Ballknower Agent" });
+
+        // v2 intentionally separates the token store from the old read-only
+        // authorization so a broader write-capable consent grant is requested.
+        var tokenStore = new EncryptedDataStore(Path.Combine(_appFolder, "google-token-v2"));
+        var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+            clientSecrets.Secrets,
+            Scopes,
+            "default",
+            CancellationToken.None,
+            tokenStore,
+            new LocalServerCodeReceiver());
+
+        _drive = new DriveService(new BaseClientService.Initializer
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = "Ballknower Agent"
+        });
     }
 
     public async Task DisconnectAsync()
     {
         _drive = null;
-        await new EncryptedDataStore(Path.Combine(_appFolder, "google-token")).ClearAsync();
+        await new EncryptedDataStore(Path.Combine(_appFolder, "google-token-v2")).ClearAsync();
     }
 
     public async Task<IList<global::Google.Apis.Drive.v3.Data.File>> SearchAsync(string query)
     {
         if (_drive is null)
             throw new InvalidOperationException("Google Drive is not connected. Open Settings and connect Google Drive first.");
+
         var request = _drive.Files.List();
         request.Q = $"trashed = false and name contains '{EscapeQuery(query)}'";
         request.PageSize = 25;
-        request.Fields = "files(id,name,mimeType,size,modifiedTimeDateTimeOffset,webViewLink,parents)";
+        request.Fields = "files(id,name,mimeType,size,modifiedTimeDateTimeOffset,webViewLink,parents,capabilities)";
         return (await request.ExecuteAsync()).Files;
     }
 
@@ -82,6 +97,7 @@ public sealed class GoogleDriveService
     {
         if (_drive is null)
             throw new InvalidOperationException("Google Drive is not connected. Open Settings and connect Google Drive first.");
+
         var file = await _drive.Files.Get(fileId).ExecuteAsync();
         if (file.MimeType == "application/vnd.google-apps.document")
         {
@@ -89,14 +105,114 @@ public sealed class GoogleDriveService
             await _drive.Files.Export(fileId, "text/plain").DownloadAsync(stream);
             return Encoding.UTF8.GetString(stream.ToArray());
         }
+
         if (file.MimeType.StartsWith("application/vnd.google-apps.", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"Google Drive file type '{file.MimeType}' is not supported for text reading.");
+
         if (file.Size.HasValue && file.Size.Value > 2_000_000)
             throw new InvalidOperationException("The requested file is larger than the 2 MB read limit.");
+
         using var output = new MemoryStream();
         await _drive.Files.Get(fileId).DownloadAsync(output);
         return Encoding.UTF8.GetString(output.ToArray());
     }
+
+    public async Task<string> CreateTextFileAsync(string name, string content, string? parentId = null)
+    {
+        EnsureConnected();
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("A file name is required.", nameof(name));
+
+        var metadata = new global::Google.Apis.Drive.v3.Data.File
+        {
+            Name = name.Trim(),
+            MimeType = "text/plain"
+        };
+
+        if (!string.IsNullOrWhiteSpace(parentId))
+            metadata.Parents = new List<string> { parentId.Trim() };
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content ?? string.Empty));
+        var request = _drive!.Files.Create(metadata, stream, "text/plain");
+        request.Fields = "id,name,mimeType,webViewLink";
+        await request.UploadAsync();
+        if (request.ResponseBody is null)
+            throw new InvalidOperationException("Google Drive did not return the created file.");
+
+        return FormatFile(request.ResponseBody);
+    }
+
+    public async Task<string> UpdateTextFileAsync(string fileId, string content)
+    {
+        EnsureConnected();
+        if (string.IsNullOrWhiteSpace(fileId))
+            throw new ArgumentException("A file ID is required.", nameof(fileId));
+
+        var existing = await _drive!.Files.Get(fileId).ExecuteAsync();
+        if (existing.MimeType.StartsWith("application/vnd.google-apps.", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Google Workspace file type '{existing.MimeType}' cannot be updated as plain text by this tool.");
+
+        if (existing.MimeType != "text/plain" && existing.MimeType != "text/csv" && existing.MimeType != "application/json")
+            throw new InvalidOperationException($"File type '{existing.MimeType}' is not supported for text updates.");
+
+        var metadata = new global::Google.Apis.Drive.v3.Data.File { Name = existing.Name };
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content ?? string.Empty));
+        var request = _drive.Files.Update(metadata, fileId, stream, existing.MimeType);
+        request.Fields = "id,name,mimeType,webViewLink";
+        await request.UploadAsync();
+        if (request.ResponseBody is null)
+            throw new InvalidOperationException("Google Drive did not return the updated file.");
+
+        return FormatFile(request.ResponseBody);
+    }
+
+    public async Task<string> RenameAsync(string fileId, string newName)
+    {
+        EnsureConnected();
+        if (string.IsNullOrWhiteSpace(fileId))
+            throw new ArgumentException("A file ID is required.", nameof(fileId));
+        if (string.IsNullOrWhiteSpace(newName))
+            throw new ArgumentException("A new name is required.", nameof(newName));
+
+        var metadata = new global::Google.Apis.Drive.v3.Data.File { Name = newName.Trim() };
+        var result = await _drive!.Files.Update(metadata, fileId).ExecuteAsync();
+        return FormatFile(result);
+    }
+
+    public async Task<string> MoveAsync(string fileId, string destinationParentId)
+    {
+        EnsureConnected();
+        if (string.IsNullOrWhiteSpace(fileId))
+            throw new ArgumentException("A file ID is required.", nameof(fileId));
+        if (string.IsNullOrWhiteSpace(destinationParentId))
+            throw new ArgumentException("A destination folder ID is required.", nameof(destinationParentId));
+
+        var file = await _drive!.Files.Get(fileId).ExecuteAsync();
+        var update = _drive.Files.Update(new global::Google.Apis.Drive.v3.Data.File(), fileId);
+        update.AddParents = destinationParentId.Trim();
+        update.RemoveParents = file.Parents is null ? null : string.Join(",", file.Parents);
+        update.Fields = "id,name,mimeType,parents,webViewLink";
+        var result = await update.ExecuteAsync();
+        return FormatFile(result);
+    }
+
+    public async Task DeleteAsync(string fileId)
+    {
+        EnsureConnected();
+        if (string.IsNullOrWhiteSpace(fileId))
+            throw new ArgumentException("A file ID is required.", nameof(fileId));
+
+        await _drive!.Files.Delete(fileId).ExecuteAsync();
+    }
+
+    private void EnsureConnected()
+    {
+        if (_drive is null)
+            throw new InvalidOperationException("Google Drive is not connected. Open Settings and connect Google Drive first.");
+    }
+
+    private static string FormatFile(global::Google.Apis.Drive.v3.Data.File file) =>
+        $"ID: {file.Id}\nName: {file.Name}\nType: {file.MimeType}\nLink: {file.WebViewLink}";
 
     private static string EscapeQuery(string value) => value.Trim().Replace("\\", "\\\\").Replace("'", "\\'");
 }
