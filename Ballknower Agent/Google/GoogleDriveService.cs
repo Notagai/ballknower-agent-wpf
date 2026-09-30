@@ -44,8 +44,7 @@ public sealed class GoogleDriveService
     {
         if (_drive is not null) return;
         var clientSecretsPath = FindClientSecretsPath();
-        using var stream = new FileStream(clientSecretsPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var clientSecrets = await GoogleClientSecrets.LoadAsync(stream);
+        var clientSecrets = await GoogleClientSecrets.FromFileAsync(clientSecretsPath, CancellationToken.None);
         var tokenStore = new EncryptedDataStore(Path.Combine(_appFolder, "google-token"));
         var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(clientSecrets.Secrets, Scopes, "default", CancellationToken.None, tokenStore, new LocalServerCodeReceiver());
         _drive = new DriveService(new BaseClientService.Initializer { HttpClientInitializer = credential, ApplicationName = "Ballknower Agent" });
@@ -64,7 +63,7 @@ public sealed class GoogleDriveService
         var request = _drive.Files.List();
         request.Q = $"trashed = false and name contains '{EscapeQuery(query)}'";
         request.PageSize = 25;
-        request.Fields = "files(id,name,mimeType,size,modifiedTime,webViewLink,parents)";
+        request.Fields = "files(id,name,mimeType,size,modifiedTimeDateTimeOffset,webViewLink,parents)";
         return (await request.ExecuteAsync()).Files;
     }
 
