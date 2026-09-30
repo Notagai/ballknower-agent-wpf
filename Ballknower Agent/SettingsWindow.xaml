@@ -90,6 +90,22 @@
                     <StackPanel x:Name="ShortcutList" Margin="0,0,0,20"/>
                 </StackPanel></ScrollViewer>
             </TabItem>
+            <TabItem Header="Google Drive">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+                    <TextBlock Text="Google Drive" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Connect Ballknower to one Google Drive account. Authentication is started only when you click Connect." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <TextBlock Text="Status" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="GoogleDriveStatusText" Text="○ Not connected" Foreground="#FFBDBDBD" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="GoogleDriveAccountText" Text="" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,14"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button x:Name="GoogleDriveConnectButton" Content="Connect Google Drive" Click="GoogleDriveConnectButton_Click" Padding="14,5" Margin="0,0,10,0"/>
+                        <Button x:Name="GoogleDriveTestButton" Content="Test Connection" Click="GoogleDriveTestButton_Click" Padding="14,5" Margin="0,0,10,0"/>
+                        <Button x:Name="GoogleDriveDisconnectButton" Content="Disconnect" Click="GoogleDriveDisconnectButton_Click" Padding="14,5"/>
+                    </StackPanel>
+                    <TextBlock x:Name="GoogleDriveErrorText" Foreground="#FFFF7B72" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <TextBlock Text="Your OAuth token is stored locally using Windows encryption. The OAuth client JSON should remain on this PC and should not be committed to GitHub." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,16,0,0"/>
+                </StackPanel></ScrollViewer>
+            </TabItem>
             <TabItem Header="Data &amp; Settings">
                 <StackPanel Margin="18">
                     <TextBlock Text="Import or export your settings as JSON." TextWrapping="Wrap" Margin="0,0,0,16"/>
