@@ -2235,7 +2235,8 @@ public partial class MainWindow : Window
 
         _settingsWindow =
             new SettingsWindow(
-                _settings)
+                _settings,
+                _googleDriveService)
             {
                 Owner = this
             };
