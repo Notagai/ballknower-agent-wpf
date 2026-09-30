@@ -13,7 +13,7 @@ public sealed class GoogleDriveSearchTool : ITool
     public ToolDefinition Definition { get; } = new()
     {
         Name = "drive_search",
-        Description = "Searches the connected user's Google Drive by file name. Returns matching file IDs, names, types, sizes, modified times, and links.",
+        Description = "Searches the connected user's Google Drive by file name or a distinctive part of the file name. Use this when the user refers to a Drive file by name, description, or other identifying text and has not provided a file ID. Returns matching file IDs, names, types, sizes, modified times, and links. The user does not need to provide a file ID first.",
         RequiresConfirmation = false,
         Parameters = new
         {
