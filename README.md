@@ -20,6 +20,13 @@ Give the assistant practical ways to help with everyday tasks:
 - **Move files** between locations.
 - **Create shortcuts** and **open applications**, making it easier to work with your desktop.
 
+### ☁️ Google Drive
+- **Optional Google Drive integration** with explicit connection from Settings.
+- **Search and read Drive files** through dedicated agent tools.
+- **Encrypted local OAuth token storage** using Windows DPAPI.
+- **Clear connection errors** when Drive is unavailable or authorization fails.
+- OAuth client files stay local and are never part of the repository.
+
 ### 🎨 Adaptive Desktop Experience
 - **Adaptive colors** respond to the background graphics behind the assistant, helping the interface stay legible as its surroundings change.
 - **Background blur** gives the window a polished, glass-like presence over your desktop.
@@ -28,6 +35,10 @@ Give the assistant practical ways to help with everyday tasks:
 ## 🌐 Website & Documentation
 
 Visit the [Ballknower website](https://notagai.github.io/ballknower-agent-wpf/) for the project overview and documentation.
+
+## ☁️ Google Drive Documentation
+
+See [Google Drive Integration](docs/GOOGLE_DRIVE.md) for setup, connection behavior, security notes, troubleshooting, and public-release considerations.
 
 ## 🧰 Project
 
