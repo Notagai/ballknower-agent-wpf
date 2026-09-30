@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Ballknower.Google;
 
-internal sealed class EncryptedDataStore : Google.Apis.Util.Store.IDataStore
+internal sealed class EncryptedDataStore : global::Google.Apis.Util.Store.IDataStore
 {
     private readonly string _folder;
     public EncryptedDataStore(string folder) { _folder = folder; Directory.CreateDirectory(_folder); }
