@@ -1,3 +1,5 @@
+using Ballknower.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using WpfMessageBox = System.Windows.MessageBox;
@@ -33,7 +35,26 @@ public class ToolExecutor
         if (dispatcher is null)
             return false;
 
-        return await dispatcher.InvokeAsync(() =>
+        try
+        {
+            if (dispatcher.CheckAccess())
+            {
+                return ShowConfirmation(tool, arguments);
+            }
+
+            return await dispatcher.InvokeAsync(
+                () => ShowConfirmation(tool, arguments));
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Google Drive/tool confirmation dialog failed", ex);
+            return false;
+        }
+    }
+
+    private static bool ShowConfirmation(ITool tool, Dictionary<string, string> arguments)
+    {
+        try
         {
             var result = WpfMessageBox.Show(
                 BuildConfirmationMessage(tool, arguments),
@@ -42,10 +63,15 @@ public class ToolExecutor
                 WpfMessageBoxImage.Question);
 
             return result == WpfMessageBoxResult.OK;
-        });
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Confirmation MessageBox failed", ex);
+            return false;
+        }
     }
 
-    private string BuildConfirmationMessage(ITool tool, Dictionary<string, string> arguments)
+    private static string BuildConfirmationMessage(ITool tool, Dictionary<string, string> arguments)
     {
         var name = tool.Definition.Name;
         if (name == "move_file")
