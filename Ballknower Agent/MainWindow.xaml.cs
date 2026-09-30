@@ -105,6 +105,7 @@ public partial class MainWindow : Window
     private readonly CommandParser _commandParser;
     private readonly ToolRegistry _toolRegistry;
     private readonly CredentialStore _credentialStore;
+    private readonly Ballknower.Google.GoogleDriveService _googleDriveService;
 
     private readonly TranslateTransform _inputPillTransform;
     private readonly TranslateTransform _messageAreaTransform;
@@ -313,6 +314,15 @@ public partial class MainWindow : Window
 
         _credentialStore =
             new CredentialStore();
+
+        _googleDriveService =
+            new Ballknower.Google.GoogleDriveService();
+
+        _toolRegistry.Register(
+            new GoogleDriveSearchTool(_googleDriveService));
+
+        _toolRegistry.Register(
+            new GoogleDriveReadTool(_googleDriveService));
 
         _commandParser =
             new CommandParser();
