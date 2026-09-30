@@ -13,7 +13,7 @@ public sealed class GoogleDriveReadTool : ITool
     public ToolDefinition Definition { get; } = new()
     {
         Name = "drive_read",
-        Description = "Reads the text contents of a Google Drive file using its file ID. Use drive_search first when the file ID is unknown.",
+        Description = "Reads the text contents of a Google Drive file using its file ID. If the user gave a file name or description instead of an ID, use drive_search first to find the ID; do not ask the user for the ID when the file can be searched.",
         RequiresConfirmation = false,
         Parameters = new
         {
