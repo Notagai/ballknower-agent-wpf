@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -20,6 +21,9 @@ public partial class App : WpfApplication
         base.OnStartup(e);
         RegisterForWindowsStartup();
 
+        if (e.Args.Contains("--startup", StringComparer.OrdinalIgnoreCase))
+            return;
+
         Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,
             new Action(
@@ -28,13 +32,15 @@ public partial class App : WpfApplication
 
     private static void RegisterForWindowsStartup()
     {
-        const string runKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        const string runKeyPath = @"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
         const string valueName = "Ballknower";
 
         try
         {
             using var runKey = Registry.CurrentUser.CreateSubKey(runKeyPath);
-            runKey?.SetValue(valueName, string.Concat('"', Environment.ProcessPath, '"'));
+            runKey?.SetValue(
+                valueName,
+                string.Concat('"', Environment.ProcessPath, '"', " --startup"));
         }
         catch (Exception ex)
         {
