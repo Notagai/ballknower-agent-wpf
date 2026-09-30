@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Windows;
 using WpfMessageBox = System.Windows.MessageBox;
 using WpfMessageBoxButton = System.Windows.MessageBoxButton;
 using WpfMessageBoxImage = System.Windows.MessageBoxImage;
@@ -30,7 +29,7 @@ public class ToolExecutor
         // Tool calls can be executed from a background async continuation.
         // WPF dialogs must be created on the UI thread; otherwise an STA/thread
         // affinity exception can terminate the desktop app.
-        var dispatcher = Application.Current?.Dispatcher;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher is null)
             return false;
 
