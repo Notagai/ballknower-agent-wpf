@@ -1,5 +1,7 @@
 using global::Google.Apis.Auth.OAuth2;
 using global::Google.Apis.Drive.v3;
+using global::Google.Apis.Docs.v1;
+using global::Google.Apis.Docs.v1.Data;
 using global::Google.Apis.Services;
 using System;
 using System.Collections.Generic;
@@ -15,6 +17,7 @@ public sealed class GoogleDriveService
     private static readonly string[] Scopes = { DriveService.Scope.Drive };
     private readonly string _appFolder;
     private DriveService? _drive;
+    private DocsService? _docs;
 
     public GoogleDriveService()
     {
@@ -73,11 +76,18 @@ public sealed class GoogleDriveService
             HttpClientInitializer = credential,
             ApplicationName = "Ballknower Agent"
         });
+
+        _docs = new DocsService(new BaseClientService.Initializer
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = "Ballknower Agent"
+        });
     }
 
     public async Task DisconnectAsync()
     {
         _drive = null;
+        _docs = null;
         await new EncryptedDataStore(Path.Combine(_appFolder, "google-token-v2")).ClearAsync();
     }
 
@@ -123,23 +133,48 @@ public sealed class GoogleDriveService
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A file name is required.", nameof(name));
 
-        var metadata = new global::Google.Apis.Drive.v3.Data.File
+        // Create a real Google Docs document first, then populate it through
+        // the Docs API. Uploading text/plain creates a plain text file, not a
+        // native Google Docs document.
+        var title = Path.GetFileNameWithoutExtension(name.Trim());
+        if (string.IsNullOrWhiteSpace(title))
+            title = name.Trim();
+
+        if (_docs is null)
+            throw new InvalidOperationException("Google Docs service is not connected.");
+
+        var document = await _docs.Documents.Create(new Document { Title = title }).ExecuteAsync();
+
+        if (!string.IsNullOrEmpty(content))
         {
-            Name = name.Trim(),
-            MimeType = "text/plain"
-        };
+            var requests = new List<Request>
+            {
+                new Request
+                {
+                    InsertText = new InsertTextRequest
+                    {
+                        Location = new Location { Index = 1 },
+                        Text = content
+                    }
+                }
+            };
+
+            await _docs.Documents.BatchUpdate(
+                new BatchUpdateDocumentRequest { Requests = requests },
+                document.DocumentId).ExecuteAsync();
+        }
 
         if (!string.IsNullOrWhiteSpace(parentId))
-            metadata.Parents = new List<string> { parentId.Trim() };
+        {
+            var move = _drive!.Files.Update(new global::Google.Apis.Drive.v3.Data.File(), document.DocumentId);
+            move.AddParents = parentId.Trim();
+            move.RemoveParents = "root";
+            move.Fields = "id,name,mimeType,webViewLink,parents";
+            await move.ExecuteAsync();
+        }
 
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content ?? string.Empty));
-        var request = _drive!.Files.Create(metadata, stream, "text/plain");
-        request.Fields = "id,name,mimeType,webViewLink";
-        await request.UploadAsync();
-        if (request.ResponseBody is null)
-            throw new InvalidOperationException("Google Drive did not return the created file.");
-
-        return FormatFile(request.ResponseBody);
+        var result = await _drive!.Files.Get(document.DocumentId).ExecuteAsync();
+        return FormatFile(result);
     }
 
     public async Task<string> UpdateTextFileAsync(string fileId, string content)
