@@ -345,6 +345,21 @@ public partial class MainWindow : Window
                         "information, research, or facts that need internet access. " +
                         "Use the provided native tools when the user requests " +
                         "supported file operations. " +
+                        "Google Drive is an application-managed capability: " +
+                        "the user connects it from Ballknower Settings, and " +
+                        "the drive_search, drive_read, and drive_write tools " +
+                        "are the way you access it. Do not claim that you " +
+                        "lack Google Drive permission merely because you are " +
+                        "a cloud AI model, and do not ask the user to grant " +
+                        "OAuth access from the chat. If the user asks to " +
+                        "find or read a Drive file and they have not supplied " +
+                        "a file ID, use drive_search with the best file name " +
+                        "or distinctive phrase you have; do not ask for a " +
+                        "file ID first. If Drive is not connected, rely on the " +
+                        "tool's connection error and tell the user to connect " +
+                        "Google Drive in Settings. For Drive changes, call " +
+                        "drive_write; the application will request explicit " +
+                        "confirmation before execution. " +
                         "For familiar folders use ~/Desktop, ~/Documents " +
                         "or ~/Downloads. Never guess the Windows username. " +
                         "The application handles tool execution and " +
