@@ -137,8 +137,11 @@ public class ToolRequestParser
             // inside <tool_call>, before the arguments.
             var toolName = string.Empty;
 
-            foreach (XmlNode child in root.ChildNodes)
+            foreach (XmlNode? child in root.ChildNodes)
             {
+                if (child is null)
+                    continue;
+
                 if (child.NodeType == XmlNodeType.Text ||
                     child.NodeType == XmlNodeType.CDATA)
                 {
@@ -164,6 +167,8 @@ public class ToolRequestParser
             for (var i = 0; i < root.ChildNodes.Count; i++)
             {
                 var node = root.ChildNodes[i];
+                if (node is null)
+                    continue;
 
                 if (node.Name != "arg_key")
                     continue;
@@ -183,6 +188,8 @@ public class ToolRequestParser
                      j++)
                 {
                     var candidate = root.ChildNodes[j];
+                    if (candidate is null)
+                        continue;
 
                     if (candidate.NodeType == XmlNodeType.Whitespace ||
                         candidate.NodeType == XmlNodeType.SignificantWhitespace)
