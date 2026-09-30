@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -28,13 +28,13 @@ public partial class App : WpfApplication
 
     private static void RegisterForWindowsStartup()
     {
-        const string runKeyPath = @"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        const string runKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         const string valueName = "Ballknower";
 
         try
         {
             using var runKey = Registry.CurrentUser.CreateSubKey(runKeyPath);
-            runKey?.SetValue(valueName, $"\\\"{Environment.ProcessPath}\\\"");
+            runKey?.SetValue(valueName, $"\\"{Environment.ProcessPath}\\"");
         }
         catch (Exception ex)
         {
