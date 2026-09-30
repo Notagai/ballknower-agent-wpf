@@ -25,11 +25,25 @@ public class ToolExecutor
         return await tool.ExecuteAsync(arguments);
     }
 
-    private Task<bool> RequestConfirmationAsync(ITool tool, Dictionary<string, string> arguments)
+    private async Task<bool> RequestConfirmationAsync(ITool tool, Dictionary<string, string> arguments)
     {
-        var result = WpfMessageBox.Show(BuildConfirmationMessage(tool, arguments), "Confirm Action",
-            WpfMessageBoxButton.OKCancel, WpfMessageBoxImage.Question);
-        return Task.FromResult(result == WpfMessageBoxResult.OK);
+        // Tool calls can be executed from a background async continuation.
+        // WPF dialogs must be created on the UI thread; otherwise an STA/thread
+        // affinity exception can terminate the desktop app.
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null)
+            return false;
+
+        return await dispatcher.InvokeAsync(() =>
+        {
+            var result = WpfMessageBox.Show(
+                BuildConfirmationMessage(tool, arguments),
+                "Confirm Action",
+                WpfMessageBoxButton.OKCancel,
+                WpfMessageBoxImage.Question);
+
+            return result == WpfMessageBoxResult.OK;
+        });
     }
 
     private string BuildConfirmationMessage(ITool tool, Dictionary<string, string> arguments)
