@@ -24,6 +24,17 @@ public sealed class GoogleDriveService
 
     public bool IsConnected => _drive is not null;
 
+    public async Task<bool> TestConnectionAsync()
+    {
+        if (_drive is null)
+            return false;
+
+        var request = _drive.About.Get();
+        request.Fields = "user(emailAddress,displayName)";
+        await request.ExecuteAsync();
+        return true;
+    }
+
     private string FindClientSecretsPath()
     {
         var preferredPath = Path.Combine(_appFolder, "google-client-secret.json");
