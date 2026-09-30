@@ -324,6 +324,9 @@ public partial class MainWindow : Window
         _toolRegistry.Register(
             new GoogleDriveReadTool(_googleDriveService));
 
+        _toolRegistry.Register(
+            new GoogleDriveWriteTool(_googleDriveService));
+
         _commandParser =
             new CommandParser();
 
