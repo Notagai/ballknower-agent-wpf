@@ -51,6 +51,38 @@ public class ToolExecutor
             arguments.TryGetValue("path", out var path);
             return $"Ballknower wants to delete this file:\n\n{path}\n\nAllow this action?";
         }
+        if (name == "drive_write")
+        {
+            arguments.TryGetValue("operation", out var operation);
+            arguments.TryGetValue("file_id", out var fileId);
+            arguments.TryGetValue("name", out var nameValue);
+            arguments.TryGetValue("parent_id", out var parentId);
+            arguments.TryGetValue("content", out var content);
+
+            var detail = operation switch
+            {
+                "create_text" => $"Create a new text file\nName: {nameValue}\nFolder ID: {parentId ?? "(Drive root)"}\nContent: {SummarizeContent(content)}",
+                "update_text" => $"Update file\nFile ID: {fileId}\nNew content: {SummarizeContent(content)}",
+                "rename" => $"Rename file\nFile ID: {fileId}\nNew name: {nameValue}",
+                "move" => $"Move file\nFile ID: {fileId}\nDestination folder ID: {parentId}",
+                "delete" => $"Delete file\nFile ID: {fileId}",
+                _ => $"Operation: {operation}"
+            };
+
+            return $"Ballknower wants to make this Google Drive change:\n\n{detail}\n\nAllow this action?";
+        }
         return $"Ballknower wants to execute '{name}'.\n\nAllow this action?";
+    }
+
+    private static string SummarizeContent(string? content)
+    {
+        if (string.IsNullOrEmpty(content))
+            return "(empty)";
+
+        const int maxLength = 500;
+        var singleLine = content.Replace("\r", " ").Replace("\n", " ");
+        return singleLine.Length <= maxLength
+            ? singleLine
+            : singleLine[..maxLength] + "…";
     }
 }
