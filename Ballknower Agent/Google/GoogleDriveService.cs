@@ -14,24 +14,37 @@ public sealed class GoogleDriveService
 {
     private static readonly string[] Scopes = { DriveService.Scope.DriveReadonly };
     private readonly string _appFolder;
-    private readonly string _clientSecretsPath;
     private DriveService? _drive;
 
     public GoogleDriveService()
     {
         _appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ballknower");
         Directory.CreateDirectory(_appFolder);
-        _clientSecretsPath = Path.Combine(_appFolder, "google-client-secret.json");
     }
 
     public bool IsConnected => _drive is not null;
 
+    private string FindClientSecretsPath()
+    {
+        var preferredPath = Path.Combine(_appFolder, "google-client-secret.json");
+        if (File.Exists(preferredPath))
+            return preferredPath;
+
+        var matches = Directory.GetFiles(_appFolder, "client_secret_*.apps.googleusercontent.com.json");
+        if (matches.Length == 1)
+            return matches[0];
+
+        if (matches.Length > 1)
+            throw new InvalidOperationException("Multiple Google OAuth client secret JSON files were found in '" + _appFolder + "'. Keep only the Desktop OAuth client JSON you want Ballknower to use.");
+
+        throw new FileNotFoundException("Google OAuth client secrets were not found. Place your Google Desktop OAuth client JSON in '" + _appFolder + "'.");
+    }
+
     public async Task ConnectAsync()
     {
         if (_drive is not null) return;
-        if (!File.Exists(_clientSecretsPath))
-            throw new FileNotFoundException("Google OAuth client secrets were not found. Place your Google Desktop OAuth client JSON at '" + _clientSecretsPath + "'.");
-        using var stream = new FileStream(_clientSecretsPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var clientSecretsPath = FindClientSecretsPath();
+        using var stream = new FileStream(clientSecretsPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         var clientSecrets = await GoogleClientSecrets.LoadAsync(stream);
         var tokenStore = new EncryptedDataStore(Path.Combine(_appFolder, "google-token"));
         var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(clientSecrets.Secrets, Scopes, "default", CancellationToken.None, tokenStore, new LocalServerCodeReceiver());
@@ -46,8 +59,9 @@ public sealed class GoogleDriveService
 
     public async Task<IList<Google.Apis.Drive.v3.Data.File>> SearchAsync(string query)
     {
-        await ConnectAsync();
-        var request = _drive!.Files.List();
+        if (_drive is null)
+            throw new InvalidOperationException("Google Drive is not connected. Open Settings and connect Google Drive first.");
+        var request = _drive.Files.List();
         request.Q = $"trashed = false and name contains '{EscapeQuery(query)}'";
         request.PageSize = 25;
         request.Fields = "files(id,name,mimeType,size,modifiedTime,webViewLink,parents)";
@@ -56,8 +70,9 @@ public sealed class GoogleDriveService
 
     public async Task<string> ReadAsync(string fileId)
     {
-        await ConnectAsync();
-        var file = await _drive!.Files.Get(fileId).ExecuteAsync();
+        if (_drive is null)
+            throw new InvalidOperationException("Google Drive is not connected. Open Settings and connect Google Drive first.");
+        var file = await _drive.Files.Get(fileId).ExecuteAsync();
         if (file.MimeType == "application/vnd.google-apps.document")
         {
             using var stream = new MemoryStream();
