@@ -10,4 +10,9 @@
 		<UseWindowsForms>true</UseWindowsForms>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<PackageReference Include="Google.Apis.Auth" Version="1.73.0" />
+		<PackageReference Include="Google.Apis.Drive.v3" Version="1.73.0" />
+	</ItemGroup>
+
 </Project>
