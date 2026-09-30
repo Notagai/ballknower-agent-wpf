@@ -22,7 +22,8 @@ Give the assistant practical ways to help with everyday tasks:
 
 ### ☁️ Google Drive
 - **Optional Google Drive integration** with explicit connection from Settings.
-- **Search and read Drive files** through dedicated agent tools.
+- **Broad Drive visibility** so the agent can search and read the user's Drive.
+- **Write operations are always confirmation-gated** before Ballknower sends the mutation to Google Drive.
 - **Encrypted local OAuth token storage** using Windows DPAPI.
 - **Clear connection errors** when Drive is unavailable or authorization fails.
 - OAuth client files stay local and are never part of the repository.
