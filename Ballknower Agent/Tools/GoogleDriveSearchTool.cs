@@ -35,7 +35,7 @@ public sealed class GoogleDriveSearchTool : ITool
                 return new ToolResult { Tool = Definition.Name, Success = true, Message = $"No Google Drive files matched '{query}'." };
             var lines = new List<string>();
             foreach (var file in files)
-                lines.Add($"ID: {file.Id}\nName: {file.Name}\nType: {file.MimeType}\nModified: {file.ModifiedTime}\nLink: {file.WebViewLink}");
+                lines.Add($"ID: {file.Id}\nName: {file.Name}\nType: {file.MimeType}\nModified: {file.ModifiedTimeDateTimeOffset}\nLink: {file.WebViewLink}");
             return new ToolResult { Tool = Definition.Name, Success = true, Message = $"Google Drive results for '{query}':\n\n" + string.Join("\n\n", lines) };
         }
         catch (Exception ex) { return new ToolResult { Tool = Definition.Name, Success = false, Message = $"Google Drive search failed: {ex.Message}" }; }
