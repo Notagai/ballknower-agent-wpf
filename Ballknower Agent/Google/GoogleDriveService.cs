@@ -1,6 +1,6 @@
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Drive.v3;
-using Google.Apis.Services;
+using global::Google.Apis.Auth.OAuth2;
+using global::Google.Apis.Drive.v3;
+using global::Google.Apis.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -57,7 +57,7 @@ public sealed class GoogleDriveService
         await new EncryptedDataStore(Path.Combine(_appFolder, "google-token")).ClearAsync();
     }
 
-    public async Task<IList<Google.Apis.Drive.v3.Data.File>> SearchAsync(string query)
+    public async Task<IList<global::Google.Apis.Drive.v3.Data.File>> SearchAsync(string query)
     {
         if (_drive is null)
             throw new InvalidOperationException("Google Drive is not connected. Open Settings and connect Google Drive first.");
