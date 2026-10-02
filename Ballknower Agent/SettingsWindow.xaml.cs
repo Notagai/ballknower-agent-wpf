@@ -1,4 +1,5 @@
 ﻿using Ballknower.Config;
+using Ballknower.Diagnostics;
 using Ballknower.Google;
 using Microsoft.Win32;
 
@@ -1225,8 +1226,8 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            Color background = ParseStyleColor(_settings.DarkThemeBackground, Colors.Black);
-            Color foreground = ParseStyleColor(_settings.DarkThemeForeground, Colors.White);
+            System.Windows.Media.Color background = ParseStyleColor(_settings.DarkThemeBackground, Colors.Black);
+            System.Windows.Media.Color foreground = ParseStyleColor(_settings.DarkThemeForeground, Colors.White);
 
             Background = new SolidColorBrush(background);
             Foreground = new SolidColorBrush(foreground);
@@ -1250,7 +1251,7 @@ public partial class SettingsWindow : Window
 
             if (element is TextBlock textBlock)
                 textBlock.Foreground = new SolidColorBrush(foreground);
-            else if (element is Control control)
+            else if (element is System.Windows.Controls.Control control)
             {
                 control.Foreground = new SolidColorBrush(foreground);
                 if (control is TextBox || control is PasswordBox || control is ComboBox || control is ListBox)
@@ -1267,7 +1268,7 @@ public partial class SettingsWindow : Window
         {
             if (string.IsNullOrWhiteSpace(value))
                 return fallback;
-            return (Color)System.Windows.Media.ColorConverter.ConvertFromString(value)!;
+            return (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(value)!;
         }
         catch
         {
