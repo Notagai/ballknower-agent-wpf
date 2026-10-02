@@ -1257,7 +1257,7 @@ public partial class SettingsWindow : Window
             }
             else if (element is System.Windows.Controls.ListBox listBox)
             {
-                listBox.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+                listBox.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
                 listBox.Foreground = new SolidColorBrush(Colors.White);
                 continue;
             }
