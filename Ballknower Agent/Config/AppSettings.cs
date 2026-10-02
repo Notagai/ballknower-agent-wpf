@@ -30,6 +30,21 @@ public class AppSettings
     // Does not include the model's response or all tool overhead.
     public int HistoryTokenBudget { get; set; } = 2000;
 
+    public string StylePreset { get; set; } = "Default";
+
+    // Unified applies the selected palette to both light and dark states.
+    public string StyleThemeMode { get; set; } = "Unified";
+
+    public string LightThemeBackground { get; set; } = "#FFFFFFFF";
+    public string LightThemeForeground { get; set; } = "#FF000000";
+    public string DarkThemeBackground { get; set; } = "#FF000000";
+    public string DarkThemeForeground { get; set; } = "#FFFFFFFF";
+
+    public string StyleFontFamily { get; set; } = "Segoe UI";
+    public bool StyleAnimatedEffects { get; set; } = true;
+    public bool StyleRainbowBorder { get; set; } = true;
+    public bool StyleGlowEffect { get; set; } = true;
+
     public Dictionary<string, string> Shortcuts { get; set; } =
         new();
 }
