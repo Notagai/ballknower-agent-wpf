@@ -1253,11 +1253,13 @@ public partial class SettingsWindow : Window
             {
                 comboBox.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
                 comboBox.Foreground = new SolidColorBrush(Colors.White);
+                continue;
             }
             else if (element is System.Windows.Controls.ListBox listBox)
             {
                 listBox.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
                 listBox.Foreground = new SolidColorBrush(Colors.White);
+                continue;
             }
             else if (element is System.Windows.Controls.Control control)
             {
