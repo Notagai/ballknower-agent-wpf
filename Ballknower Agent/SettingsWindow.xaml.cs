@@ -44,6 +44,7 @@ public partial class SettingsWindow : Window
 
     private string? _editingCommand;
     private bool _isInitializing;
+    private bool _isApplyingStylePreset;
     private bool _isDirty;
     private bool _allowClose;
     private static readonly HttpClient TestHttp = new() { Timeout = TimeSpan.FromSeconds(20) };
@@ -1127,10 +1128,13 @@ public partial class SettingsWindow : Window
         _settings.LightThemeForeground = values.Item2;
         _settings.DarkThemeBackground = values.Item3;
         _settings.DarkThemeForeground = values.Item4;
+
+        _isApplyingStylePreset = true;
         LightBackgroundInput.Text = values.Item1;
         LightForegroundInput.Text = values.Item2;
         DarkBackgroundInput.Text = values.Item3;
         DarkForegroundInput.Text = values.Item4;
+        _isApplyingStylePreset = false;
     }
 
     private void ThemeMode_Changed(object sender, RoutedEventArgs e)
@@ -1153,7 +1157,7 @@ public partial class SettingsWindow : Window
 
     private void StyleColorChanged(object sender, TextChangedEventArgs e)
     {
-        if (_isInitializing) return;
+        if (_isInitializing || _isApplyingStylePreset) return;
 
         if (sender is System.Windows.Controls.TextBox changed)
         {
