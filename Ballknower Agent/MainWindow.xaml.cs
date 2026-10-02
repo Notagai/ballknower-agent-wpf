@@ -336,6 +336,8 @@ public partial class MainWindow : Window
         _settings =
             settingsStore.Load();
 
+        ApplyStyleSettings();
+
         _credentialStore =
             new CredentialStore();
 
@@ -1416,6 +1418,94 @@ public partial class MainWindow : Window
         UpdateMessageAreaColor();
     }
 
+    private static Color ParseStyleColor(string value, Color fallback)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(value)) return fallback;
+            return (Color)ColorConverter.ConvertFromString(value)!;
+        }
+        catch
+        {
+            return fallback;
+        }
+    }
+
+    private SolidColorBrush CreateStyleBrush(string value, Color fallback)
+    {
+        var brush = new SolidColorBrush(ParseStyleColor(value, fallback));
+        brush.Freeze();
+        return brush;
+    }
+
+    private Brush GetStyleBackground(bool light) =>
+        light
+            ? CreateStyleBrush(_settings.LightThemeBackground, Colors.White)
+            : CreateStyleBrush(_settings.DarkThemeBackground, Colors.Black);
+
+    private Brush GetStyleForeground(bool light) =>
+        light
+            ? CreateStyleBrush(_settings.LightThemeForeground, Colors.Black)
+            : CreateStyleBrush(_settings.DarkThemeForeground, Colors.White);
+
+    private void ApplyStyleSettings()
+    {
+        try
+        {
+            var font = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily);
+            ChatInput.FontFamily = font;
+
+            InputPill.Effect = _settings.StyleGlowEffect
+                ? new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = Colors.Black,
+                    BlurRadius = 28,
+                    ShadowDepth = 0,
+                    Opacity = 0.35
+                }
+                : null;
+
+            MessageArea.Effect = _settings.StyleGlowEffect
+                ? new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = Colors.Black,
+                    BlurRadius = 24,
+                    ShadowDepth = 0,
+                    Opacity = 0.30
+                }
+                : null;
+
+            var rainbowBrush = new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new GradientStop(Color.FromRgb(0x42, 0x85, 0xF4), 0.0),
+                    new GradientStop(Color.FromRgb(0xEA, 0x43, 0x35), 0.33),
+                    new GradientStop(Color.FromRgb(0xFB, 0xBC, 0x05), 0.66),
+                    new GradientStop(Color.FromRgb(0x34, 0xA8, 0x53), 1.0)
+                },
+                0)
+            {
+                MappingMode = BrushMappingMode.RelativeToBoundingBox,
+                RelativeTransform = new RotateTransform()
+            };
+            InputPill.BorderBrush = _settings.StyleRainbowBorder ? rainbowBrush : null;
+            InputPill.BorderThickness = _settings.StyleRainbowBorder ? new Thickness(2) : new Thickness(0);
+
+            if (_settings.StyleRainbowBorder && rainbowBrush.RelativeTransform is RotateTransform rotate)
+            {
+                rotate.BeginAnimation(
+                    RotateTransform.AngleProperty,
+                    _settings.StyleAnimatedEffects
+                        ? new DoubleAnimation(0, 360, TimeSpan.FromSeconds(5)) { RepeatBehavior = RepeatBehavior.Forever }
+                        : null);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Style settings could not be applied", ex);
+        }
+    }
+
     private void UpdateInputPillColor()
     {
         try
@@ -1452,20 +1542,9 @@ public partial class MainWindow : Window
             _inputIsLight =
                 shouldBeLight;
 
-            InputPill.Background =
-                shouldBeLight
-                    ? _lightBrush
-                    : _darkBrush;
-
-            ChatInput.Foreground =
-                shouldBeLight
-                    ? _blackTextBrush
-                    : _whiteTextBrush;
-
-            ChatInput.CaretBrush =
-                shouldBeLight
-                    ? _blackTextBrush
-                    : _whiteTextBrush;
+            InputPill.Background = GetStyleBackground(shouldBeLight);
+            ChatInput.Foreground = GetStyleForeground(shouldBeLight);
+            ChatInput.CaretBrush = GetStyleForeground(shouldBeLight);
 
             /*
              * Keep the autocomplete popup synchronized with
@@ -1527,10 +1606,7 @@ public partial class MainWindow : Window
             _messageAreaIsLight =
                 shouldBeLight;
 
-            MessageArea.Background =
-                shouldBeLight
-                    ? _lightBrush
-                    : _darkBrush;
+            MessageArea.Background = GetStyleBackground(shouldBeLight);
 
             UpdateMessageTextColors(
                 shouldBeLight);
