@@ -1008,6 +1008,17 @@ public partial class SettingsWindow : Window
                     importedSettings.Shortcuts ??
                     new Dictionary<string, string>();
 
+                _settings.StylePreset = importedSettings.StylePreset ?? "Default";
+                _settings.StyleThemeMode = importedSettings.StyleThemeMode ?? "Unified";
+                _settings.LightThemeBackground = importedSettings.LightThemeBackground ?? "#FFFFFFFF";
+                _settings.LightThemeForeground = importedSettings.LightThemeForeground ?? "#FF000000";
+                _settings.DarkThemeBackground = importedSettings.DarkThemeBackground ?? "#FF000000";
+                _settings.DarkThemeForeground = importedSettings.DarkThemeForeground ?? "#FFFFFFFF";
+                _settings.StyleFontFamily = importedSettings.StyleFontFamily ?? "Segoe UI";
+                _settings.StyleAnimatedEffects = importedSettings.StyleAnimatedEffects;
+                _settings.StyleRainbowBorder = importedSettings.StyleRainbowBorder;
+                _settings.StyleGlowEffect = importedSettings.StyleGlowEffect;
+
                 ProviderInput.SelectedValue =
                     _settings.AIProvider;
 
@@ -1045,6 +1056,7 @@ public partial class SettingsWindow : Window
                     Visibility.Collapsed;
 
                 RefreshShortcutList();
+                LoadStyleControls();
                 MarkDirty();
             }
             finally
