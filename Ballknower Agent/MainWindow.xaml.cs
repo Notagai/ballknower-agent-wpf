@@ -606,7 +606,6 @@ public partial class MainWindow : Window
             null);
 
         InputPill.Width = InitialPillWidth;
-        ChatInput.Width = InitialPillWidth - 50;
         MessageArea.Width = InitialPillWidth;
         MessageArea.Visibility = Visibility.Collapsed;
 
@@ -1242,6 +1241,7 @@ public partial class MainWindow : Window
             // Measure with the actual available width so wrapped visual lines
             // contribute to the TextBox's height instead of being clipped.
             ChatInput.Height = double.NaN;
+            ChatInput.Width = double.NaN;
             ChatInput.Measure(new System.Windows.Size(ChatInput.ActualWidth, double.PositiveInfinity));
             double desiredHeight = ChatInput.DesiredSize.Height;
             ChatInput.Height = Math.Max(44, Math.Min(200, desiredHeight));
@@ -2245,7 +2245,6 @@ public partial class MainWindow : Window
             return;
 
         InputPill.Width = _hasEnteredChat ? ChatPillWidth : InitialPillWidth;
-        ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = _hasEnteredChat ? ChatPillWidth : InitialPillWidth;
 
         double targetPosition =
