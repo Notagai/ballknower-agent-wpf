@@ -3440,10 +3440,14 @@ public partial class MainWindow : Window
         FlowDocument document,
         string markdown)
     {
-        var lines = (markdown ?? string.Empty)
+        string readableMarkdown = (markdown ?? string.Empty)
             .Replace("\r\n", "\n")
-            .Replace('\r', '\n')
-            .Split('\n');
+            .Replace('\r', '\n');
+
+        // WPF FlowDocument does not render LaTeX; show a readable plain-text fallback.
+        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\\\[([\s\S]*?)\\\\\]", "\n$1\n");
+        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\\\(([\s\S]*?)\\\\\)", "$1");
+        var lines = readableMarkdown.Split('\n');
 
         bool inCodeBlock = false;
         var codeLines = new List<string>();
