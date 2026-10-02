@@ -1453,9 +1453,7 @@ public partial class MainWindow : Window
         try
         {
             var font = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily);
-            ChatInput.FontFamily = font;
-            CommandSuggestions.FontFamily = font;
-            CommandSuggestionList.FontFamily = font;
+            ChatInput.FontFamily = font;            CommandSuggestionList.FontFamily = font;
 
             InputPill.Effect = _settings.StyleGlowEffect
                 ? new System.Windows.Media.Effects.DropShadowEffect
