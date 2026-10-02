@@ -1206,7 +1206,19 @@ public partial class MainWindow : Window
 
     private void SendButton_Click(object sender, RoutedEventArgs e)
     {
-        SendCurrentPrompt();
+        if (!ChatInput.IsEnabled || string.IsNullOrWhiteSpace(ChatInput.Text))
+            return;
+
+        var keyArgs = new KeyEventArgs(
+            Keyboard.PrimaryDevice,
+            PresentationSource.FromVisual(ChatInput),
+            0,
+            Key.Enter)
+        {
+            RoutedEvent = Keyboard.PreviewKeyDownEvent
+        };
+
+        ChatInput.RaiseEvent(keyArgs);
     }
 
     private void ChatInput_TextChanged(
