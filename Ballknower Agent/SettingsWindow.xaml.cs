@@ -1155,7 +1155,7 @@ public partial class SettingsWindow : Window
     {
         if (_isInitializing) return;
 
-        if (sender is TextBox changed)
+        if (sender is System.Windows.Controls.TextBox changed)
         {
             string value = changed.Text.Trim();
 
