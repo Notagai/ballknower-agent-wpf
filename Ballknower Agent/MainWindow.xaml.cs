@@ -2241,7 +2241,7 @@ public partial class MainWindow : Window
         Hide();
     }
 
-    private static bool IsPointInside(FrameworkElement element, Point point)
+    private static bool IsPointInside(FrameworkElement element, System.Windows.Point point)
     {
         if (!element.IsVisible || element.ActualWidth <= 0 || element.ActualHeight <= 0)
             return false;
