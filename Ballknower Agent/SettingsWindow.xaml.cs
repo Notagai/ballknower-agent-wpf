@@ -70,7 +70,17 @@ public partial class SettingsWindow : Window
             OpeningShortcut = settings.OpeningShortcut,
             HistoryTokenBudget = settings.HistoryTokenBudget,
             Shortcuts = new Dictionary<string, string>(
-                settings.Shortcuts)
+                settings.Shortcuts),
+            StylePreset = settings.StylePreset,
+            StyleThemeMode = settings.StyleThemeMode,
+            LightThemeBackground = settings.LightThemeBackground,
+            LightThemeForeground = settings.LightThemeForeground,
+            DarkThemeBackground = settings.DarkThemeBackground,
+            DarkThemeForeground = settings.DarkThemeForeground,
+            StyleFontFamily = settings.StyleFontFamily,
+            StyleAnimatedEffects = settings.StyleAnimatedEffects,
+            StyleRainbowBorder = settings.StyleRainbowBorder,
+            StyleGlowEffect = settings.StyleGlowEffect
         };
 
         _settingsStore = new SettingsStore();
@@ -100,6 +110,7 @@ public partial class SettingsWindow : Window
         UpdateHistorySlider();
         RefreshShortcutList();
         RefreshGoogleDriveStatus();
+        LoadStyleControls();
 
         _isInitializing = false;
     }
@@ -1102,6 +1113,17 @@ public partial class SettingsWindow : Window
         _targetSettings.Shortcuts =
             new Dictionary<string, string>(
                 _settings.Shortcuts);
+
+        _targetSettings.StylePreset = _settings.StylePreset;
+        _targetSettings.StyleThemeMode = _settings.StyleThemeMode;
+        _targetSettings.LightThemeBackground = _settings.LightThemeBackground;
+        _targetSettings.LightThemeForeground = _settings.LightThemeForeground;
+        _targetSettings.DarkThemeBackground = _settings.DarkThemeBackground;
+        _targetSettings.DarkThemeForeground = _settings.DarkThemeForeground;
+        _targetSettings.StyleFontFamily = _settings.StyleFontFamily;
+        _targetSettings.StyleAnimatedEffects = _settings.StyleAnimatedEffects;
+        _targetSettings.StyleRainbowBorder = _settings.StyleRainbowBorder;
+        _targetSettings.StyleGlowEffect = _settings.StyleGlowEffect;
 
         _settingsStore.Save(
             _targetSettings);
