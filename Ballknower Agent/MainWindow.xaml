@@ -174,6 +174,9 @@
                     Padding="10,10,10,10">
 
             <Grid MinHeight="50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -187,22 +190,24 @@
                          FontSize="20"
                          Foreground="White"
                          CaretBrush="White"
-                         Padding="14,8,12,6"
+                         Padding="14,8,16,6"
                          Margin="0,0,2,0"
                          HorizontalAlignment="Stretch"
-                         VerticalAlignment="Stretch"
+                         VerticalAlignment="Top"
                          VerticalContentAlignment="Top"
+                         HorizontalContentAlignment="Stretch"
                          SnapsToDevicePixels="True"
                          TextWrapping="Wrap"
                          AcceptsReturn="False"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          TextChanged="ChatInput_TextChanged"
                          PreviewKeyDown="ChatInput_PreviewKeyDown"/>
 
                 <Button x:Name="SendButton"
                         Grid.Column="1"
-                        Width="42"
-                        Height="42"
+                        Width="40"
+                        Height="40"
                         Margin="8,0,2,0"
                         Padding="0"
                         VerticalAlignment="Bottom"
@@ -210,7 +215,7 @@
                         Background="White"
                         Foreground="Black"
                         BorderBrush="White"
-                        BorderThickness="1"
+                        BorderThickness="0"
                         FontSize="18"
                         FontWeight="SemiBold"
                         ToolTip="Send"
