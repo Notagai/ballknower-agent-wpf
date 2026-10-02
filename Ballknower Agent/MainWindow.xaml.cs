@@ -1229,6 +1229,29 @@ public partial class MainWindow : Window
             return;
 
         UpdateCommandSuggestions();
+        UpdateChatInputHeight();
+    }
+
+    private void UpdateChatInputHeight()
+    {
+        try
+        {
+            if (ChatInput.ActualWidth <= 0)
+                return;
+
+            // Measure with the actual available width so wrapped visual lines
+            // contribute to the TextBox's height instead of being clipped.
+            ChatInput.Height = double.NaN;
+            ChatInput.Measure(new Size(ChatInput.ActualWidth, double.PositiveInfinity));
+            double desiredHeight = ChatInput.DesiredSize.Height;
+            ChatInput.Height = Math.Max(44, Math.Min(200, desiredHeight));
+            InputPill.InvalidateMeasure();
+            InputPill.UpdateLayout();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Chat input sizing failed", ex);
+        }
     }
 
     private void UpdateCommandSuggestions()
