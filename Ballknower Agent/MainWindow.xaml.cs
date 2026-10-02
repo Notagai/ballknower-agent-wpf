@@ -2226,7 +2226,7 @@ public partial class MainWindow : Window
             _ignoreShortcutDeactivation)
             return;
 
-        Point point = e.GetPosition(ContentRoot);
+        System.Windows.Point point = e.GetPosition(ContentRoot);
         bool insideInput = IsPointInside(InputPill, point);
         bool insideMessages = MessageArea.Visibility == Visibility.Visible &&
             IsPointInside(MessageArea, point);
