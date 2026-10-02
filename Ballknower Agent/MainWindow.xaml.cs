@@ -1204,6 +1204,11 @@ public partial class MainWindow : Window
         return result;
     }
 
+    private void SendButton_Click(object sender, RoutedEventArgs e)
+    {
+        SendCurrentPrompt();
+    }
+
     private void ChatInput_TextChanged(
         object sender,
         TextChangedEventArgs e)
