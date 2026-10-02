@@ -1226,8 +1226,25 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            bool useLightPalette = GetColorLuminance(
-                ParseStyleColor(_settings.DarkThemeBackground, Colors.Black)) > 0.50;
+            // Settings follows the configured light/dark palettes rather than
+            // guessing from the dark palette. Prefer the palette with the
+            // strongest internal contrast.
+            System.Windows.Media.Color lightBackground = ParseStyleColor(
+                _settings.LightThemeBackground,
+                Colors.White);
+            System.Windows.Media.Color darkBackground = ParseStyleColor(
+                _settings.DarkThemeBackground,
+                Colors.Black);
+            System.Windows.Media.Color lightForeground = ParseStyleColor(
+                _settings.LightThemeForeground,
+                Colors.Black);
+            System.Windows.Media.Color darkForeground = ParseStyleColor(
+                _settings.DarkThemeForeground,
+                Colors.White);
+
+            bool useLightPalette =
+                GetContrastRatio(lightBackground, lightForeground) >=
+                GetContrastRatio(darkBackground, darkForeground);
 
             string backgroundValue = useLightPalette
                 ? _settings.LightThemeBackground
