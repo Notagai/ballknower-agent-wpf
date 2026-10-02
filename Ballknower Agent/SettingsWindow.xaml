@@ -106,6 +106,49 @@
                     <TextBlock Text="Your OAuth token is stored locally using Windows encryption. The OAuth client JSON should remain on this PC and should not be committed to GitHub." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,16,0,0"/>
                 </StackPanel></ScrollViewer>
             </TabItem>
+            <TabItem Header="Style">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+                    <TextBlock Text="Appearance" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Customize Ballknower's light/dark surfaces, fonts, and visual effects." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <TextBlock Text="Preset" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ComboBox x:Name="StylePresetInput" SelectionChanged="StylePresetInput_SelectionChanged" Margin="0,0,0,14">
+                        <ComboBoxItem Content="Default"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Purple"/>
+                        <ComboBoxItem Content="Green"/>
+                        <ComboBoxItem Content="Sunset"/>
+                    </ComboBox>
+                    <TextBlock Text="Theme editing" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <RadioButton x:Name="UnifiedThemeRadio" Content="Unified palette" IsChecked="True" GroupName="ThemeMode" Checked="ThemeMode_Changed" Margin="0,0,18,0"/>
+                        <RadioButton x:Name="SeparateThemeRadio" Content="Separate Light / Dark" GroupName="ThemeMode" Checked="ThemeMode_Changed"/>
+                    </StackPanel>
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Text="Light background" FontWeight="SemiBold"/>
+                            <TextBox x:Name="LightBackgroundInput" TextChanged="StyleColorChanged" Margin="0,4,0,8"/>
+                            <TextBlock Text="Light text" FontWeight="SemiBold"/>
+                            <TextBox x:Name="LightForegroundInput" TextChanged="StyleColorChanged" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                            <TextBlock Text="Dark background" FontWeight="SemiBold"/>
+                            <TextBox x:Name="DarkBackgroundInput" TextChanged="StyleColorChanged" Margin="0,4,0,8"/>
+                            <TextBlock Text="Dark text" FontWeight="SemiBold"/>
+                            <TextBox x:Name="DarkForegroundInput" TextChanged="StyleColorChanged" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="Font" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ComboBox x:Name="StyleFontInput" SelectionChanged="StyleFontInput_SelectionChanged" Margin="0,0,0,16">
+                        <ComboBoxItem Content="Segoe UI"/><ComboBoxItem Content="Aptos"/><ComboBoxItem Content="Calibri"/><ComboBoxItem Content="Consolas"/><ComboBoxItem Content="Cascadia Code"/><ComboBoxItem Content="Trebuchet MS"/><ComboBoxItem Content="Georgia"/>
+                    </ComboBox>
+                    <TextBlock Text="Effects" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <CheckBox x:Name="AnimatedEffectsCheckBox" Content="Animated effects" Margin="0,0,0,8" Checked="StyleOptionChanged" Unchecked="StyleOptionChanged"/>
+                    <CheckBox x:Name="RainbowBorderCheckBox" Content="Animated rainbow outline" Margin="0,0,0,8" Checked="StyleOptionChanged" Unchecked="StyleOptionChanged"/>
+                    <CheckBox x:Name="GlowEffectCheckBox" Content="Soft glow on panels" Margin="0,0,0,8" Checked="StyleOptionChanged" Unchecked="StyleOptionChanged"/>
+                    <TextBlock Text="Color values accept #RRGGBB or #AARRGGBB. Presets are a starting point; choose Separate Light / Dark to fine-tune each side independently." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel></ScrollViewer>
+            </TabItem>
             <TabItem Header="Data &amp; Settings">
                 <StackPanel Margin="18">
                     <TextBlock Text="Import or export your settings as JSON." TextWrapping="Wrap" Margin="0,0,0,16"/>
