@@ -404,6 +404,9 @@ public partial class MainWindow : Window
 
         PreviewKeyDown +=
             MainWindow_PreviewKeyDown;
+
+        PreviewMouseDown +=
+            MainWindow_PreviewMouseDown;
     }
 
     private void UpdateInputPillGlow()
@@ -2215,11 +2218,51 @@ public partial class MainWindow : Window
         await completion.Task;
     }
 
+    private void MainWindow_PreviewMouseDown(
+        object sender,
+        MouseButtonEventArgs e)
+    {
+        if (!IsVisible || _isPinned || _isCapturingBackdrop ||
+            _ignoreShortcutDeactivation)
+            return;
+
+        Point point = e.GetPosition(ContentRoot);
+        bool insideInput = IsPointInside(InputPill, point);
+        bool insideMessages = MessageArea.Visibility == Visibility.Visible &&
+            IsPointInside(MessageArea, point);
+        bool insideSuggestions = CommandSuggestions.Visibility == Visibility.Visible &&
+            IsPointInside(CommandSuggestions, point);
+
+        if (insideInput || insideMessages || insideSuggestions)
+            return;
+
+        Topmost = false;
+        ResetToInitialState();
+        Hide();
+    }
+
+    private static bool IsPointInside(FrameworkElement element, Point point)
+    {
+        if (!element.IsVisible || element.ActualWidth <= 0 || element.ActualHeight <= 0)
+            return false;
+
+        try
+        {
+            Rect bounds = element.TransformToAncestor((Visual)element.Parent)
+                .TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+            return bounds.Contains(point);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
     private void MainWindow_PreviewKeyDown(
         object sender,
         System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key != Key.Escape)
+        if (e.Key != Key.Escape && e.SystemKey != Key.Escape)
             return;
 
         /*
