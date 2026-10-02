@@ -2413,6 +2413,8 @@ public partial class MainWindow : Window
             (_, _) =>
             {
                 _settingsWindow = null;
+                ApplyStyleSettings();
+                UpdateAllAdaptiveColors();
 
                 // Discard the snapshot that may contain Settings
                 // or an old foreground app, then recapture after
