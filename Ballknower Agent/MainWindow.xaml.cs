@@ -1535,7 +1535,7 @@ public partial class MainWindow : Window
                     height);
 
             bool shouldBeLight =
-                luminance < 0.50;
+                ResolveAdaptiveStyleState(luminance);
 
             _inputIsLight =
                 shouldBeLight;
@@ -1599,7 +1599,7 @@ public partial class MainWindow : Window
                     height);
 
             bool shouldBeLight =
-                luminance < 0.50;
+                ResolveAdaptiveStyleState(luminance);
 
             _messageAreaIsLight =
                 shouldBeLight;
@@ -1615,6 +1615,54 @@ public partial class MainWindow : Window
                 "Message area color update failed",
                 ex);
         }
+    }
+
+    private bool ResolveAdaptiveStyleState(double backdropLuminance)
+    {
+        // Prefer the palette that contrasts with the backdrop, then verify that
+        // its configured foreground also contrasts with its configured background.
+        bool light = backdropLuminance < 0.50;
+        if (HasSufficientStyleContrast(light))
+            return light;
+
+        bool alternate = !light;
+        return HasSufficientStyleContrast(alternate)
+            ? alternate
+            : light;
+    }
+
+    private bool HasSufficientStyleContrast(bool light)
+    {
+        Color background = ParseStyleColor(
+            light ? _settings.LightThemeBackground : _settings.DarkThemeBackground,
+            light ? Colors.White : Colors.Black);
+        Color foreground = ParseStyleColor(
+            light ? _settings.LightThemeForeground : _settings.DarkThemeForeground,
+            light ? Colors.Black : Colors.White);
+
+        double backgroundLuminance = GetColorLuminance(background);
+        double foregroundLuminance = GetColorLuminance(foreground);
+        double lighter = Math.Max(backgroundLuminance, foregroundLuminance);
+        double darker = Math.Min(backgroundLuminance, foregroundLuminance);
+        double contrast = (lighter + 0.05) / (darker + 0.05);
+
+        return contrast >= 2.5;
+    }
+
+    private static double GetColorLuminance(Color color)
+    {
+        static double Linearize(byte channel)
+        {
+            double value = channel / 255.0;
+            return value <= 0.03928
+                ? value / 12.92
+                : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        return
+            (0.2126 * Linearize(color.R)) +
+            (0.7152 * Linearize(color.G)) +
+            (0.0722 * Linearize(color.B));
     }
 
     private double GetAdaptiveLuminance(
@@ -2363,8 +2411,22 @@ public partial class MainWindow : Window
         }
 
         /*
+         * Escape dismisses the overlay. When pinned, hide it directly
+         * instead of routing through Window.Close(), which would trigger
+         * the pinned close confirmation and interfere with the pinned state.
+         */
+        if (_isPinned)
+        {
+            ResetToInitialState();
+            Hide();
+            Opacity = 1;
+            e.Handled = true;
+            return;
+        }
+
+        /*
          * Fade the visible window before asking the normal close
-         * handler to hide it (or show the pinned-close confirmation).
+         * handler to hide it.
          */
         AnimateDouble(
             animation =>
