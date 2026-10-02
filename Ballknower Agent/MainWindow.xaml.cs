@@ -1322,10 +1322,7 @@ public partial class MainWindow : Window
                 ? GetStyleBackground(true)
                 : GetStyleBackground(false);
         
-        CommandSuggestionList.Foreground =
-            lightBackground
-                ? _blackTextBrush
-                : _whiteTextBrush;
+        CommandSuggestionList.Foreground = GetStyleForeground(lightBackground);
 
         /*
          * Rebuild the item containers' foreground so the
@@ -1491,7 +1488,7 @@ public partial class MainWindow : Window
             InputPill.BorderBrush = _settings.StyleRainbowBorder ? rainbowBrush : null;
             InputPill.BorderThickness = _settings.StyleRainbowBorder ? new Thickness(2) : new Thickness(0);
 
-            if (_settings.StyleRainbowBorder && rainbowBrush.RelativeTransform is RotateTransform rotate)
+            // Apply the selected palette immediately after loading it, so no hard-coded black/white colors linger.\n            UpdateInputPillColor();\n            UpdateMessageAreaColor();\n            if (CommandSuggestions.Visibility == Visibility.Visible)\n                UpdateCommandSuggestionColors();\n\n            if (_settings.StyleRainbowBorder && rainbowBrush.RelativeTransform is RotateTransform rotate)
             {
                 rotate.BeginAnimation(
                     RotateTransform.AngleProperty,
