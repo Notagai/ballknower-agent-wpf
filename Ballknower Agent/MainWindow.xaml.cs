@@ -3664,4 +3664,9 @@ public partial class MainWindow : Window
         if (position < text.Length)
             inlines.Add(new Run(text.Substring(position)));
     }
-
+    private sealed class CommandSuggestion
+    {
+        public string Command { get; init; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
+    }
+}
