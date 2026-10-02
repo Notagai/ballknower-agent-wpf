@@ -243,6 +243,17 @@ public partial class MainWindow : Window
         InputPill.Background =
             _darkBrush;
 
+        InputPill.BorderBrush =
+            new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new GradientStop(Color.FromRgb(0x42, 0x85, 0xF4), 0.0),
+                    new GradientStop(Color.FromRgb(0xEA, 0x43, 0x35), 0.33),
+                    new GradientStop(Color.FromRgb(0xFB, 0xBC, 0x05), 0.66),
+                    new GradientStop(Color.FromRgb(0x34, 0xA8, 0x53), 1.0)
+                },
+                0);
+
         MessageArea.Background =
             _darkBrush;
 
@@ -393,6 +404,14 @@ public partial class MainWindow : Window
 
         PreviewKeyDown +=
             MainWindow_PreviewKeyDown;
+    }
+
+    private void UpdateInputPillGlow()
+    {
+        InputPill.BorderThickness =
+            _hasEnteredChat
+                ? new Thickness(2)
+                : new Thickness(0);
     }
 
     private void MainWindow_Loaded(
@@ -547,6 +566,7 @@ public partial class MainWindow : Window
     {
         _isPillAnimating = false;
         _hasEnteredChat = false;
+        UpdateInputPillGlow();
 
         _inputPillTransform.BeginAnimation(
             TranslateTransform.YProperty,
@@ -2100,6 +2120,7 @@ public partial class MainWindow : Window
         }
 
         _hasEnteredChat = true;
+        UpdateInputPillGlow();
         InputPill.Width = ChatPillWidth;
         ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = ChatPillWidth;
