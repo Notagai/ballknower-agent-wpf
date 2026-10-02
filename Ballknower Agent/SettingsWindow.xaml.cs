@@ -114,6 +114,7 @@ public partial class SettingsWindow : Window
         RefreshShortcutList();
         RefreshGoogleDriveStatus();
         LoadStyleControls();
+        ApplySettingsTheme();
 
         _isInitializing = false;
     }
@@ -1135,6 +1136,7 @@ public partial class SettingsWindow : Window
         DarkBackgroundInput.Text = values.Item3;
         DarkForegroundInput.Text = values.Item4;
         _isApplyingStylePreset = false;
+        ApplySettingsTheme();
     }
 
     private void ThemeMode_Changed(object sender, RoutedEventArgs e)
@@ -1142,6 +1144,7 @@ public partial class SettingsWindow : Window
         if (_isInitializing || UnifiedThemeRadio is null) return;
         _settings.StyleThemeMode = UnifiedThemeRadio.IsChecked == true ? "Unified" : "Separate";
         UpdateThemeEditorState();
+        ApplySettingsTheme();
         MarkDirty();
     }
 
@@ -1198,6 +1201,7 @@ public partial class SettingsWindow : Window
         _settings.StylePreset = "Custom";
         if (StylePresetInput.SelectedValue as string != "Custom")
             StylePresetInput.SelectedValue = "Custom";
+        ApplySettingsTheme();
         MarkDirty();
     }
 
@@ -1215,6 +1219,60 @@ public partial class SettingsWindow : Window
         _settings.StyleRainbowBorder = RainbowBorderCheckBox.IsChecked == true;
         _settings.StyleGlowEffect = GlowEffectCheckBox.IsChecked == true;
         MarkDirty();
+    }
+
+    private void ApplySettingsTheme()
+    {
+        try
+        {
+            Color background = ParseStyleColor(_settings.DarkThemeBackground, Colors.Black);
+            Color foreground = ParseStyleColor(_settings.DarkThemeForeground, Colors.White);
+
+            Background = new SolidColorBrush(background);
+            Foreground = new SolidColorBrush(foreground);
+            ApplySettingsThemeRecursive(this, background, foreground);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Settings theme could not be applied", ex);
+        }
+    }
+
+    private static void ApplySettingsThemeRecursive(
+        DependencyObject parent,
+        Color background,
+        Color foreground)
+    {
+        foreach (object child in LogicalTreeHelper.GetChildren(parent))
+        {
+            if (child is not DependencyObject element)
+                continue;
+
+            if (element is TextBlock textBlock)
+                textBlock.Foreground = new SolidColorBrush(foreground);
+            else if (element is Control control)
+            {
+                control.Foreground = new SolidColorBrush(foreground);
+                if (control is TextBox || control is PasswordBox || control is ComboBox || control is ListBox)
+                    control.Background = new SolidColorBrush(background);
+            }
+
+            ApplySettingsThemeRecursive(element, background, foreground);
+        }
+    }
+
+    private static Color ParseStyleColor(string value, Color fallback)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return fallback;
+            return (Color)System.Windows.Media.ColorConverter.ConvertFromString(value)!;
+        }
+        catch
+        {
+            return fallback;
+        }
     }
 
     private void SaveButton_Click(
