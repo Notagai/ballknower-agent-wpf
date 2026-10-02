@@ -1251,7 +1251,7 @@ public partial class SettingsWindow : Window
                 textBlock.Foreground = new SolidColorBrush(Colors.Black);
             else if (element is System.Windows.Controls.ComboBox comboBox)
             {
-                comboBox.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+                comboBox.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 45));
                 comboBox.Foreground = new SolidColorBrush(Colors.White);
                 continue;
             }
