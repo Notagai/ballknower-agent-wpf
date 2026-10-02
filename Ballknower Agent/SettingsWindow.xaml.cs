@@ -1140,20 +1140,54 @@ public partial class SettingsWindow : Window
 
     private void UpdateThemeEditorState()
     {
-        bool separate = SeparateThemeRadio?.IsChecked == true;
-        LightBackgroundInput.IsEnabled = separate;
-        LightForegroundInput.IsEnabled = separate;
-        DarkBackgroundInput.IsEnabled = separate;
-        DarkForegroundInput.IsEnabled = separate;
+        // Both modes remain editable. In Unified mode, editing either
+        // light or dark value mirrors that value to the other side.
+        LightBackgroundInput.IsEnabled = true;
+        LightForegroundInput.IsEnabled = true;
+        DarkBackgroundInput.IsEnabled = true;
+        DarkForegroundInput.IsEnabled = true;
     }
 
     private void StyleColorChanged(object sender, TextChangedEventArgs e)
     {
         if (_isInitializing) return;
-        _settings.LightThemeBackground = LightBackgroundInput.Text.Trim();
-        _settings.LightThemeForeground = LightForegroundInput.Text.Trim();
-        _settings.DarkThemeBackground = DarkBackgroundInput.Text.Trim();
-        _settings.DarkThemeForeground = DarkForegroundInput.Text.Trim();
+
+        if (sender is TextBox changed)
+        {
+            string value = changed.Text.Trim();
+
+            if (ReferenceEquals(changed, LightBackgroundInput))
+                _settings.LightThemeBackground = value;
+            else if (ReferenceEquals(changed, LightForegroundInput))
+                _settings.LightThemeForeground = value;
+            else if (ReferenceEquals(changed, DarkBackgroundInput))
+                _settings.DarkThemeBackground = value;
+            else if (ReferenceEquals(changed, DarkForegroundInput))
+                _settings.DarkThemeForeground = value;
+
+            if (string.Equals(_settings.StyleThemeMode, "Unified", StringComparison.OrdinalIgnoreCase))
+            {
+                if (ReferenceEquals(changed, LightBackgroundInput) || ReferenceEquals(changed, DarkBackgroundInput))
+                {
+                    _settings.LightThemeBackground = value;
+                    _settings.DarkThemeBackground = value;
+                    if (!ReferenceEquals(changed, LightBackgroundInput))
+                        LightBackgroundInput.Text = value;
+                    if (!ReferenceEquals(changed, DarkBackgroundInput))
+                        DarkBackgroundInput.Text = value;
+                }
+                else
+                {
+                    _settings.LightThemeForeground = value;
+                    _settings.DarkThemeForeground = value;
+                    if (!ReferenceEquals(changed, LightForegroundInput))
+                        LightForegroundInput.Text = value;
+                    if (!ReferenceEquals(changed, DarkForegroundInput))
+                        DarkForegroundInput.Text = value;
+                }
+            }
+        }
+
         _settings.StylePreset = "Custom";
         MarkDirty();
     }
