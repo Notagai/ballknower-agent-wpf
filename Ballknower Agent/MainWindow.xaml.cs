@@ -197,10 +197,9 @@ public partial class MainWindow : Window
     {
         _ignoreShortcutDeactivation = true;
 
+        Opacity = 0;
         if (!IsVisible)
             Show();
-
-        Opacity = 1;
 
         if (WindowState == WindowState.Minimized)
             WindowState = WindowState.Maximized;
@@ -208,6 +207,17 @@ public partial class MainWindow : Window
         Topmost = true;
         Activate();
         ChatInput.Focus();
+
+        if (DesktopBackdrop.Source is not null || _desktopUnblurred)
+        {
+            AnimateDouble(
+                animation => BeginAnimation(Window.OpacityProperty, animation),
+                value => Opacity = value,
+                0,
+                1,
+                WindowFadeMilliseconds,
+                new QuadraticEase { EasingMode = EasingMode.EaseOut });
+        }
 
         Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,
@@ -219,6 +229,7 @@ public partial class MainWindow : Window
         _desktopUnblurred = false;
         DesktopBackdrop.Source = null;
         Topmost = true;
+        Opacity = 0;
 
         if (!IsVisible)
             Show();
@@ -1301,13 +1312,20 @@ public partial class MainWindow : Window
                         70,
                         GetEligibleCommands().Count * 58 + 16));
 
-        // Keep the suggestions directly above the pill.
         double pillLeft = (ContentRoot.ActualWidth - InputPill.ActualWidth) / 2;
+        double gap = 8;
+        double aboveY = pillY - suggestionHeight - gap;
+        double belowY = pillY + InputPill.ActualHeight + gap;
+
+        // Prefer the top of the pill, but flip below it when there isn't
+        // enough room above. This prevents clipping near the top edge.
+        double suggestionY = aboveY >= 0 ? aboveY : belowY;
+
         CommandSuggestions.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
         CommandSuggestions.Margin =
             new Thickness(
                 Math.Max(0, pillLeft),
-                Math.Max(0, pillY - suggestionHeight - 12),
+                Math.Max(0, suggestionY),
                 0,
                 0);
     }
@@ -1342,9 +1360,7 @@ public partial class MainWindow : Window
                             is ListBoxItem container)
                         {
                             container.Foreground =
-                                lightBackground
-                                    ? _blackTextBrush
-                                    : _whiteTextBrush;
+                                GetStyleForeground(lightBackground);
                         }
                     }
                 }));
