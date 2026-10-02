@@ -1254,7 +1254,7 @@ public partial class SettingsWindow : Window
             else if (element is System.Windows.Controls.Control control)
             {
                 control.Foreground = new SolidColorBrush(foreground);
-                if (control is TextBox || control is PasswordBox || control is ComboBox || control is ListBox)
+                if (control is System.Windows.Controls.TextBox || control is System.Windows.Controls.PasswordBox || control is System.Windows.Controls.ComboBox || control is System.Windows.Controls.ListBox)
                     control.Background = new SolidColorBrush(background);
             }
 
