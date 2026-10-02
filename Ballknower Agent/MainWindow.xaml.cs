@@ -3444,9 +3444,11 @@ public partial class MainWindow : Window
             .Replace("\r\n", "\n")
             .Replace('\r', '\n');
 
-        // WPF FlowDocument does not render LaTeX; show a readable plain-text fallback.
+        // WPF FlowDocument does not render LaTeX; convert common math markup
+        // into readable Unicode/plain text rather than exposing raw commands.
         readableMarkdown = Regex.Replace(readableMarkdown, @"\\\[([\s\S]*?)\\\]", "\n$1\n");
         readableMarkdown = Regex.Replace(readableMarkdown, @"\\\(([\s\S]*?)\\\)", "$1");
+        readableMarkdown = ConvertLatexToReadableText(readableMarkdown);
         var lines = readableMarkdown.Split('\n');
 
         bool inCodeBlock = false;
@@ -3575,6 +3577,46 @@ public partial class MainWindow : Window
         FlushParagraph();
         if (inCodeBlock)
             FlushCode();
+    }
+
+    private static string ConvertLatexToReadableText(string text)
+    {
+        // Remove common display-math environments and presentation wrappers.
+        text = Regex.Replace(text, @"\\begin\{(?:aligned|align\*?|gathered|gather)\}", "");
+        text = Regex.Replace(text, @"\\end\{(?:aligned|align\*?|gathered|gather)\}", "");
+        text = Regex.Replace(text, @"\\(?:left|right)\b", "");
+        text = Regex.Replace(text, @"\\boxed\{([^{}]*)\}", "$1");
+
+        // Fractions and square roots: preserve their meaning in plain text.
+        for (int i = 0; i < 4; i++)
+            text = Regex.Replace(text, @"\\frac\{([^{}]*)\}\{([^{}]*)\}", "($1)/($2)");
+        text = Regex.Replace(text, @"\\sqrt\{([^{}]*)\}", "√($1)");
+
+        var replacements = new Dictionary<string, string>
+        {
+            [@"\qquad"] = "    ", [@"\quad"] = "  ",
+            [@"\,"] = " ", [@"\;"] = " ", [@"\:"] = " ",
+            [@"\times"] = "×", [@"\cdot"] = "·",
+            [@"\pm"] = "±", [@"\mp"] = "∓",
+            [@"\Delta"] = "Δ", [@"\delta"] = "δ",
+            [@"\approx"] = "≈", [@"\neq"] = "≠",
+            [@"\leq"] = "≤", [@"\geq"] = "≥",
+            [@"\infty"] = "∞", [@"\pi"] = "π",
+            [@"\Rightarrow"] = "⇒", [@"\rightarrow"] = "→",
+            [@"\to"] = "→", [@"\cdots"] = "…",
+            [@"\text"] = ""
+        };
+
+        foreach (var pair in replacements)
+            text = text.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
+
+        // Remove remaining LaTeX command names while retaining their arguments.
+        text = Regex.Replace(text, @"\\[a-zA-Z]+\*?", "");
+        text = text.Replace("{", "").Replace("}", "");
+        text = Regex.Replace(text, @"[ \t]*&[ \t]*", "    ");
+        text = Regex.Replace(text, @"[ \t]*\\[ \t]*", "  ");
+        text = Regex.Replace(text, @"[ \t]{2,}", " ");
+        return text;
     }
 
     private Brush CurrentMessageBrush() =>
