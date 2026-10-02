@@ -1112,6 +1112,9 @@ public partial class SettingsWindow : Window
 
     private void ApplyStylePreset(string preset)
     {
+        if (string.Equals(preset, "Custom", StringComparison.OrdinalIgnoreCase))
+            return;
+
         var values = preset switch
         {
             "Blue" => ("#FFEAF6FF", "#FF09243A", "#FF071A2B", "#FFEAF6FF"),
@@ -1189,6 +1192,8 @@ public partial class SettingsWindow : Window
         }
 
         _settings.StylePreset = "Custom";
+        if (StylePresetInput.SelectedValue as string != "Custom")
+            StylePresetInput.SelectedValue = "Custom";
         MarkDirty();
     }
 
