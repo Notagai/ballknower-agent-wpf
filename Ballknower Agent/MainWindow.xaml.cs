@@ -1321,9 +1321,7 @@ public partial class MainWindow : Window
             lightBackground
                 ? GetStyleBackground(true)
                 : GetStyleBackground(false);
-        CommandSuggestions.FontFamily =
-            new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily);
-
+        
         CommandSuggestionList.Foreground =
             lightBackground
                 ? _blackTextBrush
