@@ -50,9 +50,11 @@ public partial class SettingsWindow : Window
 
     public SettingsWindow(AppSettings settings, GoogleDriveService googleDriveService)
     {
-        InitializeComponent();
-
+        // WPF can raise control change events while InitializeComponent
+        // is wiring up the XAML. Guard those handlers before any of the
+        // backing settings fields have been initialized.
         _isInitializing = true;
+        InitializeComponent();
 
         _targetSettings = settings;
         _googleDriveService = googleDriveService;
