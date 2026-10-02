@@ -1240,8 +1240,10 @@ public partial class MainWindow : Window
 
             // Measure with the actual available width so wrapped visual lines
             // contribute to the TextBox's height instead of being clipped.
+            // The Grid's star column already computes the available width.
+            // Do not override Width: doing so can create a feedback loop where
+            // wrapping changes the measured width and spaces appear stretched.
             ChatInput.Height = double.NaN;
-            ChatInput.Width = double.NaN;
             ChatInput.Measure(new System.Windows.Size(ChatInput.ActualWidth, double.PositiveInfinity));
             double desiredHeight = ChatInput.DesiredSize.Height;
             ChatInput.Height = Math.Max(44, Math.Min(200, desiredHeight));
@@ -2329,7 +2331,6 @@ public partial class MainWindow : Window
         _hasEnteredChat = true;
         UpdateInputPillGlow();
         InputPill.Width = ChatPillWidth;
-        ChatInput.Width = InputPill.Width - 50;
         MessageArea.Width = ChatPillWidth;
         MessageArea.Visibility = Visibility.Collapsed;
         _isPillAnimating = true;
