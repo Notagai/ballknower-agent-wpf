@@ -1319,8 +1319,10 @@ public partial class MainWindow : Window
 
         CommandSuggestions.Background =
             lightBackground
-                ? _lightBrush
-                : _darkBrush;
+                ? GetStyleBackground(true)
+                : GetStyleBackground(false);
+        CommandSuggestions.FontFamily =
+            new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily);
 
         CommandSuggestionList.Foreground =
             lightBackground
@@ -1454,6 +1456,8 @@ public partial class MainWindow : Window
         {
             var font = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily);
             ChatInput.FontFamily = font;
+            CommandSuggestions.FontFamily = font;
+            CommandSuggestionList.FontFamily = font;
 
             InputPill.Effect = _settings.StyleGlowEffect
                 ? new System.Windows.Media.Effects.DropShadowEffect
@@ -3486,7 +3490,8 @@ public partial class MainWindow : Window
             new FlowDocument
             {
                 PagePadding = new Thickness(0),
-                TextAlignment = TextAlignment.Left
+                TextAlignment = TextAlignment.Left,
+                FontFamily = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily)
             };
 
         var title =
@@ -3516,6 +3521,7 @@ public partial class MainWindow : Window
                         ? _blackTextBrush
                         : _whiteTextBrush,
                 FontSize = 18,
+                FontFamily = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily),
                 Margin = new Thickness(0, 0, 0, 12),
                 IsHitTestVisible = true
             };
