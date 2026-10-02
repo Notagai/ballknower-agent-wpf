@@ -27,6 +27,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using WpfMath.Controls;
 
 using DrawingBitmap = System.Drawing.Bitmap;
 using DrawingColor = System.Drawing.Color;
@@ -3448,147 +3449,78 @@ public partial class MainWindow : Window
         UpdateMessageAreaColor();
     }
 
-    private void AddMarkdownBlocks(
-        FlowDocument document,
-        string markdown)
+    private void AddMarkdownBlocks(FlowDocument document,string markdown)
     {
-        string readableMarkdown = (markdown ?? string.Empty)
-            .Replace("\r\n", "\n")
-            .Replace('\r', '\n');
-
-        // WPF FlowDocument does not render LaTeX; convert common math markup
-        // into readable Unicode/plain text rather than exposing raw commands.
-        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\[([\s\S]*?)\\\]", "\n$1\n");
-        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\(([\s\S]*?)\\\)", "$1");
-        readableMarkdown = ConvertLatexToReadableText(readableMarkdown);
-        var lines = readableMarkdown.Split('\n');
-
-        bool inCodeBlock = false;
-        var codeLines = new List<string>();
-        var paragraphLines = new List<string>();
+        string normalized=(markdown??string.Empty).Replace("\r\n","\n").Replace('\r','\n');
+        var displayMath=new List<string>();
+        normalized=Regex.Replace(normalized,@"\\\[((?:.|\n)*?)\\\]",m=>{
+            displayMath.Add(m.Groups[1].Value.Trim());
+            return "\n@@BALLKNOWER_DISPLAY_MATH_"+(displayMath.Count-1)+"@@\n";
+        });
+        var lines=normalized.Split('\n');
+        bool inCodeBlock=false;
+        var codeLines=new List<string>();
+        var paragraphLines=new List<string>();
 
         void FlushParagraph()
         {
-            if (paragraphLines.Count == 0)
-                return;
-
-            var paragraph = new Paragraph
-            {
-                Margin = new Thickness(0, 0, 0, 10),
-                Foreground = CurrentMessageBrush()
-            };
-
-            AddMarkdownInlines(
-                paragraph.Inlines,
-                string.Join(" ", paragraphLines).Trim());
-
-            document.Blocks.Add(paragraph);
-            paragraphLines.Clear();
+            if(paragraphLines.Count==0)return;
+            var p=new Paragraph{Margin=new Thickness(0,0,0,10),Foreground=CurrentMessageBrush()};
+            AddMarkdownInlines(p.Inlines,string.Join(" ",paragraphLines).Trim());
+            document.Blocks.Add(p); paragraphLines.Clear();
         }
-
         void FlushCode()
         {
-            var code = new Paragraph
-            {
-                Margin = new Thickness(0, 2, 0, 10),
-                Background = _messageAreaIsLight
-                    ? new SolidColorBrush(Color.FromArgb(24, 0, 0, 0))
-                    : new SolidColorBrush(Color.FromArgb(36, 255, 255, 255)),
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 15,
-                Foreground = CurrentMessageBrush()
-            };
-
-            code.Inlines.Add(new Run(string.Join(Environment.NewLine, codeLines)));
-            document.Blocks.Add(code);
-            codeLines.Clear();
+            var p=new Paragraph{Margin=new Thickness(0,2,0,10),Background=_messageAreaIsLight?new SolidColorBrush(Color.FromArgb(24,0,0,0)):new SolidColorBrush(Color.FromArgb(36,255,255,255)),FontFamily=new FontFamily("Consolas"),FontSize=15,Foreground=CurrentMessageBrush()};
+            p.Inlines.Add(new Run(string.Join(Environment.NewLine,codeLines)));
+            document.Blocks.Add(p); codeLines.Clear();
         }
-
-        foreach (string rawLine in lines)
+        void AddDisplayMath(string formula)
         {
-            string line = rawLine.TrimEnd();
-            string trimmed = line.Trim();
-
-            if (trimmed.StartsWith("```", StringComparison.Ordinal))
-            {
-                FlushParagraph();
-                if (inCodeBlock)
-                    FlushCode();
-                inCodeBlock = !inCodeBlock;
-                continue;
-            }
-
-            if (inCodeBlock)
-            {
-                codeLines.Add(line);
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(trimmed))
-            {
-                FlushParagraph();
-                continue;
-            }
-
-            var heading = Regex.Match(trimmed, @"^(#{1,6})\s+(.+)$");
-            if (heading.Success)
-            {
-                FlushParagraph();
-                int level = heading.Groups[1].Length;
-                var p = new Paragraph
-                {
-                    Margin = new Thickness(0, level == 1 ? 8 : 5, 0, 7),
-                    FontSize = level switch
-                    {
-                        1 => 28, 2 => 25, 3 => 22,
-                        4 => 20, 5 => 19, _ => 18
-                    },
-                    FontWeight = FontWeights.Bold,
-                    Foreground = CurrentMessageBrush()
-                };
-                AddMarkdownInlines(p.Inlines, heading.Groups[2].Value);
-                document.Blocks.Add(p);
-                continue;
-            }
-
-            var bullet = Regex.Match(trimmed, @"^[-*+]\s+(.+)$");
-            var numbered = Regex.Match(trimmed, @"^\d+[.)]\s+(.+)$");
-            if (bullet.Success || numbered.Success)
-            {
-                FlushParagraph();
-                var p = new Paragraph
-                {
-                    Margin = new Thickness(12, 0, 0, 6),
-                    Foreground = CurrentMessageBrush()
-                };
-                p.Inlines.Add(new Run(bullet.Success ? "•  " : "‣  "));
-                AddMarkdownInlines(
-                    p.Inlines,
-                    bullet.Success ? bullet.Groups[1].Value : numbered.Groups[1].Value);
-                document.Blocks.Add(p);
-                continue;
-            }
-
-            if (trimmed.StartsWith("> ", StringComparison.Ordinal))
-            {
-                FlushParagraph();
-                var p = new Paragraph
-                {
-                    Margin = new Thickness(12, 0, 0, 8),
-                    Foreground = CurrentMessageBrush(),
-                    FontStyle = FontStyles.Italic
-                };
-                AddMarkdownInlines(p.Inlines, trimmed.Substring(2));
-                document.Blocks.Add(p);
-                continue;
-            }
-
-            paragraphLines.Add(trimmed);
+            FlushParagraph();
+            var control=new FormulaControl{Formula=formula.Trim(),Scale=22,Foreground=CurrentMessageBrush(),HorizontalAlignment=System.Windows.HorizontalAlignment.Left,Margin=new Thickness(0,6,0,10)};
+            TextOptions.SetTextRenderingMode(control,TextRenderingMode.ClearType);
+            TextOptions.SetTextHintingMode(control,TextHintingMode.Fixed);
+            TextOptions.SetTextFormattingMode(control,TextFormattingMode.Display);
+            document.Blocks.Add(new BlockUIContainer(control){Margin=new Thickness(0)});
         }
 
-        FlushParagraph();
-        if (inCodeBlock)
-            FlushCode();
+        foreach(string rawLine in lines)
+        {
+            string line=rawLine.TrimEnd(), trimmed=line.Trim();
+            var dm=Regex.Match(trimmed,@"^@@BALLKNOWER_DISPLAY_MATH_(\d+)@@$");
+            if(dm.Success&&int.TryParse(dm.Groups[1].Value,out int index)&&index>=0&&index<displayMath.Count){AddDisplayMath(displayMath[index]);continue;}
+
+            if(trimmed.Length>=3&&trimmed[0]==(char)96&&trimmed[1]==(char)96&&trimmed[2]==(char)96)
+            {FlushParagraph();if(inCodeBlock)FlushCode();inCodeBlock=!inCodeBlock;continue;}
+            if(inCodeBlock){codeLines.Add(line);continue;}
+            if(string.IsNullOrWhiteSpace(trimmed)){FlushParagraph();continue;}
+
+            string textLine=ConvertLatexToReadableText(trimmed);
+            var heading=Regex.Match(textLine,@"^(#{1,6})\s+(.+)$");
+            if(heading.Success)
+            {
+                FlushParagraph();int level=heading.Groups[1].Length;
+                var p=new Paragraph{Margin=new Thickness(0,level==1?8:5,0,7),FontSize=level switch{1=>28,2=>25,3=>22,4=>20,5=>19,_=>18},FontWeight=FontWeights.Bold,Foreground=CurrentMessageBrush()};
+                AddMarkdownInlines(p.Inlines,heading.Groups[2].Value);document.Blocks.Add(p);continue;
+            }
+            var bullet=Regex.Match(textLine,@"^[-*+]\s+(.+)$");
+            var numbered=Regex.Match(textLine,@"^\d+[.)]\s+(.+)$");
+            if(bullet.Success||numbered.Success)
+            {
+                FlushParagraph();var p=new Paragraph{Margin=new Thickness(12,0,0,6),Foreground=CurrentMessageBrush()};
+                p.Inlines.Add(new Run(bullet.Success?"•  ":"‣  "));
+                AddMarkdownInlines(p.Inlines,bullet.Success?bullet.Groups[1].Value:numbered.Groups[1].Value);
+                document.Blocks.Add(p);continue;
+            }
+            if(textLine.StartsWith("> ",StringComparison.Ordinal))
+            {
+                FlushParagraph();var p=new Paragraph{Margin=new Thickness(12,0,0,8),Foreground=CurrentMessageBrush(),FontStyle=FontStyles.Italic};
+                AddMarkdownInlines(p.Inlines,textLine.Substring(2));document.Blocks.Add(p);continue;
+            }
+            paragraphLines.Add(textLine.Trim());
+        }
+        FlushParagraph();if(inCodeBlock)FlushCode();
     }
 
     private static string ConvertLatexToReadableText(string text)
@@ -3633,11 +3565,27 @@ public partial class MainWindow : Window
     private Brush CurrentMessageBrush() =>
         _messageAreaIsLight ? _blackTextBrush : _whiteTextBrush;
 
-    private void AddMarkdownInlines(
-        InlineCollection inlines,
-        string text)
+    private void AddMarkdownInlines(InlineCollection inlines,string text)
     {
-        // Supports bold, italic, inline code, and Markdown links.
+        var mathPattern=new Regex(@"(\\\((?:.|\n)*?\\\)|(?<!\\)\$(?:[^$\\]|\\.)+\$)");
+        int position=0;
+        foreach(Match mathMatch in mathPattern.Matches(text))
+        {
+            if(mathMatch.Index>position)AddMarkdownInlinesPlain(inlines,text.Substring(position,mathMatch.Index-position));
+            string formula=mathMatch.Value;
+            if(formula.StartsWith(@"\(")&&formula.EndsWith(@"\)"))formula=formula.Substring(2,formula.Length-4);
+            else formula=formula.Substring(1,formula.Length-2);
+            var control=new FormulaControl{Formula=formula,Scale=18,Foreground=CurrentMessageBrush(),VerticalAlignment=System.Windows.VerticalAlignment.Center};
+            TextOptions.SetTextRenderingMode(control,TextRenderingMode.ClearType);
+            TextOptions.SetTextHintingMode(control,TextHintingMode.Fixed);
+            TextOptions.SetTextFormattingMode(control,TextFormattingMode.Display);
+            inlines.Add(new InlineUIContainer(control){BaselineAlignment=BaselineAlignment.Center});
+            position=mathMatch.Index+mathMatch.Length;
+        }
+        if(position<text.Length)AddMarkdownInlinesPlain(inlines,text.Substring(position));
+    }
+
+    private void AddMarkdownInlinesPlain(InlineCollection inlines,string text)
         var pattern = new Regex(
             @"(\*\*.+?\*\*|__.+?__|\*[^*]+?\*|_[^_]+?_|`[^`]+?`|\[[^\]]+\]\(https?://[^\s)]+\))");
 
@@ -3709,30 +3657,3 @@ public partial class MainWindow : Window
             inlines.Add(new Run(text.Substring(position)));
     }
 
-    private void ChatScrollViewer_PreviewMouseWheel(
-        object sender,
-        MouseWheelEventArgs e)
-    {
-        // Ensure wheel input scrolls the conversation even when a
-        // message control inside the viewer handles the wheel first.
-        ChatScrollViewer.ScrollToVerticalOffset(
-            ChatScrollViewer.VerticalOffset - e.Delta);
-        e.Handled = true;
-    }
-
-    private void ScrollChatToEnd()
-    {
-        Dispatcher.BeginInvoke(
-            DispatcherPriority.Loaded,
-            new Action(() => ChatScrollViewer.ScrollToEnd()));
-    }
-
-    private sealed class CommandSuggestion
-    {
-        public string Command { get; init; } =
-            string.Empty;
-
-        public string Description { get; init; } =
-            string.Empty;
-    }
-}
