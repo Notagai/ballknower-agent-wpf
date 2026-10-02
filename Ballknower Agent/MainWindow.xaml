@@ -58,7 +58,6 @@
 
             <ListBox x:Name="CommandSuggestionList"
                          Background="Transparent"
-                         FontFamily="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=FontFamily}"
                          BorderThickness="0"
                          Foreground="White"
                          SelectionChanged="CommandSuggestionList_SelectionChanged"
