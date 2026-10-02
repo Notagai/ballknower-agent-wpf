@@ -3351,6 +3351,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ChatScrollViewer_PreviewMouseWheel(
+        object sender,
+        MouseWheelEventArgs e)
+    {
+        ChatScrollViewer.ScrollToVerticalOffset(
+            ChatScrollViewer.VerticalOffset - e.Delta);
+        e.Handled = true;
+    }
+
     private void ScrollChatToEnd()
     {
         Dispatcher.BeginInvoke(
