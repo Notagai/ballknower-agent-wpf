@@ -1226,8 +1226,28 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            System.Windows.Media.Color background = ParseStyleColor(_settings.DarkThemeBackground, Colors.Black);
-            System.Windows.Media.Color foreground = ParseStyleColor(_settings.DarkThemeForeground, Colors.White);
+            bool useLightPalette = GetColorLuminance(
+                ParseStyleColor(_settings.DarkThemeBackground, Colors.Black)) > 0.50;
+
+            string backgroundValue = useLightPalette
+                ? _settings.LightThemeBackground
+                : _settings.DarkThemeBackground;
+            string foregroundValue = useLightPalette
+                ? _settings.LightThemeForeground
+                : _settings.DarkThemeForeground;
+
+            System.Windows.Media.Color background = ParseStyleColor(
+                backgroundValue,
+                useLightPalette ? Colors.White : Colors.Black);
+            System.Windows.Media.Color foreground = ParseStyleColor(
+                foregroundValue,
+                useLightPalette ? Colors.Black : Colors.White);
+
+            // Never allow the Settings UI to render unreadable text.
+            // If the configured foreground has poor contrast, fall back to
+            // whichever of black/white contrasts better with the background.
+            if (GetContrastRatio(background, foreground) < 4.0)
+                foreground = GetBestTextColor(background);
 
             Background = new SolidColorBrush(background);
             Foreground = new SolidColorBrush(foreground);
@@ -1260,6 +1280,40 @@ public partial class SettingsWindow : Window
 
             ApplySettingsThemeRecursive(element, background, foreground);
         }
+    }
+
+    private static double GetColorLuminance(System.Windows.Media.Color color)
+    {
+        static double Linearize(byte channel)
+        {
+            double value = channel / 255.0;
+            return value <= 0.03928
+                ? value / 12.92
+                : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        return (0.2126 * Linearize(color.R))
+             + (0.7152 * Linearize(color.G))
+             + (0.0722 * Linearize(color.B));
+    }
+
+    private static double GetContrastRatio(
+        System.Windows.Media.Color background,
+        System.Windows.Media.Color foreground)
+    {
+        double backgroundLuminance = GetColorLuminance(background);
+        double foregroundLuminance = GetColorLuminance(foreground);
+        double lighter = Math.Max(backgroundLuminance, foregroundLuminance);
+        double darker = Math.Min(backgroundLuminance, foregroundLuminance);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private static System.Windows.Media.Color GetBestTextColor(
+        System.Windows.Media.Color background)
+    {
+        double whiteContrast = GetContrastRatio(background, Colors.White);
+        double blackContrast = GetContrastRatio(background, Colors.Black);
+        return whiteContrast >= blackContrast ? Colors.White : Colors.Black;
     }
 
     private static System.Windows.Media.Color ParseStyleColor(string value, System.Windows.Media.Color fallback)
