@@ -3351,6 +3351,13 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ScrollChatToEnd()
+    {
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Background,
+            new Action(() => ChatScrollViewer.ScrollToEnd()));
+    }
+
     private void AddUserMessage(string message)
     {
         var row = new Grid { Margin = new Thickness(0, 0, 0, 12) };
