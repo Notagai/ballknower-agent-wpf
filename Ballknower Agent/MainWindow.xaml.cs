@@ -243,16 +243,28 @@ public partial class MainWindow : Window
         InputPill.Background =
             _darkBrush;
 
-        InputPill.BorderBrush =
-            new LinearGradientBrush(
-                new GradientStopCollection
-                {
-                    new GradientStop(Color.FromRgb(0x42, 0x85, 0xF4), 0.0),
-                    new GradientStop(Color.FromRgb(0xEA, 0x43, 0x35), 0.33),
-                    new GradientStop(Color.FromRgb(0xFB, 0xBC, 0x05), 0.66),
-                    new GradientStop(Color.FromRgb(0x34, 0xA8, 0x53), 1.0)
-                },
-                0);
+        var rainbowBrush = new LinearGradientBrush(
+            new GradientStopCollection
+            {
+                new GradientStop(Color.FromRgb(0x42, 0x85, 0xF4), 0.0),
+                new GradientStop(Color.FromRgb(0xEA, 0x43, 0x35), 0.33),
+                new GradientStop(Color.FromRgb(0xFB, 0xBC, 0x05), 0.66),
+                new GradientStop(Color.FromRgb(0x34, 0xA8, 0x53), 1.0)
+            },
+            0)
+        {
+            MappingMode = BrushMappingMode.RelativeToBoundingBox,
+            RelativeTransform = new RotateTransform(0.0, 0.5, 0.5)
+        };
+        InputPill.BorderBrush = rainbowBrush;
+
+        // Continuously rotate the rainbow around the pill outline.
+        ((RotateTransform)rainbowBrush.RelativeTransform).BeginAnimation(
+            RotateTransform.AngleProperty,
+            new DoubleAnimation(0, 360, TimeSpan.FromSeconds(5))
+            {
+                RepeatBehavior = RepeatBehavior.Forever
+            });
 
         MessageArea.Background =
             _darkBrush;
@@ -3581,41 +3593,43 @@ public partial class MainWindow : Window
 
     private static string ConvertLatexToReadableText(string text)
     {
-        // Remove common display-math environments and presentation wrappers.
-        text = Regex.Replace(text, @"\\begin\{(?:aligned|align\*?|gathered|gather)\}", "");
-        text = Regex.Replace(text, @"\\end\{(?:aligned|align\*?|gathered|gather)\}", "");
-        text = Regex.Replace(text, @"\\(?:left|right)\b", "");
-        text = Regex.Replace(text, @"\\boxed\{([^{}]*)\}", "$1");
+        // Normalize common LaTeX math into readable Unicode/plain text.
+        text = Regex.Replace(text, @"\\\\(?:begin|end)\\{(?:aligned|align\\*?|gathered|gather)\\}", "");
+        text = Regex.Replace(text, @"\\\\(?:left|right)\\b", "");
+        text = Regex.Replace(text, @"\\\\boxed\\{([^{}]*)\\}", "$1");
 
-        // Fractions and square roots: preserve their meaning in plain text.
-        for (int i = 0; i < 4; i++)
-            text = Regex.Replace(text, @"\\frac\{([^{}]*)\}\{([^{}]*)\}", "($1)/($2)");
-        text = Regex.Replace(text, @"\\sqrt\{([^{}]*)\}", "√($1)");
+        // Repeated passes handle nested simple fractions and square roots.
+        for (int i = 0; i < 8; i++)
+        {
+            text = Regex.Replace(text, @"\\\\frac\\{([^{}]*)\\}\\{([^{}]*)\\}", "($1)/($2)");
+            text = Regex.Replace(text, @"\\\\sqrt\\{([^{}]*)\\}", "√($1)");
+        }
 
         var replacements = new Dictionary<string, string>
         {
-            [@"\qquad"] = "    ", [@"\quad"] = "  ",
-            [@"\,"] = " ", [@"\;"] = " ", [@"\:"] = " ",
-            [@"\times"] = "×", [@"\cdot"] = "·",
-            [@"\pm"] = "±", [@"\mp"] = "∓",
-            [@"\Delta"] = "Δ", [@"\delta"] = "δ",
-            [@"\approx"] = "≈", [@"\neq"] = "≠",
-            [@"\leq"] = "≤", [@"\geq"] = "≥",
-            [@"\infty"] = "∞", [@"\pi"] = "π",
-            [@"\Rightarrow"] = "⇒", [@"\rightarrow"] = "→",
-            [@"\to"] = "→", [@"\cdots"] = "…",
-            [@"\text"] = ""
+            [@"\\qquad"] = "    ", [@"\\quad"] = "  ",
+            [@"\\,"] = " ", [@"\\;"] = " ", [@"\\:"] = " ",
+            [@"\\times"] = "×", [@"\\cdot"] = "·",
+            [@"\\pm"] = "±", [@"\\mp"] = "∓",
+            [@"\\Delta"] = "Δ", [@"\\delta"] = "δ",
+            [@"\\approx"] = "≈", [@"\\neq"] = "≠",
+            [@"\\leq"] = "≤", [@"\\geq"] = "≥",
+            [@"\\infty"] = "∞", [@"\\pi"] = "π",
+            [@"\\Rightarrow"] = "⇒", [@"\\rightarrow"] = "→",
+            [@"\\to"] = "→", [@"\\cdots"] = "…",
+            [@"\\text"] = ""
         };
-
         foreach (var pair in replacements)
             text = text.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
 
-        // Remove remaining LaTeX command names while retaining their arguments.
-        text = Regex.Replace(text, @"\\[a-zA-Z]+\*?", "");
+        // Make common superscripts readable, then discard any unknown command names.
+        text = Regex.Replace(text, @"\\^\\{([^{}]+)\\}", "^($1)");
+        text = Regex.Replace(text, @"\\_\\{([^{}]+)\\}", "_($1)");
+        text = Regex.Replace(text, @"\\\\[a-zA-Z]+\\*?", "");
         text = text.Replace("{", "").Replace("}", "");
-        text = Regex.Replace(text, @"[ \t]*&[ \t]*", "    ");
-        text = Regex.Replace(text, @"[ \t]*\\[ \t]*", "  ");
-        text = Regex.Replace(text, @"[ \t]{2,}", " ");
+        text = Regex.Replace(text, @"[ \\t]*&[ \\t]*", "    ");
+        text = Regex.Replace(text, @"[ \\t]*\\\\[ \\t]*", "  ");
+        text = Regex.Replace(text, @"[ \\t]{2,}", " ");
         return text;
     }
 
