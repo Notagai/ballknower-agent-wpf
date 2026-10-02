@@ -1226,49 +1226,13 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            // Settings follows the configured light/dark palettes rather than
-            // guessing from the dark palette. Prefer the palette with the
-            // strongest internal contrast.
-            System.Windows.Media.Color lightBackground = ParseStyleColor(
-                _settings.LightThemeBackground,
-                Colors.White);
-            System.Windows.Media.Color darkBackground = ParseStyleColor(
-                _settings.DarkThemeBackground,
-                Colors.Black);
-            System.Windows.Media.Color lightForeground = ParseStyleColor(
-                _settings.LightThemeForeground,
-                Colors.Black);
-            System.Windows.Media.Color darkForeground = ParseStyleColor(
-                _settings.DarkThemeForeground,
-                Colors.White);
-
-            bool useLightPalette =
-                GetContrastRatio(lightBackground, lightForeground) >=
-                GetContrastRatio(darkBackground, darkForeground);
-
-            string backgroundValue = useLightPalette
-                ? _settings.LightThemeBackground
-                : _settings.DarkThemeBackground;
-            string foregroundValue = useLightPalette
-                ? _settings.LightThemeForeground
-                : _settings.DarkThemeForeground;
-
-            System.Windows.Media.Color background = ParseStyleColor(
-                backgroundValue,
-                useLightPalette ? Colors.White : Colors.Black);
-            System.Windows.Media.Color foreground = ParseStyleColor(
-                foregroundValue,
-                useLightPalette ? Colors.Black : Colors.White);
-
-            // Never allow the Settings UI to render unreadable text.
-            // If the configured foreground has poor contrast, fall back to
-            // whichever of black/white contrasts better with the background.
-            if (GetContrastRatio(background, foreground) < 4.0)
-                foreground = GetBestTextColor(background);
-
+            // Keep the Settings surface consistently light: ordinary text is
+            // black, while dark dropdown/list controls use white text.
+            var background = Colors.White;
+            var foreground = Colors.Black;
             Background = new SolidColorBrush(background);
             Foreground = new SolidColorBrush(foreground);
-            ApplySettingsThemeRecursive(this, background, foreground);
+            ApplySettingsThemeRecursive(this);
         }
         catch (Exception ex)
         {
@@ -1276,10 +1240,7 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private static void ApplySettingsThemeRecursive(
-        DependencyObject parent,
-        System.Windows.Media.Color background,
-        System.Windows.Media.Color foreground)
+    private static void ApplySettingsThemeRecursive(DependencyObject parent)
     {
         foreach (object child in LogicalTreeHelper.GetChildren(parent))
         {
@@ -1287,15 +1248,26 @@ public partial class SettingsWindow : Window
                 continue;
 
             if (element is TextBlock textBlock)
-                textBlock.Foreground = new SolidColorBrush(foreground);
+                textBlock.Foreground = new SolidColorBrush(Colors.Black);
+            else if (element is System.Windows.Controls.ComboBox comboBox)
+            {
+                comboBox.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+                comboBox.Foreground = new SolidColorBrush(Colors.White);
+            }
+            else if (element is System.Windows.Controls.ListBox listBox)
+            {
+                listBox.Background = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+                listBox.Foreground = new SolidColorBrush(Colors.White);
+            }
             else if (element is System.Windows.Controls.Control control)
             {
-                control.Foreground = new SolidColorBrush(foreground);
-                if (control is System.Windows.Controls.TextBox || control is System.Windows.Controls.PasswordBox || control is System.Windows.Controls.ComboBox || control is System.Windows.Controls.ListBox)
-                    control.Background = new SolidColorBrush(background);
+                control.Foreground = new SolidColorBrush(Colors.Black);
+                if (control is System.Windows.Controls.TextBox ||
+                    control is System.Windows.Controls.PasswordBox)
+                    control.Background = new SolidColorBrush(Colors.White);
             }
 
-            ApplySettingsThemeRecursive(element, background, foreground);
+            ApplySettingsThemeRecursive(element);
         }
     }
 
