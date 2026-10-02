@@ -21,13 +21,14 @@ public partial class App : WpfApplication
         base.OnStartup(e);
         RegisterForWindowsStartup();
 
-        if (e.Args.Contains("--startup", StringComparer.OrdinalIgnoreCase))
-            return;
+        var startHidden = e.Args.Contains("--startup", StringComparer.OrdinalIgnoreCase);
+        var mainWindow = new MainWindow();
+        MainWindow = mainWindow;
 
-        Dispatcher.BeginInvoke(
-            DispatcherPriority.ApplicationIdle,
-            new Action(
-                InitializeBackgroundActivity));
+        InitializeBackgroundActivity();
+
+        if (!startHidden)
+            mainWindow.Show();
     }
 
     private static void RegisterForWindowsStartup()
