@@ -167,6 +167,7 @@
                     HorizontalAlignment="Center"
                     VerticalAlignment="Top"
                     Background="Black"
+                    BorderThickness="0"
                     CornerRadius="35">
 
             <Grid Height="70">
