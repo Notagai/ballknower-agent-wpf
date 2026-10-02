@@ -3445,8 +3445,8 @@ public partial class MainWindow : Window
             .Replace('\r', '\n');
 
         // WPF FlowDocument does not render LaTeX; show a readable plain-text fallback.
-        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\\\[([\s\S]*?)\\\\\]", "\n$1\n");
-        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\\\(([\s\S]*?)\\\\\)", "$1");
+        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\[([\s\S]*?)\\\]", "\n$1\n");
+        readableMarkdown = Regex.Replace(readableMarkdown, @"\\\(([\s\S]*?)\\\)", "$1");
         var lines = readableMarkdown.Split('\n');
 
         bool inCodeBlock = false;
