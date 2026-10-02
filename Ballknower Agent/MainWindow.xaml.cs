@@ -3593,43 +3593,40 @@ public partial class MainWindow : Window
 
     private static string ConvertLatexToReadableText(string text)
     {
-        // Normalize common LaTeX math into readable Unicode/plain text.
-        text = Regex.Replace(text, @"\\\\(?:begin|end)\\{(?:aligned|align\\*?|gathered|gather)\\}", "");
-        text = Regex.Replace(text, @"\\\\(?:left|right)\\b", "");
-        text = Regex.Replace(text, @"\\\\boxed\\{([^{}]*)\\}", "$1");
+        text = Regex.Replace(text, @"\\(?:begin|end)\{(?:aligned|align\*?|gathered|gather)\}", "");
+        text = Regex.Replace(text, @"\\(?:left|right)\b", "");
+        text = Regex.Replace(text, @"\\boxed\{([^{}]*)\}", "$1");
 
-        // Repeated passes handle nested simple fractions and square roots.
         for (int i = 0; i < 8; i++)
         {
-            text = Regex.Replace(text, @"\\\\frac\\{([^{}]*)\\}\\{([^{}]*)\\}", "($1)/($2)");
-            text = Regex.Replace(text, @"\\\\sqrt\\{([^{}]*)\\}", "√($1)");
+            text = Regex.Replace(text, @"\\frac\{([^{}]*)\}\{([^{}]*)\}", "($1)/($2)");
+            text = Regex.Replace(text, @"\\sqrt\{([^{}]*)\}", "√($1)");
         }
 
         var replacements = new Dictionary<string, string>
         {
-            [@"\\qquad"] = "    ", [@"\\quad"] = "  ",
-            [@"\\,"] = " ", [@"\\;"] = " ", [@"\\:"] = " ",
-            [@"\\times"] = "×", [@"\\cdot"] = "·",
-            [@"\\pm"] = "±", [@"\\mp"] = "∓",
-            [@"\\Delta"] = "Δ", [@"\\delta"] = "δ",
-            [@"\\approx"] = "≈", [@"\\neq"] = "≠",
-            [@"\\leq"] = "≤", [@"\\geq"] = "≥",
-            [@"\\infty"] = "∞", [@"\\pi"] = "π",
-            [@"\\Rightarrow"] = "⇒", [@"\\rightarrow"] = "→",
-            [@"\\to"] = "→", [@"\\cdots"] = "…",
-            [@"\\text"] = ""
+            [@"\qquad"] = "    ", [@"\quad"] = "  ",
+            [@"\,"] = " ", [@"\;"] = " ", [@"\:"] = " ",
+            [@"\times"] = "×", [@"\cdot"] = "·",
+            [@"\pm"] = "±", [@"\mp"] = "∓",
+            [@"\Delta"] = "Δ", [@"\delta"] = "δ",
+            [@"\approx"] = "≈", [@"\neq"] = "≠",
+            [@"\leq"] = "≤", [@"\geq"] = "≥",
+            [@"\infty"] = "∞", [@"\pi"] = "π",
+            [@"\Rightarrow"] = "⇒", [@"\rightarrow"] = "→",
+            [@"\to"] = "→", [@"\cdots"] = "…",
+            [@"\text"] = ""
         };
         foreach (var pair in replacements)
             text = text.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
 
-        // Make common superscripts readable, then discard any unknown command names.
-        text = Regex.Replace(text, @"\\^\\{([^{}]+)\\}", "^($1)");
-        text = Regex.Replace(text, @"\\_\\{([^{}]+)\\}", "_($1)");
-        text = Regex.Replace(text, @"\\\\[a-zA-Z]+\\*?", "");
+        text = Regex.Replace(text, @"\^\{([^{}]+)\}", "^($1)");
+        text = Regex.Replace(text, @"_\{([^{}]+)\}", "_($1)");
+        text = Regex.Replace(text, @"\\[a-zA-Z]+\*?", "");
         text = text.Replace("{", "").Replace("}", "");
-        text = Regex.Replace(text, @"[ \\t]*&[ \\t]*", "    ");
-        text = Regex.Replace(text, @"[ \\t]*\\\\[ \\t]*", "  ");
-        text = Regex.Replace(text, @"[ \\t]{2,}", " ");
+        text = Regex.Replace(text, @"[ \t]*&[ \t]*", "    ");
+        text = Regex.Replace(text, @"[ \t]*\\\\[ \t]*", "  ");
+        text = Regex.Replace(text, @"[ \t]{2,}", " ");
         return text;
     }
 
