@@ -33,7 +33,7 @@ public partial class App : WpfApplication
 
     private static void RegisterForWindowsStartup()
     {
-        const string runKeyPath = @"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        const string runKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         const string valueName = "Ballknower";
 
         try
