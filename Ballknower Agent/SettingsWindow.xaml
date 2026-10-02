@@ -111,7 +111,7 @@
                     <TextBlock Text="Appearance" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <TextBlock Text="Customize Ballknower's light/dark surfaces, fonts, and visual effects." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,16"/>
                     <TextBlock Text="Preset" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <ComboBox x:Name="StylePresetInput" SelectionChanged="StylePresetInput_SelectionChanged" Margin="0,0,0,14">
+                    <ComboBox x:Name="StylePresetInput" SelectedValuePath="Content" SelectionChanged="StylePresetInput_SelectionChanged" Margin="0,0,0,14">
                         <ComboBoxItem Content="Default"/>
                         <ComboBoxItem Content="Blue"/>
                         <ComboBoxItem Content="Purple"/>
@@ -139,7 +139,7 @@
                         </StackPanel>
                     </Grid>
                     <TextBlock Text="Font" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <ComboBox x:Name="StyleFontInput" SelectionChanged="StyleFontInput_SelectionChanged" Margin="0,0,0,16">
+                    <ComboBox x:Name="StyleFontInput" SelectedValuePath="Content" SelectionChanged="StyleFontInput_SelectionChanged" Margin="0,0,0,16">
                         <ComboBoxItem Content="Segoe UI"/><ComboBoxItem Content="Aptos"/><ComboBoxItem Content="Calibri"/><ComboBoxItem Content="Consolas"/><ComboBoxItem Content="Cascadia Code"/><ComboBoxItem Content="Trebuchet MS"/><ComboBoxItem Content="Georgia"/>
                     </ComboBox>
                     <TextBlock Text="Effects" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
