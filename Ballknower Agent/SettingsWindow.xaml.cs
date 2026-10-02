@@ -1084,6 +1084,94 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void LoadStyleControls()
+    {
+        StylePresetInput.SelectedValue = _settings.StylePreset;
+        UnifiedThemeRadio.IsChecked = !string.Equals(_settings.StyleThemeMode, "Separate", StringComparison.OrdinalIgnoreCase);
+        SeparateThemeRadio.IsChecked = !UnifiedThemeRadio.IsChecked;
+        LightBackgroundInput.Text = _settings.LightThemeBackground;
+        LightForegroundInput.Text = _settings.LightThemeForeground;
+        DarkBackgroundInput.Text = _settings.DarkThemeBackground;
+        DarkForegroundInput.Text = _settings.DarkThemeForeground;
+        StyleFontInput.SelectedValue = _settings.StyleFontFamily;
+        AnimatedEffectsCheckBox.IsChecked = _settings.StyleAnimatedEffects;
+        RainbowBorderCheckBox.IsChecked = _settings.StyleRainbowBorder;
+        GlowEffectCheckBox.IsChecked = _settings.StyleGlowEffect;
+        UpdateThemeEditorState();
+    }
+
+    private void StylePresetInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || StylePresetInput.SelectedValue is not string preset) return;
+        _settings.StylePreset = preset;
+        ApplyStylePreset(preset);
+        MarkDirty();
+    }
+
+    private void ApplyStylePreset(string preset)
+    {
+        var values = preset switch
+        {
+            "Blue" => ("#FFEAF6FF", "#FF09243A", "#FF071A2B", "#FFEAF6FF"),
+            "Purple" => ("#FFF5EEFF", "#FF29153D", "#FF1B0D2A", "#FFF5EEFF"),
+            "Green" => ("#FFECFFF4", "#FF0C3020", "#FF071F16", "#FFECFFF4"),
+            "Sunset" => ("#FFFFF1E8", "#FF3A1B0C", "#FF2A1108", "#FFFFF1E8"),
+            _ => ("#FFFFFFFF", "#FF000000", "#FF000000", "#FFFFFFFF")
+        };
+        _settings.LightThemeBackground = values.Item1;
+        _settings.LightThemeForeground = values.Item2;
+        _settings.DarkThemeBackground = values.Item3;
+        _settings.DarkThemeForeground = values.Item4;
+        LightBackgroundInput.Text = values.Item1;
+        LightForegroundInput.Text = values.Item2;
+        DarkBackgroundInput.Text = values.Item3;
+        DarkForegroundInput.Text = values.Item4;
+    }
+
+    private void ThemeMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing || UnifiedThemeRadio is null) return;
+        _settings.StyleThemeMode = UnifiedThemeRadio.IsChecked == true ? "Unified" : "Separate";
+        UpdateThemeEditorState();
+        MarkDirty();
+    }
+
+    private void UpdateThemeEditorState()
+    {
+        bool separate = SeparateThemeRadio?.IsChecked == true;
+        LightBackgroundInput.IsEnabled = separate;
+        LightForegroundInput.IsEnabled = separate;
+        DarkBackgroundInput.IsEnabled = separate;
+        DarkForegroundInput.IsEnabled = separate;
+    }
+
+    private void StyleColorChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInitializing) return;
+        _settings.LightThemeBackground = LightBackgroundInput.Text.Trim();
+        _settings.LightThemeForeground = LightForegroundInput.Text.Trim();
+        _settings.DarkThemeBackground = DarkBackgroundInput.Text.Trim();
+        _settings.DarkThemeForeground = DarkForegroundInput.Text.Trim();
+        _settings.StylePreset = "Custom";
+        MarkDirty();
+    }
+
+    private void StyleFontInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || StyleFontInput.SelectedValue is not string font) return;
+        _settings.StyleFontFamily = font;
+        MarkDirty();
+    }
+
+    private void StyleOptionChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing) return;
+        _settings.StyleAnimatedEffects = AnimatedEffectsCheckBox.IsChecked == true;
+        _settings.StyleRainbowBorder = RainbowBorderCheckBox.IsChecked == true;
+        _settings.StyleGlowEffect = GlowEffectCheckBox.IsChecked == true;
+        MarkDirty();
+    }
+
     private void SaveButton_Click(
         object sender,
         RoutedEventArgs e)
