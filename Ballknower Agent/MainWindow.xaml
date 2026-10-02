@@ -164,32 +164,50 @@
         <!-- Input pill -->
         <Border x:Name="InputPill"
                     Width="700"
-                    Height="70"
+                    MinHeight="70"
+                    MaxHeight="220"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Top"
                     Background="Black"
                     BorderThickness="0"
-                    CornerRadius="35">
+                    CornerRadius="35"
+                    Padding="10,10,10,10">
 
-            <Grid Height="70">
+            <Grid MinHeight="50">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
                 <TextBox x:Name="ChatInput"
-                             Width="650"
-                             Height="44"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             FontSize="20"
-                             Foreground="White"
-                             CaretBrush="White"
-                             Padding="12,0,12,0"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center"
-                             VerticalContentAlignment="Center"
-                             TextWrapping="NoWrap"
-                             AcceptsReturn="False"
-                             TextChanged="ChatInput_TextChanged"
-                             PreviewKeyDown="ChatInput_PreviewKeyDown"/>
+                         Grid.Column="0"
+                         MinHeight="44"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         FontSize="20"
+                         Foreground="White"
+                         CaretBrush="White"
+                         Padding="12,8,8,8"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Top"
+                         VerticalContentAlignment="Top"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="False"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         TextChanged="ChatInput_TextChanged"
+                         PreviewKeyDown="ChatInput_PreviewKeyDown"/>
 
+                <Button x:Name="SendButton"
+                        Grid.Column="1"
+                        Width="44"
+                        Height="44"
+                        Margin="8,0,4,0"
+                        Padding="0"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Right"
+                        ToolTip="Send"
+                        Click="SendButton_Click"
+                        Content="➤"/>
             </Grid>
         </Border>
 
