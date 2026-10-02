@@ -1209,7 +1209,7 @@ public partial class MainWindow : Window
         if (!ChatInput.IsEnabled || string.IsNullOrWhiteSpace(ChatInput.Text))
             return;
 
-        var keyArgs = new KeyEventArgs(
+        var keyArgs = new System.Windows.Input.KeyEventArgs(
             Keyboard.PrimaryDevice,
             PresentationSource.FromVisual(ChatInput),
             0,
