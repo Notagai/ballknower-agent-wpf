@@ -1488,10 +1488,7 @@ public partial class MainWindow : Window
             SendButton.FontFamily = font;
             SendButton.FontSize = 18;
             SendButton.FontWeight = FontWeights.SemiBold;
-            SendButton.Foreground = GetStyleForeground(_inputIsLight);
-            SendButton.Background = GetStyleBackground(_inputIsLight);
-            SendButton.BorderBrush = GetStyleForeground(_inputIsLight);
-            SendButton.BorderThickness = new Thickness(1);
+            ApplySendButtonColors(_inputIsLight);
 
             InputPill.Effect = _settings.StyleGlowEffect
                 ? new System.Windows.Media.Effects.DropShadowEffect
@@ -1545,6 +1542,17 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ApplySendButtonColors(bool pillIsLight)
+    {
+        // The send button is always the inverse of the pill's active theme:
+        // its background uses the pill's foreground and its glyph uses the
+        // pill's background.
+        SendButton.Background = GetStyleForeground(pillIsLight);
+        SendButton.Foreground = GetStyleBackground(pillIsLight);
+        SendButton.BorderBrush = GetStyleForeground(pillIsLight);
+        SendButton.BorderThickness = new Thickness(0);
+    }
+
     private void UpdateInputPillColor()
     {
         try
@@ -1584,9 +1592,7 @@ public partial class MainWindow : Window
             InputPill.Background = GetStyleBackground(shouldBeLight);
             ChatInput.Foreground = GetStyleForeground(shouldBeLight);
             ChatInput.CaretBrush = GetStyleForeground(shouldBeLight);
-            SendButton.Foreground = GetStyleForeground(shouldBeLight);
-            SendButton.Background = GetStyleForeground(shouldBeLight);
-            SendButton.BorderBrush = GetStyleForeground(shouldBeLight);
+            ApplySendButtonColors(shouldBeLight);
 
             /*
              * Keep the autocomplete popup synchronized with
