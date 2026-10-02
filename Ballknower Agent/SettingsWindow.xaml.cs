@@ -1240,8 +1240,8 @@ public partial class SettingsWindow : Window
 
     private static void ApplySettingsThemeRecursive(
         DependencyObject parent,
-        Color background,
-        Color foreground)
+        System.Windows.Media.Color background,
+        System.Windows.Media.Color foreground)
     {
         foreach (object child in LogicalTreeHelper.GetChildren(parent))
         {
@@ -1261,7 +1261,7 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private static Color ParseStyleColor(string value, Color fallback)
+    private static System.Windows.Media.Color ParseStyleColor(string value, System.Windows.Media.Color fallback)
     {
         try
         {
