@@ -2055,10 +2055,7 @@ public partial class MainWindow : Window
     private void UpdateMessageTextColors(
         bool lightBackground)
     {
-        Brush textBrush =
-            lightBackground
-                ? _blackTextBrush
-                : _whiteTextBrush;
+        Brush textBrush = GetStyleForeground(lightBackground);
 
         foreach (var child in MessagePanel.Children)
         {
@@ -3459,7 +3456,8 @@ public partial class MainWindow : Window
             Child = new TextBlock
             {
                 Text = message, FontSize = 18, Foreground = Brushes.White,
-                TextWrapping = TextWrapping.Wrap
+                TextWrapping = TextWrapping.Wrap,
+                FontFamily = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily)
             }
         };
         Grid.SetColumn(bubble, 1);
@@ -3587,6 +3585,21 @@ public partial class MainWindow : Window
             {FlushParagraph();if(inCodeBlock)FlushCode();inCodeBlock=!inCodeBlock;continue;}
             if(inCodeBlock){codeLines.Add(line);continue;}
             if(string.IsNullOrWhiteSpace(trimmed)){FlushParagraph();continue;}
+
+            if(trimmed == "---")
+            {
+                FlushParagraph();
+                var rule = new Border
+                {
+                    Height = 1,
+                    Background = CurrentMessageBrush(),
+                    Opacity = 0.35,
+                    Margin = new Thickness(0, 8, 0, 14),
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch
+                };
+                document.Blocks.Add(new BlockUIContainer(rule));
+                continue;
+            }
 
             string textLine=ConvertLatexToReadableText(trimmed);
             var heading=Regex.Match(textLine,@"^(#{1,6})\s+(.+)$");
