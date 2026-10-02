@@ -1423,7 +1423,7 @@ public partial class MainWindow : Window
         try
         {
             if (string.IsNullOrWhiteSpace(value)) return fallback;
-            return (Color)ColorConverter.ConvertFromString(value)!;
+            return (Color)System.Windows.Media.ColorConverter.ConvertFromString(value)!;
         }
         catch
         {
