@@ -1483,7 +1483,15 @@ public partial class MainWindow : Window
         try
         {
             var font = new FontFamily(string.IsNullOrWhiteSpace(_settings.StyleFontFamily) ? "Segoe UI" : _settings.StyleFontFamily);
-            ChatInput.FontFamily = font;            CommandSuggestionList.FontFamily = font;
+            ChatInput.FontFamily = font;
+            CommandSuggestionList.FontFamily = font;
+            SendButton.FontFamily = font;
+            SendButton.FontSize = 18;
+            SendButton.FontWeight = FontWeights.SemiBold;
+            SendButton.Foreground = GetStyleForeground(_inputIsLight);
+            SendButton.Background = GetStyleBackground(_inputIsLight);
+            SendButton.BorderBrush = GetStyleForeground(_inputIsLight);
+            SendButton.BorderThickness = new Thickness(1);
 
             InputPill.Effect = _settings.StyleGlowEffect
                 ? new System.Windows.Media.Effects.DropShadowEffect
@@ -1576,6 +1584,9 @@ public partial class MainWindow : Window
             InputPill.Background = GetStyleBackground(shouldBeLight);
             ChatInput.Foreground = GetStyleForeground(shouldBeLight);
             ChatInput.CaretBrush = GetStyleForeground(shouldBeLight);
+            SendButton.Foreground = GetStyleForeground(shouldBeLight);
+            SendButton.Background = GetStyleForeground(shouldBeLight);
+            SendButton.BorderBrush = GetStyleForeground(shouldBeLight);
 
             /*
              * Keep the autocomplete popup synchronized with
