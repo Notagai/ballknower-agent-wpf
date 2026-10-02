@@ -187,10 +187,12 @@
                          FontSize="20"
                          Foreground="White"
                          CaretBrush="White"
-                         Padding="12,8,8,8"
+                         Padding="14,8,12,6"
+                         Margin="0,0,2,0"
                          HorizontalAlignment="Stretch"
-                         VerticalAlignment="Top"
+                         VerticalAlignment="Stretch"
                          VerticalContentAlignment="Top"
+                         SnapsToDevicePixels="True"
                          TextWrapping="Wrap"
                          AcceptsReturn="False"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
@@ -199,15 +201,47 @@
 
                 <Button x:Name="SendButton"
                         Grid.Column="1"
-                        Width="44"
-                        Height="44"
-                        Margin="8,0,4,0"
+                        Width="42"
+                        Height="42"
+                        Margin="8,0,2,0"
                         Padding="0"
                         VerticalAlignment="Bottom"
                         HorizontalAlignment="Right"
+                        Background="White"
+                        Foreground="Black"
+                        BorderBrush="White"
+                        BorderThickness="1"
+                        FontSize="18"
+                        FontWeight="SemiBold"
                         ToolTip="Send"
                         Click="SendButton_Click"
-                        Content="➤"/>
+                        Content="➤">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="SendButtonBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="21">
+                                <ContentPresenter
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,1,0,0"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="SendButtonBorder" Property="Opacity" Value="0.88"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="SendButtonBorder" Property="Opacity" Value="0.72"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="SendButtonBorder" Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
             </Grid>
         </Border>
 
