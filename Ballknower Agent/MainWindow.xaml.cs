@@ -3586,6 +3586,7 @@ public partial class MainWindow : Window
     }
 
     private void AddMarkdownInlinesPlain(InlineCollection inlines,string text)
+    {
         var pattern = new Regex(
             @"(\*\*.+?\*\*|__.+?__|\*[^*]+?\*|_[^_]+?_|`[^`]+?`|\[[^\]]+\]\(https?://[^\s)]+\))");
 
