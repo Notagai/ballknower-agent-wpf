@@ -2,40 +2,72 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0d1017">
-<meta name="description" content="Ballknower is a floating Windows AI assistant with chat, desktop tools, slash commands, and configurable controls.">
-<title>Ballknower — AI, within reach</title>
+<meta name="theme-color" content="#090b0f">
+<meta name="description" content="Ballknower — a floating Windows AI assistant with desktop tools, commands, and configurable models.">
+<title>Ballknower — know what to ask</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css"><script src="script.js" defer></script>
 </head>
-<body class="home-page">
-<div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+<body class="site home-page">
+<div class="noise" aria-hidden="true"></div>
+<div class="cursor-glow" aria-hidden="true"></div>
+<div class="loader" aria-hidden="true"><div class="loader-mark">BK</div><div class="loader-line"><span></span></div><p>CALIBRATING THE DESKTOP</p></div>
+
 <header class="site-header">
-<a class="brand" href="index.html" aria-label="Ballknower home"><span class="brand-mark">🏀</span><span>Ballknower</span></a>
-<button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="Open navigation"><span></span><span></span><span></span></button>
-    <nav class="nav" id="site-navigation" aria-label="Main navigation"><a class="nav-link active" href="index.html" aria-current="page">Home</a><a class="nav-link" href="about.html">About</a><a class="nav-link" href="documentation.html">Documentation</a></nav>
-<a class="github-link" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+<a class="brand" href="index.html"><span class="brand-mark">●</span><span>BALLKNOWER</span></a>
+<button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation"><span></span><span></span><span></span></button>
+<nav class="nav" id="site-navigation" aria-label="Main navigation"><a class="nav-link active" href="index.html">Home</a><a class="nav-link" href="about.html">About</a><a class="nav-link" href="documentation.html">Documentation</a></nav>
+<div class="header-tools"><button class="sound-toggle" type="button" aria-pressed="false" title="Toggle ambient sound"><span class="sound-bars"><i></i><i></i><i></i></span><span class="sound-label">SOUND OFF</span></button><a class="github-link" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">SOURCE ↗</a></div>
 </header>
-<main class="home-main page-enter">
-<section class="home-hero">
-<div class="eyebrow"><span class="status-dot"></span> A Windows desktop companion</div>
-<div class="hero-layout">
-<div><h1>AI that fits<br><span class="gradient-text">your desktop.</span></h1>
-<p class="hero-copy">A floating AI assistant with desktop tools and quick commands—ready when you need it, out of the way when you don't.</p>
-<div class="hero-actions"><a class="button button-primary" href="about.html">Meet Ballknower <span>→</span></a><a class="button button-quiet" href="documentation.html">Read the docs</a></div>
-<div class="home-points"><span>Bring your own API key</span><span>Custom slash shortcuts</span><span>Windows desktop tools</span></div></div>
-<div class="ball-stage" aria-hidden="true"><div class="ball-shadow"></div><div class="basketball"><div class="ball-seam seam-one"></div><div class="ball-seam seam-two"></div><div class="ball-seam seam-three"></div></div><div class="ball-orbit orbit-one"></div><div class="ball-orbit orbit-two"></div><span class="spark spark-one">✦</span><span class="spark spark-two">✧</span></div>
+
+<main>
+<section class="hero scene-section" data-scene="0">
+<div class="hero-grid"></div>
+<div class="hero-copy reveal">
+<p class="kicker"><span class="pulse-dot"></span> WINDOWS DESKTOP AI / .NET 8</p>
+<h1>AI that<br><em>knows</em> your<br><span>flow.</span></h1>
+<p class="hero-lead">A floating assistant for the work between windows. Ask. Act. Get back to it.</p>
+<div class="hero-actions"><a class="button button-solid" href="#story">Enter the orbit <span>↓</span></a><a class="text-link" href="documentation.html">Read the documentation ↗</a></div>
+</div>
+<div class="hero-object" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><div class="ball"><span></span><i></i><b></b></div><div class="crosshair crosshair-a">+</div><div class="crosshair crosshair-b">+</div><div class="object-label label-a">READY / 01</div><div class="object-label label-b">FLOATING / ALWAYS</div></div>
+<div class="scroll-cue"><span>SCROLL TO EXPLORE</span><i></i></div>
+<div class="hero-index">00 / 05</div>
+</section>
+
+<div class="marquee"><div class="marquee-track"><span>CHAT NATURALLY</span><b>✳</b><span>DESKTOP TOOLS</span><b>✳</b><span>QUICK COMMANDS</span><b>✳</b><span>YOUR MODELS</span><b>✳</b><span>CHAT NATURALLY</span><b>✳</b><span>DESKTOP TOOLS</span><b>✳</b></div></div>
+
+<section id="story" class="story scene-section" data-scene="1">
+<div class="story-sticky">
+<div class="section-number">01</div>
+<div class="story-title reveal"><p class="kicker">THE IDEA</p><h2>Stay in the<br><em>space</em> between.</h2></div>
+<div class="story-copy reveal"><p>Ballknower is not another tab demanding your attention. It lives as a lightweight Windows overlay you summon when the next action is obvious.</p><p>Ask a question. Find a file. Search the web. Launch something. Then disappear.</p><a class="text-link" href="about.html#idea">Why it exists →</a></div>
+<div class="floating-card card-one"><span>ASK</span><strong>“What was that<br>file called?”</strong><small>⌘ CONTEXT</small></div>
+<div class="floating-card card-two"><span>ACT</span><strong>Search · Read<br>· Move · Launch</strong><small>TOOLS / READY</small></div>
+<div class="story-line"></div>
 </div>
 </section>
-<section class="home-strip">
-<article><span>01</span><h2>Chat naturally</h2><p>Ask, explore, brainstorm, and build with your chosen model.</p></article>
-<article><span>02</span><h2>Work across your desktop</h2><p>Use AI tools for files, apps, web search, and everyday tasks.</p></article>
-<article><span>03</span><h2>Stay in your flow</h2><p>Bring up the overlay, use slash commands, and make it yours.</p></article>
+
+<section class="feature-section scene-section" data-scene="2">
+<div class="feature-head reveal"><p class="kicker">THREE MODES OF MOMENTUM</p><h2>Useful by<br><em>default.</em></h2></div>
+<div class="feature-stack">
+<article class="feature-panel panel-chat"><div class="panel-meta"><span>02.01</span><span>CONVERSATION</span></div><div class="panel-number">01</div><div class="panel-copy"><p class="kicker">CHAT</p><h3>Talk it<br>through.</h3><p>Choose Groq or OpenRouter, select your model, and keep the conversation close to the desktop.</p><a href="documentation.html#interface">Interface details →</a></div><div class="panel-visual"><div class="chat-window"><div class="chat-top"><span></span><span></span><span></span><b>BALLKNOWER</b></div><div class="chat-msg msg-a">Need the latest notes from Downloads.</div><div class="chat-msg msg-b">I can look through the directory.</div><div class="chat-caret">_</div></div></div></article>
+<article class="feature-panel panel-tools"><div class="panel-meta"><span>02.02</span><span>DESKTOP TOOLS</span></div><div class="panel-number">02</div><div class="panel-copy"><p class="kicker">TOOLS</p><h3>Turn words<br>into motion.</h3><p>Read, create, move and delete files, list directories, launch apps, or search the public web.</p><a href="documentation.html#tools">See every tool →</a></div><div class="tool-orbit"><span>READ</span><span>WRITE</span><span>MOVE</span><span>SEARCH</span><i></i></div></article>
+<article class="feature-panel panel-command"><div class="panel-meta"><span>02.03</span><span>CONTROL</span></div><div class="panel-number">03</div><div class="panel-copy"><p class="kicker">COMMANDS</p><h3>One slash.<br>Instant control.</h3><p>Open settings, clear a chat, pin the overlay, inspect logs, reveal the desktop, and more.</p><a href="documentation.html#commands">Command index →</a></div><div class="command-display"><span>/</span><b>settings</b><i>↵</i><small>HELP&nbsp;&nbsp; CLEAR&nbsp;&nbsp; CONFETTI&nbsp;&nbsp; PIN&nbsp;&nbsp; SEE</small></div></article>
+</div>
 </section>
-<section class="home-showcase">
-<div class="showcase-copy"><div class="eyebrow">BUILT FOR THE DESKTOP</div><h2>Useful without<br><span class="gradient-text">taking over.</span></h2><p>Ballknower stays close when you want it and gets out of the way when you don't. Explore the real features without pretending the website is the app.</p></div>
-<div class="showcase-scene" aria-hidden="true"><div class="scene-ring ring-a"></div><div class="scene-ring ring-b"></div><div class="scene-ball"><span></span></div><i class="scene-star star-a">✦</i><i class="scene-star star-b">✧</i></div>
+
+<section class="manifesto scene-section" data-scene="3">
+<div class="manifesto-bg" aria-hidden="true">FLOW</div>
+<div class="manifesto-content reveal"><p class="kicker">DESIGNED TO BE CONFIGURED</p><h2>Your desktop.<br><em>Your rules.</em></h2><div class="manifesto-grid"><div><span>MODEL</span><strong>Bring your own</strong><p>Configure provider, model, key, history budget, streaming and more.</p></div><div><span>STYLE</span><strong>Make it yours</strong><p>Presets, custom palettes, fonts, animation, glow and rainbow outline.</p></div><div><span>ACCESS</span><strong>Always close</strong><p>Global modifier + Windows shortcut, configurable to fit your muscle memory.</p></div></div><a class="button button-outline" href="documentation.html#style">Explore configuration ↗</a></div>
 </section>
-<section class="home-cta"><div><div class="eyebrow">TAKE A CLOSER LOOK</div><h2>Small footprint.<br><span class="gradient-text">Flexible workflow.</span></h2></div><div class="hero-actions"><a class="button button-primary" href="about.html">Explore About <span>→</span></a><a class="button button-quiet" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">View source ↗</a></div></section>
+
+<section class="finale scene-section" data-scene="4">
+<div class="finale-ring"></div><div class="finale-copy reveal"><p class="kicker">BALLKNOWER / 2026</p><h2>Make the<br>next move.</h2><p>The application is the tool. This site is the map.</p><div class="hero-actions"><a class="button button-solid" href="documentation.html">Open documentation <span>↗</span></a><a class="text-link" href="https://github.com/Notagai/ballknower-agent-wpf" target="_blank" rel="noreferrer">View source on GitHub ↗</a></div></div>
+<div class="finale-mark" aria-hidden="true">BK<span>●</span></div>
+</section>
 </main>
-<footer class="site-footer"><a class="brand" href="index.html"><span class="brand-mark">🏀</span><span>Ballknower</span></a><span>Windows · WPF · .NET 8</span><span>© 2026 Notagai. All rights reserved.</span></footer>
+
+<footer class="site-footer"><a class="brand" href="index.html"><span class="brand-mark">●</span><span>BALLKNOWER</span></a><span>WINDOWS · WPF · .NET 8</span><span>AI, within reach.</span></footer>
 </body></html>
