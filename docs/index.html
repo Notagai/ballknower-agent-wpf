@@ -5,6 +5,7 @@
 <meta name="theme-color" content="#090b0f">
 <meta name="description" content="Ballknower — a floating Windows AI assistant with desktop tools, commands, and configurable models.">
 <title>Ballknower — know what to ask</title>
+<script>if(sessionStorage.getItem("ballknower-home-seen"))document.documentElement.classList.add("skip-loader");</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -31,7 +32,7 @@
 <p class="hero-lead">A floating assistant for the work between windows. Ask. Act. Get back to it.</p>
 <div class="hero-actions"><a class="button button-solid" href="#story">Enter the orbit <span>↓</span></a><a class="text-link" href="documentation.html">Read the documentation ↗</a></div>
 </div>
-<div class="hero-object" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><div class="ball"><span></span><i></i><b></b></div><div class="crosshair crosshair-a">+</div><div class="crosshair crosshair-b">+</div><div class="object-label label-a">READY / 01</div><div class="object-label label-b">FLOATING / ALWAYS</div></div>
+<div class="hero-object" aria-label="Interactive 3D basketball. Drag to rotate." role="img"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><div class="ball-stage"><div class="ball-shadow"></div><div class="ball-3d"><span></span><i></i><b></b><em></em><strong></strong></div><div class="drag-hint">DRAG / ROTATE</div></div><div class="crosshair crosshair-a">+</div><div class="crosshair crosshair-b">+</div><div class="object-label label-a">INTERACTIVE / 01</div><div class="object-label label-b">GRAB TO ORIENT</div></div>
 <div class="scroll-cue"><span>SCROLL TO EXPLORE</span><i></i></div>
 <div class="hero-index">00 / 05</div>
 </section>
