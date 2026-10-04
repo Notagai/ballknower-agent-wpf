@@ -51,3 +51,54 @@ html{scroll-behavior:auto}
 @media(min-width:901px){
   .home-page .hero-copy{margin-left:10vw}
 }
+
+
+/* Small-phone layout: prevent decorative layers and cards from colliding. */
+@media(max-width:600px){
+  .site-header{left:10px;right:10px;top:8px;height:56px;padding:0 14px;border-radius:14px}
+  .brand{font-size:10px;letter-spacing:.13em;gap:8px}
+  .brand-mark{width:22px;height:22px;font-size:10px}
+  .hero{min-height:760px;height:auto;padding:105px 20px 45px;display:flex;align-items:flex-start;position:relative}
+  .hero-copy{width:100%;max-width:none;margin:0!important;padding-top:35px;z-index:5}
+  .hero h1{font-size:clamp(54px,16vw,82px);line-height:.86;letter-spacing:-.07em;margin-bottom:24px}
+  .kicker{font-size:9px;letter-spacing:.12em;line-height:1.5;max-width:290px}
+  .hero-lead{font-size:14px;line-height:1.55;max-width:310px}
+  .hero-actions{display:flex;flex-direction:column;align-items:flex-start;gap:18px;margin-top:25px}
+  .hero-object{width:105vw;height:105vw;right:-43vw;top:auto;bottom:-17vw;opacity:.28;z-index:1}
+  .hero .scroll-cue{left:20px;bottom:18px;font-size:8px;gap:9px}
+  .hero .hero-index{right:20px;bottom:18px;font-size:8px}
+  .story{min-height:auto}
+  .story-sticky{height:auto;min-height:760px;position:relative;padding:90px 20px 70px;overflow:hidden}
+  .section-number{left:20px;top:45px}
+  .story-title{position:relative;left:auto;top:auto;margin-top:25px}
+  .story-title h2,.feature-head h2,.manifesto h2{font-size:clamp(48px,14vw,72px);line-height:.9}
+  .story-copy{position:relative;left:auto;top:auto;max-width:100%;margin-top:45px;font-size:13px}
+  .floating-card{position:relative;width:min(100%,260px);left:auto!important;right:auto!important;top:auto!important;margin:35px 0 0;padding:20px}
+  .card-one{transform:rotate(-3deg)}
+  .card-two{transform:rotate(3deg);margin-left:auto}
+  .story-line{left:20px;right:20px;bottom:30px}
+  .feature-section{padding:85px 20px 100px}
+  .feature-head{margin-bottom:60px}
+  .feature-stack{gap:60px}
+  .feature-panel{min-height:auto;display:flex;flex-direction:column;gap:50px;padding:55px 24px 40px}
+  .panel-copy h3{font-size:clamp(46px,13vw,68px)}
+  .panel-visual{width:100%;overflow:hidden}
+  .chat-window{width:100%;height:250px;transform:rotate(1deg)}
+  .tool-orbit{width:65vw;max-width:280px}
+  .command-display{font-size:13px;width:100%;padding:17px}
+  .manifesto{min-height:auto;padding:100px 20px}
+  .manifesto-bg{font-size:55vw}
+  .manifesto-grid{grid-template-columns:1fr}
+  .manifesto-grid>div,.manifesto-grid>div+div{padding:22px 0;border-right:0;border-bottom:1px solid var(--line)}
+  .finale{min-height:720px;padding:80px 20px}
+  .finale h2{font-size:clamp(58px,16vw,92px)}
+  .finale-ring{width:115vw}
+  .site-footer{padding:20px;min-height:110px;flex-direction:column;justify-content:center;gap:18px;text-align:center}
+  .docs-layout{padding:115px 20px 70px;display:block}
+  .docs-sidebar{position:static;margin-bottom:60px}
+  .docs-content h1{font-size:clamp(54px,15vw,82px)}
+  .docs-lead{font-size:16px;margin-bottom:55px}
+  .doc-section{padding:45px 0;scroll-margin-top:80px}
+  .doc-section h2{font-size:29px}
+  .doc-section p,.doc-section li{font-size:13px;line-height:1.75}
+}
