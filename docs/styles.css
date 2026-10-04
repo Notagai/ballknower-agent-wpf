@@ -107,3 +107,11 @@ html{scroll-behavior:auto}
 /* Universal audio control icon */
 .sound-icon{display:inline-block;font-size:16px;line-height:1;filter:grayscale(1);opacity:.72;transition:.25s}.sound-toggle:hover .sound-icon,.sound-toggle.is-on .sound-icon{opacity:1;filter:none}.sound-toggle{background:none;border:0;padding:4px;cursor:pointer}
 @media(max-width:800px){.sound-icon{font-size:15px}.sound-toggle{padding:7px}}
+
+
+/* Ensure the shared desktop navbar is visible on every page. */
+@media(min-width:801px){
+  .site-header .nav{display:flex!important;visibility:visible!important;opacity:1!important;position:static!important;flex:1 1 auto!important;align-items:center!important;justify-content:center!important;gap:32px!important;background:none!important;padding:0!important;border:0!important;box-shadow:none!important;margin:0 auto!important;}
+  .site-header .nav-link{display:block!important;visibility:visible!important;opacity:1!important;color:#aaa!important;}
+  .site-header .nav-link:hover,.site-header .nav-link.active{color:var(--ink)!important;}
+}
