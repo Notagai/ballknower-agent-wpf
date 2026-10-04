@@ -45,3 +45,9 @@
 html{scroll-behavior:auto}
 .page-leaving main{opacity:1;transform:none;transition:none}
 .page-leaving{overflow:visible}
+
+
+/* Center the desktop hero composition more deliberately. */
+@media(min-width:901px){
+  .home-page .hero-copy{margin-left:10vw}
+}
