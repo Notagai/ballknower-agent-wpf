@@ -127,3 +127,38 @@ html{scroll-behavior:auto}
   .site-header .nav-link.active:after{left:0!important;right:0!important;bottom:0!important;width:auto!important;height:2px!important;background:var(--acid)!important;box-shadow:0 0 10px rgba(216,255,69,.35)!important;}
   .site-header .header-tools{position:absolute!important;right:20px!important;top:50%!important;transform:translateY(-50%)!important;margin:0!important;}
 }
+
+
+/* Hard-center desktop navigation against the viewport, not the header grid. */
+@media(min-width:801px){
+  .site-header .nav{
+    position:fixed!important;
+    left:50vw!important;
+    top:50px!important;
+    transform:translateX(-50%)!important;
+    width:max-content!important;
+    margin:0!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:32px!important;
+  }
+  .site-header .nav-link{
+    display:block!important;
+    position:relative!important;
+    padding:10px 0 11px!important;
+    line-height:1!important;
+  }
+  .site-header .nav-link.active:after{
+    content:""!important;
+    position:absolute!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    width:100%!important;
+    height:2px!important;
+    background:var(--acid)!important;
+    box-shadow:0 0 10px rgba(216,255,69,.35)!important;
+  }
+}
