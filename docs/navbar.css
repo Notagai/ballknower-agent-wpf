@@ -1,0 +1,146 @@
+/* Unified navbar fix: one predictable shell across desktop and mobile. */
+.site-header{
+  position:fixed !important;
+  inset:0 0 auto 0 !important;
+  width:100% !important;
+  max-width:none !important;
+  height:72px !important;
+  min-height:72px;
+  margin:0 !important;
+  padding:0 max(20px, calc((100vw - 1380px)/2 + 20px)) !important;
+  display:grid !important;
+  grid-template-columns:minmax(180px,1fr) auto minmax(180px,1fr) !important;
+  align-items:center !important;
+  gap:24px;
+  box-sizing:border-box;
+  border:0 !important;
+  border-bottom:1px solid var(--line) !important;
+  border-radius:0 !important;
+  background:rgba(9,11,15,.86) !important;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  box-shadow:0 10px 35px rgba(0,0,0,.18);
+}
+.site-header .brand{justify-self:start;min-width:0}
+.site-header .nav{
+  position:static;
+  justify-self:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:32px;
+  margin:0;
+}
+.site-header .header-tools{
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  min-width:0;
+}
+.site-header .nav-toggle{display:none}
+.site-header + main{padding-top:72px}
+.site-header .nav-link{white-space:nowrap}
+.site-header .nav-link:focus-visible,
+.site-header .github-link:focus-visible,
+.site-header .brand:focus-visible,
+.site-header .nav-toggle:focus-visible{
+  outline:2px solid var(--acid);
+  outline-offset:4px;
+}
+@media(max-width:800px){
+  .site-header{
+    height:64px !important;
+    min-height:64px;
+    padding:0 14px !important;
+    display:flex !important;
+    gap:10px;
+  }
+  .site-header .brand{margin-right:auto}
+  .site-header .header-tools{
+    order:2;
+    gap:4px;
+  }
+  .site-header .nav-toggle{
+    order:3;
+    display:flex !important;
+    flex:0 0 40px;
+    width:40px;
+    height:40px;
+    padding:8px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#ffffff08;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:5px;
+    cursor:pointer;
+  }
+  .site-header .nav-toggle span{
+    display:block;
+    width:18px;
+    height:2px;
+    border-radius:2px;
+    background:var(--ink);
+    transition:transform .2s ease,opacity .2s ease;
+  }
+  .site-header .nav-toggle[aria-expanded="true"] span:first-child{transform:translateY(7px) rotate(45deg)}
+  .site-header .nav-toggle[aria-expanded="true"] span:nth-child(2){opacity:0}
+  .site-header .nav-toggle[aria-expanded="true"] span:last-child{transform:translateY(-7px) rotate(-45deg)}
+  .site-header .nav{
+    position:fixed !important;
+    top:64px !important;
+    right:0 !important;
+    left:auto !important;
+    bottom:0 !important;
+    width:min(320px,88vw);
+    height:calc(100dvh - 64px);
+    padding:14px;
+    margin:0 !important;
+    display:flex !important;
+    flex-direction:column;
+    align-items:stretch;
+    justify-content:flex-start;
+    gap:4px;
+    border:0 !important;
+    border-left:1px solid var(--line) !important;
+    border-radius:0 !important;
+    background:rgba(9,11,15,.98) !important;
+    box-shadow:-18px 0 50px rgba(0,0,0,.4);
+    transform:translateX(105%);
+    visibility:hidden;
+    pointer-events:none;
+    transition:transform .22s ease,visibility .22s ease;
+    z-index:1002;
+  }
+  .site-header .nav.is-open{
+    transform:translateX(0);
+    visibility:visible;
+    pointer-events:auto;
+  }
+  .site-header .nav-link{
+    display:block;
+    padding:15px 14px;
+    border-radius:10px;
+    font-size:12px;
+  }
+  .site-header .nav-link:hover,
+  .site-header .nav-link.active{
+    background:rgba(216,255,69,.08);
+  }
+  .site-header .nav-link.active:after{
+    left:14px;
+    right:auto;
+    bottom:8px;
+    width:24px;
+  }
+  .site-header .github-link{display:none}
+  .site-header .sound-toggle{padding:8px}
+  .site-header + main{padding-top:64px}
+  body.nav-open{overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){
+  .site-header .nav,
+  .site-header .nav-toggle span{transition:none}
+}
