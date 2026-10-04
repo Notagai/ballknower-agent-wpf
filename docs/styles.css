@@ -115,3 +115,15 @@ html{scroll-behavior:auto}
   .site-header .nav-link{display:block!important;visibility:visible!important;opacity:1!important;color:#aaa!important;}
   .site-header .nav-link:hover,.site-header .nav-link.active{color:var(--ink)!important;}
 }
+
+
+/* Center the desktop navbar independently of the left/right header content. */
+@media(min-width:801px){
+  .site-header{display:flex!important;align-items:center!important;justify-content:space-between!important;}
+  .site-header .brand{position:absolute!important;left:20px!important;top:50%!important;transform:translateY(-50%)!important;}
+  .site-header .nav{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:32px!important;width:max-content!important;margin:0!important;}
+  .site-header .nav-link{position:relative!important;display:block!important;padding:10px 0 11px!important;color:#aaa!important;}
+  .site-header .nav-link.active{color:var(--ink)!important;}
+  .site-header .nav-link.active:after{left:0!important;right:0!important;bottom:0!important;width:auto!important;height:2px!important;background:var(--acid)!important;box-shadow:0 0 10px rgba(216,255,69,.35)!important;}
+  .site-header .header-tools{position:absolute!important;right:20px!important;top:50%!important;transform:translateY(-50%)!important;margin:0!important;}
+}
