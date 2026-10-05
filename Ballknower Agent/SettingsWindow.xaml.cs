@@ -75,6 +75,13 @@ public partial class SettingsWindow : Window
             HistoryTokenBudget = settings.HistoryTokenBudget,
             Shortcuts = new Dictionary<string, string>(
                 settings.Shortcuts),
+            AiPresets = settings.AiPresets.Select(p => new AiPreset
+            {
+                Name = p.Name,
+                AIProvider = p.AIProvider,
+                Model = p.Model,
+                EncryptedApiKey = p.EncryptedApiKey
+            }).ToList(),
             StylePreset = settings.StylePreset,
             StyleThemeMode = settings.StyleThemeMode,
             LightThemeBackground = settings.LightThemeBackground,
@@ -92,6 +99,7 @@ public partial class SettingsWindow : Window
         _apiKeys = new Dictionary<string, string>();
 
         LoadApiKeys();
+        RefreshPresetList();
 
         ProviderInput.SelectedValue =
             _settings.AIProvider;
@@ -409,6 +417,191 @@ public partial class SettingsWindow : Window
         {
             _apiKeys[provider] = apiKey;
         }
+    }
+
+    private void SavePresetButton_Click(object sender, RoutedEventArgs e)
+    {
+        var name = PresetNameInput.Text.Trim();
+        SaveCurrentModel();
+        SaveCurrentApiKeyToMemory();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            WpfMessageBox.Show(this, "Enter a name for the preset.", "Preset", WpfMessageBoxButton.OK, WpfMessageBoxImage.Information);
+            return;
+        }
+
+        if (!_apiKeys.TryGetValue(_settings.AIProvider, out var apiKey) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            WpfMessageBox.Show(this, "Enter an API key before saving a preset.", "Preset", WpfMessageBoxButton.OK, WpfMessageBoxImage.Information);
+            return;
+        }
+
+        var encryptedApiKey = _credentialStore.ProtectApiKeyForPreset(apiKey);
+        var existing = _settings.AiPresets.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+        {
+            _settings.AiPresets.Add(new AiPreset
+            {
+                Name = name,
+                AIProvider = _settings.AIProvider,
+                Model = ModelInput.Text.Trim(),
+                EncryptedApiKey = encryptedApiKey
+            });
+        }
+        else
+        {
+            existing.AIProvider = _settings.AIProvider;
+            existing.Model = ModelInput.Text.Trim();
+            existing.EncryptedApiKey = encryptedApiKey;
+        }
+
+        PresetNameInput.Text = string.Empty;
+        RefreshPresetList();
+        MarkDirty();
+    }
+
+    private void LoadPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton button || button.Tag is not AiPreset preset)
+            return;
+
+        try
+        {
+            var key = string.IsNullOrWhiteSpace(preset.EncryptedApiKey)
+                ? null
+                : _credentialStore.UnprotectApiKeyFromPreset(preset.EncryptedApiKey);
+
+            _isInitializing = true;
+            try
+            {
+                _settings.AIProvider = preset.AIProvider;
+                SetModelForProvider(preset.AIProvider, preset.Model);
+                ProviderInput.SelectedValue = preset.AIProvider;
+
+                if (key is not null)
+                    _apiKeys[preset.AIProvider] = key;
+                else
+                    _apiKeys.Remove(preset.AIProvider);
+
+                UpdateProviderUI();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            MarkDirty();
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this, "This preset's encrypted API key could not be opened on this Windows user.\n\n" + ex.Message, "Preset Load Failed", WpfMessageBoxButton.OK, WpfMessageBoxImage.Error);
+        }
+    }
+
+    private void RenamePreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton button || button.Tag is not AiPreset preset)
+            return;
+
+        var dialog = new Window
+        {
+            Title = "Rename AI Preset",
+            Owner = this,
+            Width = 420,
+            Height = 160,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        var input = new System.Windows.Controls.TextBox { Text = preset.Name, Margin = new Thickness(0, 0, 0, 12) };
+        var save = new WpfButton { Content = "Rename", HorizontalAlignment = HorizontalAlignment.Right, Padding = new Thickness(14, 5), IsDefault = true };
+        save.Click += (_, _) =>
+        {
+            var name = input.Text.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+                return;
+
+            if (_settings.AiPresets.Any(p => !ReferenceEquals(p, preset) && string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                WpfMessageBox.Show(dialog, "A preset with that name already exists.", "Preset", WpfMessageBoxButton.OK, WpfMessageBoxImage.Information);
+                return;
+            }
+
+            preset.Name = name;
+            dialog.DialogResult = true;
+        };
+        panel.Children.Add(input);
+        panel.Children.Add(save);
+        dialog.Content = panel;
+
+        if (dialog.ShowDialog() == true)
+        {
+            RefreshPresetList();
+            MarkDirty();
+        }
+    }
+
+    private void DeletePreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton button || button.Tag is not AiPreset preset)
+            return;
+
+        _settings.AiPresets.Remove(preset);
+        RefreshPresetList();
+        MarkDirty();
+    }
+
+    private void RefreshPresetList()
+    {
+        if (PresetList is null)
+            return;
+
+        PresetList.Children.Clear();
+        foreach (var preset in _settings.AiPresets.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var label = new TextBlock
+            {
+                Text = $"{preset.Name} — {preset.AIProvider} / {preset.Model}",
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var load = new WpfButton { Content = "Load", Tag = preset, Margin = new Thickness(8, 0, 0, 0) };
+            var rename = new WpfButton { Content = "Rename", Tag = preset, Margin = new Thickness(8, 0, 0, 0) };
+            var delete = new WpfButton { Content = "Delete", Tag = preset, Margin = new Thickness(8, 0, 0, 0) };
+
+            load.Click += LoadPreset_Click;
+            rename.Click += RenamePreset_Click;
+            delete.Click += DeletePreset_Click;
+
+            Grid.SetColumn(label, 0);
+            Grid.SetColumn(load, 1);
+            Grid.SetColumn(rename, 2);
+            Grid.SetColumn(delete, 3);
+            row.Children.Add(label);
+            row.Children.Add(load);
+            row.Children.Add(rename);
+            row.Children.Add(delete);
+            PresetList.Children.Add(row);
+        }
+    }
+
+    private void SetModelForProvider(string provider, string model)
+    {
+        if (provider == "OpenRouter")
+            _settings.OpenRouterModel = model;
+        else if (provider == "OpenAI")
+            _settings.OpenAIModel = model;
+        else if (provider == "Gemini")
+            _settings.GeminiModel = model;
+        else
+            _settings.GroqModel = model;
     }
 
     private void ProviderInput_SelectionChanged(
@@ -902,6 +1095,11 @@ public partial class SettingsWindow : Window
             StreamingCheckBox.IsChecked == true;
         _settings.JailbreakEnabled = JailbreakCheckBox.IsChecked == true;
         _settings.JailbreakPrompt = JailbreakPromptInput.Text;
+        SaveCurrentApiKeyToMemory();
+
+        // Presets contain only DPAPI-protected API-key blobs. Plaintext API keys
+        // are never serialized into the export file.
+        RefreshPresetList();
 
         var dialog =
             new Microsoft.Win32.SaveFileDialog
@@ -1013,6 +1211,21 @@ public partial class SettingsWindow : Window
                     importedSettings.Shortcuts ??
                     new Dictionary<string, string>();
 
+                _settings.AiPresets = importedSettings.AiPresets ?? new List<AiPreset>();
+                foreach (var preset in _settings.AiPresets)
+                {
+                    if (string.IsNullOrWhiteSpace(preset.Name) ||
+                        string.IsNullOrWhiteSpace(preset.AIProvider) ||
+                        (preset.AIProvider != "Groq" && preset.AIProvider != "OpenRouter" &&
+                         preset.AIProvider != "OpenAI" && preset.AIProvider != "Gemini"))
+                    {
+                        throw new JsonException("Invalid AI preset.");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(preset.EncryptedApiKey))
+                        _credentialStore.ImportEncryptedApiKey(preset.AIProvider, preset.EncryptedApiKey);
+                }
+
                 _settings.StylePreset = importedSettings.StylePreset ?? "Default";
                 _settings.StyleThemeMode = importedSettings.StyleThemeMode ?? "Unified";
                 _settings.LightThemeBackground = importedSettings.LightThemeBackground ?? "#FFFFFFFF";
@@ -1061,6 +1274,7 @@ public partial class SettingsWindow : Window
                     Visibility.Collapsed;
 
                 RefreshShortcutList();
+                RefreshPresetList();
                 LoadStyleControls();
                 MarkDirty();
             }
@@ -1360,6 +1574,14 @@ public partial class SettingsWindow : Window
         _targetSettings.Shortcuts =
             new Dictionary<string, string>(
                 _settings.Shortcuts);
+
+        _targetSettings.AiPresets = _settings.AiPresets.Select(p => new AiPreset
+        {
+            Name = p.Name,
+            AIProvider = p.AIProvider,
+            Model = p.Model,
+            EncryptedApiKey = p.EncryptedApiKey
+        }).ToList();
 
         _targetSettings.StylePreset = _settings.StylePreset;
         _targetSettings.StyleThemeMode = _settings.StyleThemeMode;
