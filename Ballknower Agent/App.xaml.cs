@@ -72,7 +72,7 @@ public partial class App : WpfApplication
             new Action(
                 () => _backgroundActivity?.ShowBallknower()));
     }
-
+    //egg salad sadwitch
     public void UpdateOpeningShortcut(string shortcut)
     {
         _keyboardShortcutManager?.SetOpeningShortcut(shortcut);
