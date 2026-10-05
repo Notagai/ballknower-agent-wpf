@@ -35,6 +35,7 @@ public sealed class OpenAIClient : IAiClient
             messages,
             tools = _toolRegistry.GetAiToolDefinitions(),
             tool_choice = "auto",
+            reasoning_effort = "none",
             stream = false
         };
 
