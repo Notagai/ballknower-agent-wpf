@@ -293,7 +293,7 @@ public partial class SettingsWindow : Window
             };
             var body = _settings.AIProvider == "Gemini"
                 ? JsonSerializer.Serialize(new { contents = new[] { new { parts = new[] { new { text = "Reply with exactly: Ballknower test OK" } } } }, generationConfig = new { maxOutputTokens = 20 } })
-                : JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_completion_tokens = 20, stream = false });
+                : _settings.AIProvider == "OpenAI"\n                    ? JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_completion_tokens = 20, stream = false })\n                    : JsonSerializer.Serialize(new { model, messages = new[] { new { role = "user", content = "Reply with exactly: Ballknower test OK" } }, max_tokens = 20, stream = false });
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             if (_settings.AIProvider != "Gemini") request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
             if (_settings.AIProvider == "OpenRouter") request.Headers.Add("X-Title", "Ballknower");
