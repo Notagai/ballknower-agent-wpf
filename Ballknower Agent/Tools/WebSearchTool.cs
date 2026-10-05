@@ -122,11 +122,15 @@ public sealed class WebSearchTool : ITool
         }
         catch (Exception ex)
         {
+            var details = ex.Message;
+            for (var inner = ex.InnerException; inner is not null; inner = inner.InnerException)
+                details += $" -> {inner.Message}";
+
             return new ToolResult
             {
                 Tool = Definition.Name,
                 Success = false,
-                Message = $"Web search failed: {ex.Message}"
+                Message = $"Web search failed: {details}"
             };
         }
     }
