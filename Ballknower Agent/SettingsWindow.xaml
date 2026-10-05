@@ -25,6 +25,12 @@
                     <ComboBox x:Name="ProviderInput" SelectedValuePath="Content" SelectionChanged="ProviderInput_SelectionChanged" Margin="0,0,0,16">
                         <ComboBoxItem Content="Groq"/><ComboBoxItem Content="OpenRouter"/><ComboBoxItem Content="OpenAI"/><ComboBoxItem Content="Gemini"/>
                     </ComboBox>
+                    <TextBlock Text="Search Provider" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="SearchProviderInput" SelectedValuePath="Content" SelectionChanged="SearchProviderInput_SelectionChanged" Margin="0,0,0,16">
+                        <ComboBoxItem Content="DuckDuckGo"/>
+                        <ComboBoxItem Content="Bing"/>
+                    </ComboBox>
+                    <TextBlock Text="Choose which public search engine Ballknower uses for the web_search tool. No search API key is required." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,18"/>
                     <TextBlock x:Name="ApiKeyLabel" Text="Groq API Key" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <PasswordBox x:Name="ApiKeyInput" PasswordChanged="SettingsChanged" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
