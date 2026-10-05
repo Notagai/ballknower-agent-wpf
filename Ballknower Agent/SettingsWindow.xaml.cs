@@ -516,7 +516,7 @@ public partial class SettingsWindow : Window
 
         var panel = new StackPanel { Margin = new Thickness(16) };
         var input = new System.Windows.Controls.TextBox { Text = preset.Name, Margin = new Thickness(0, 0, 0, 12) };
-        var save = new WpfButton { Content = "Rename", HorizontalAlignment = HorizontalAlignment.Right, Padding = new Thickness(14, 5), IsDefault = true };
+        var save = new WpfButton { Content = "Rename", HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Padding = new Thickness(14, 5, 14, 5), IsDefault = true };
         save.Click += (_, _) =>
         {
             var name = input.Text.Trim();
