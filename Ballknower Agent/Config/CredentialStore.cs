@@ -69,6 +69,61 @@ public class CredentialStore
         }
     }
 
+    public string ProtectApiKeyForPreset(string apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new ArgumentException("API key cannot be empty.", nameof(apiKey));
+
+        var data = Encoding.UTF8.GetBytes(apiKey);
+        try
+        {
+            var encrypted = ProtectedData.Protect(
+                data,
+                optionalEntropy: null,
+                scope: DataProtectionScope.CurrentUser);
+            return Convert.ToBase64String(encrypted);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(data);
+        }
+    }
+
+    public string UnprotectApiKeyFromPreset(string encryptedApiKey)
+    {
+        if (string.IsNullOrWhiteSpace(encryptedApiKey))
+            throw new ArgumentException("Encrypted API key cannot be empty.", nameof(encryptedApiKey));
+
+        var encrypted = Convert.FromBase64String(encryptedApiKey);
+        var decrypted = ProtectedData.Unprotect(
+            encrypted,
+            optionalEntropy: null,
+            scope: DataProtectionScope.CurrentUser);
+        try
+        {
+            return Encoding.UTF8.GetString(decrypted);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(decrypted);
+        }
+    }
+
+    public void ImportEncryptedApiKey(string provider, string encryptedApiKey)
+    {
+        ValidateProvider(provider);
+        var apiKey = UnprotectApiKeyFromPreset(encryptedApiKey);
+        try
+        {
+            SaveApiKey(provider, apiKey);
+        }
+        finally
+        {
+            // The string is immutable; it is discarded after SaveApiKey.
+            apiKey = string.Empty;
+        }
+    }
+
     private static void ValidateProvider(string provider)
     {
         if (provider != "Groq" &&
