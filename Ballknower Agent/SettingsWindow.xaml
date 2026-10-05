@@ -40,6 +40,13 @@
                         <TextBlock x:Name="PromptTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
                     </StackPanel>
                     <TextBlock Text="The prompt test sends a short request to the selected provider and model; usage may incur a small API charge." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                    <TextBlock Text="Saved AI Presets" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Save a provider, model, and API key together. API keys are encrypted with Windows DPAPI and are never written to GitHub." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBox x:Name="PresetNameInput" MinWidth="240" Margin="0,0,8,0" ToolTip="Preset name"/>
+                        <Button Content="Save Current as Preset" Click="SavePresetButton_Click" Padding="14,5"/>
+                    </StackPanel>
+                    <StackPanel x:Name="PresetList" Margin="0,0,0,18"/>
                     <TextBlock Text="Advanced" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <CheckBox x:Name="JailbreakCheckBox" Content="Jailbreak" Foreground="White" Margin="0,0,0,8" Checked="JailbreakCheckBox_Changed" Unchecked="JailbreakCheckBox_Changed"/>
                     <StackPanel x:Name="JailbreakPromptPanel" Visibility="Collapsed">
