@@ -20,6 +20,8 @@ public class AppSettings
 
     public bool StreamResponses { get; set; } = true;
 
+    public string SearchProvider { get; set; } = "DuckDuckGo";
+
     public bool JailbreakEnabled { get; set; } = false;
 
     public string JailbreakPrompt { get; set; } = string.Empty;

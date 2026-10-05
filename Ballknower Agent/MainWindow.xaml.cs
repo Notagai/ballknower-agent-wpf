@@ -338,14 +338,14 @@ public partial class MainWindow : Window
         _toolRegistry.Register(
             new MoveFileTool());
 
-        _toolRegistry.Register(
-            new WebSearchTool());
-
         var settingsStore =
             new SettingsStore();
 
         _settings =
             settingsStore.Load();
+
+        _toolRegistry.Register(
+            new WebSearchTool(_settings.SearchProvider));
 
         ApplyStyleSettings();
 

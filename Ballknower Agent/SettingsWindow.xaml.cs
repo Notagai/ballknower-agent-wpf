@@ -69,6 +69,7 @@ public partial class SettingsWindow : Window
             OpenAIModel = settings.OpenAIModel,
             GeminiModel = settings.GeminiModel,
             StreamResponses = settings.StreamResponses,
+            SearchProvider = NormalizeSearchProvider(settings.SearchProvider),
             JailbreakEnabled = settings.JailbreakEnabled,
             JailbreakPrompt = settings.JailbreakPrompt,
             OpeningShortcut = settings.OpeningShortcut,
@@ -104,6 +105,9 @@ public partial class SettingsWindow : Window
         ProviderInput.SelectedValue =
             _settings.AIProvider;
 
+        SearchProviderInput.SelectedValue =
+            NormalizeSearchProvider(_settings.SearchProvider);
+
         OpeningShortcutInput.SelectedValue =
             NormalizeOpeningShortcut(
                 _settings.OpeningShortcut);
@@ -126,6 +130,25 @@ public partial class SettingsWindow : Window
         ApplySettingsTheme();
 
         _isInitializing = false;
+    }
+
+    private static string NormalizeSearchProvider(string provider)
+    {
+        return string.Equals(provider, "Bing", StringComparison.OrdinalIgnoreCase)
+            ? "Bing"
+            : "DuckDuckGo";
+    }
+
+    private void SearchProviderInput_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_isInitializing ||
+            SearchProviderInput.SelectedValue is not string provider)
+            return;
+
+        _settings.SearchProvider = NormalizeSearchProvider(provider);
+        MarkDirty();
     }
 
     private static string NormalizeOpeningShortcut(string shortcut)
@@ -1209,6 +1232,10 @@ public partial class SettingsWindow : Window
                     NormalizeHistoryBudget(
                         importedSettings.HistoryTokenBudget);
 
+                _settings.SearchProvider =
+                    NormalizeSearchProvider(
+                        importedSettings.SearchProvider);
+
                 _settings.Shortcuts =
                     importedSettings.Shortcuts ??
                     new Dictionary<string, string>();
@@ -1241,6 +1268,9 @@ public partial class SettingsWindow : Window
 
                 ProviderInput.SelectedValue =
                     _settings.AIProvider;
+
+                SearchProviderInput.SelectedValue =
+                    NormalizeSearchProvider(_settings.SearchProvider);
 
                 UpdateProviderUI();
 
@@ -1552,6 +1582,9 @@ public partial class SettingsWindow : Window
 
         _targetSettings.AIProvider =
             _settings.AIProvider;
+
+        _targetSettings.SearchProvider =
+            NormalizeSearchProvider(_settings.SearchProvider);
 
         _targetSettings.OpenRouterModel =
             _settings.OpenRouterModel;
