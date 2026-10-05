@@ -47,4 +47,6 @@ public class AppSettings
 
     public Dictionary<string, string> Shortcuts { get; set; } =
         new();
+
+    public List<AiPreset> AiPresets { get; set; } = new();
 }
