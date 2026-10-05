@@ -3,3 +3,5 @@ bin/
 obj/
 *.user
 *.suo
+# Settings exports can contain DPAPI-protected preset metadata; keep them out of the repository.
+BallknowerSettings*.json
