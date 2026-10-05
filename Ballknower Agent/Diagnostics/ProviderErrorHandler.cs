@@ -53,7 +53,8 @@ public static class ProviderErrorHandler
                     "Please try again later.",
 
                 _ =>
-                    $"The AI provider returned HTTP {statusCode}."
+                    $"The AI provider returned HTTP {statusCode}." +
+                    GetProviderErrorDetails(responseBody)
             };
 
         return new AiProviderException(
@@ -89,6 +90,53 @@ public static class ProviderErrorHandler
         return
             $"Rate limit reached. Try again in approximately " +
             $"{minutes} minute(s).";
+    }
+
+    private static string GetProviderErrorDetails(
+        string responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+            return string.Empty;
+
+        try
+        {
+            using var document =
+                JsonDocument.Parse(responseBody);
+
+            if (document.RootElement.TryGetProperty(
+                    "error",
+                    out var error))
+            {
+                if (error.TryGetProperty(
+                        "message",
+                        out var messageElement) &&
+                    messageElement.ValueKind == JsonValueKind.String)
+                {
+                    var message =
+                        messageElement.GetString();
+
+                    if (!string.IsNullOrWhiteSpace(message))
+                        return $" Details: {message}";
+                }
+
+                if (error.ValueKind == JsonValueKind.String)
+                {
+                    var message =
+                        error.GetString();
+
+                    if (!string.IsNullOrWhiteSpace(message))
+                        return $" Details: {message}";
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // The provider may return plain text instead of JSON.
+        }
+
+        return responseBody.Length <= 500
+            ? $" Details: {responseBody.Trim()}"
+            : $" Details: {responseBody[..500].Trim()}";
     }
 
     private static TimeSpan? GetRetryAfter(
