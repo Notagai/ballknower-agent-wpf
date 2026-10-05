@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Ballknower.Diagnostics;
 
 namespace Ballknower.Tools;
 
@@ -122,6 +123,10 @@ public sealed class WebSearchTool : ITool
         }
         catch (Exception ex)
         {
+            AppLogger.Error(
+                $"Web search failed ({_searchProvider}).",
+                ex);
+
             var details = ex.Message;
             for (var inner = ex.InnerException; inner is not null; inner = inner.InnerException)
                 details += $" -> {inner.Message}";
