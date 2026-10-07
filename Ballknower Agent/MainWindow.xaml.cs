@@ -423,12 +423,7 @@ public partial class MainWindow : Window
             new CredentialStore();
 
         _speechInput = new MicrosoftSpeechInput();
-        _speechOutput = new ElevenLabsSpeechOutput(
-            () => _credentialStore.GetApiKey("ElevenLabs"),
-            () => _settings.SpeechVoiceId,
-            () => _settings.SpeechModel,
-            () => _settings.SpeechOutputDevice,
-            () => _settings.SpeechVolume);
+        _speechOutput = new MicrosoftSpeechOutput();
 
         _googleDriveService =
             new Ballknower.Google.GoogleDriveService();
