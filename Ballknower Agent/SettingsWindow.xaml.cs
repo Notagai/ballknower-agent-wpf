@@ -1694,6 +1694,7 @@ public partial class SettingsWindow : Window
     {
         SaveCurrentModel();
         SaveCurrentHistoryBudget();
+        SaveSpeechControls();
         SaveApiKeys();
 
         _settings.StreamResponses =
@@ -1749,7 +1750,6 @@ public partial class SettingsWindow : Window
         _targetSettings.StyleRainbowBorder = _settings.StyleRainbowBorder;
         _targetSettings.StyleGlowEffect = _settings.StyleGlowEffect;
 
-        SaveSpeechControls();
         _targetSettings.SpeechOutputEnabled = _settings.SpeechOutputEnabled;
         _targetSettings.SpeechVoiceId = _settings.SpeechVoiceId;
         _targetSettings.SpeechModel = _settings.SpeechModel;
