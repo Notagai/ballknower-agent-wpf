@@ -61,23 +61,16 @@ public partial class App : WpfApplication
 
         _keyboardShortcutManager =
             new KeyboardShortcutManager(
-                ShowBallknowerFromShortcut,
-                (MainWindow as MainWindow)?.OpeningShortcut ?? "Alt+Win");
+                ShowBallknowerFromShortcut);
     }
 
-    private void ShowBallknowerFromShortcut()
+    private void ShowBallknowerFromShortcut(LaunchMode launchMode)
     {
         Dispatcher.BeginInvoke(
             DispatcherPriority.Normal,
             new Action(
-                () => _backgroundActivity?.ShowBallknower()));
+                () => _backgroundActivity?.ShowBallknower(launchMode)));
     }
-    //egg salad sadwitch
-    public void UpdateOpeningShortcut(string shortcut)
-    {
-        _keyboardShortcutManager?.SetOpeningShortcut(shortcut);
-    }
-
     public void ExitApplication()
     {
         if (IsExiting)
