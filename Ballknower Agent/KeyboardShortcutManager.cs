@@ -1,474 +1,161 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Ballknower.Voice;
 
 namespace Ballknower;
 
-/// <summary>
-/// Global Alt+Win shortcut:
-/// - hold Alt, then press and release Win to open Ballknower
-/// - other Win combinations retain their normal Windows behavior
-/// </summary>
 public sealed class KeyboardShortcutManager : IDisposable
 {
     private const int WH_KEYBOARD_LL = 13;
-
     private const int WM_KEYDOWN = 0x0100;
     private const int WM_KEYUP = 0x0101;
     private const int WM_SYSKEYDOWN = 0x0104;
     private const int WM_SYSKEYUP = 0x0105;
-
     private const int VK_LWIN = 0x5B;
     private const int VK_RWIN = 0x5C;
-    private const int VK_ESCAPE = 0x1B;
-
+    private const int VK_LCTRL = 0xA2;
+    private const int VK_RCTRL = 0xA3;
+    private const int VK_LALT = 0xA4;
+    private const int VK_RALT = 0xA5;
     private const uint LLKHF_INJECTED = 0x00000010;
-
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
 
-
-    private readonly Action _onLongHold;
+    private readonly Action<LaunchMode> _onLaunch;
     private readonly LowLevelKeyboardProc _hookCallback;
-
+    private readonly bool[] _keysDown = new bool[256];
     private IntPtr _hookHandle;
     private bool _winHeld;
-    private bool _combinationUsed;
     private bool _winDownReplayed;
-    private bool _openingShortcut;
-    private string _openingShortcutModifier = "Alt";
     private int _activeWinKey;
-    private readonly bool[] _keysDown = new bool[256];
-
+    private LaunchMode? _pendingMode;
     private bool _disposed;
 
-    public KeyboardShortcutManager(Action onLongHold, string openingShortcut = "Alt+Win")
+    public KeyboardShortcutManager(Action<LaunchMode> onLaunch)
     {
-        _onLongHold =
-            onLongHold ??
-            throw new ArgumentNullException(nameof(onLongHold));
-
-        SetOpeningShortcut(openingShortcut);
-
+        _onLaunch = onLaunch ?? throw new ArgumentNullException(nameof(onLaunch));
         _hookCallback = HookCallback;
-
-        using Process process = Process.GetCurrentProcess();
-        ProcessModule? module = process.MainModule;
-
-        IntPtr moduleHandle =
-            module is null
-                ? IntPtr.Zero
-                : GetModuleHandle(module.ModuleName);
-
-        _hookHandle =
-            SetWindowsHookEx(
-                WH_KEYBOARD_LL,
-                _hookCallback,
-                moduleHandle,
-                0);
-
+        using var process = Process.GetCurrentProcess();
+        var module = process.MainModule;
+        var moduleHandle = module is null ? IntPtr.Zero : GetModuleHandle(module.ModuleName);
+        _hookHandle = SetWindowsHookEx(WH_KEYBOARD_LL, _hookCallback, moduleHandle, 0);
         if (_hookHandle == IntPtr.Zero)
-        {
-            throw new System.ComponentModel.Win32Exception(
-                Marshal.GetLastWin32Error(),
-                "Could not install the global keyboard shortcut hook.");
-        }
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "Could not install the global keyboard shortcut hook.");
     }
 
-    private IntPtr HookCallback(
-        int nCode,
-        IntPtr wParam,
-        IntPtr lParam)
+    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
         if (nCode < 0 || _disposed)
             return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
 
-        var data =
-            Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-
-        /*
-         * Ignore the synthetic Win events that we replay ourselves.
-         */
+        var data = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
         if ((data.flags & LLKHF_INJECTED) != 0)
-        {
-            return CallNextHookEx(
-                _hookHandle,
-                nCode,
-                wParam,
-                lParam);
-        }
+            return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
 
         int message = wParam.ToInt32();
-
-        bool isDown =
-            message == WM_KEYDOWN ||
-            message == WM_SYSKEYDOWN;
-
-        bool isUp =
-            message == WM_KEYUP ||
-            message == WM_SYSKEYUP;
-
-        bool isWin =
-            data.vkCode == VK_LWIN ||
-            data.vkCode == VK_RWIN;
+        bool isDown = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+        bool isUp = message == WM_KEYUP || message == WM_SYSKEYUP;
+        bool isWin = data.vkCode == VK_LWIN || data.vkCode == VK_RWIN;
 
         if (!isWin)
         {
             if (data.vkCode < _keysDown.Length)
             {
-                if (isDown)
-                    _keysDown[data.vkCode] = true;
-                else if (isUp)
-                    _keysDown[data.vkCode] = false;
+                if (isDown) _keysDown[data.vkCode] = true;
+                if (isUp) _keysDown[data.vkCode] = false;
             }
 
-            if (isDown && _winHeld)
+            if (isDown && _winHeld && _pendingMode is not null &&
+                data.vkCode != VK_LCTRL && data.vkCode != VK_RCTRL &&
+                data.vkCode != VK_LALT && data.vkCode != VK_RALT &&
+                data.vkCode != 0x11 && data.vkCode != 0x12)
             {
-                _combinationUsed = true;
-
-                /*
-                 * The original Win-down was held back while we
-                 * determined whether this was a standalone Win press.
-                 * Replay it immediately before allowing the other
-                 * key through, preserving Win+E and similar shortcuts.
-                 */
-                if (!_winDownReplayed)
-                {
-                    ReplayWinDown();
-                    _winDownReplayed = true;
-                }
+                ReplayWinDownIfNeeded();
+                _winDownReplayed = true;
+                _pendingMode = null;
             }
 
-            return CallNextHookEx(
-                _hookHandle,
-                nCode,
-                wParam,
-                lParam);
+            return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
         }
 
         if (isDown)
         {
-            /*
-             * Windows may repeat Win key-down messages while held.
-             * Only the first physical press starts the timer.
-             */
             if (_winHeld)
-            {
                 return IntPtr.Zero;
-            }
 
             _winHeld = true;
-            bool modifierHeld = IsOpeningModifierTrackedDown();
-            _combinationUsed = HasAnotherTrackedKeyDown() && !modifierHeld;
-            _winDownReplayed = false;
-            _openingShortcut = modifierHeld;
             _activeWinKey = (int)data.vkCode;
+            _pendingMode = DetermineMode();
 
-            if (modifierHeld)
-            {
-                // The configured modifier+Win combination is our hotkey.
-                // does not open; invoke Ballknower when Win is released.
+            if (_pendingMode is not null)
                 return IntPtr.Zero;
-            }
 
-            if (_combinationUsed)
-            {
-                ReplayWinDown();
-                _winDownReplayed = true;
-
-                return CallNextHookEx(
-                    _hookHandle,
-                    nCode,
-                    wParam,
-                    lParam);
-            }
-
-            /*
-             * Suppress the physical Win-down until we know whether
-             * this is a tap or the Ballknower shortcut.
-             */
-            return IntPtr.Zero;
+            ReplayWinDownIfNeeded();
+            _winDownReplayed = true;
+            return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
         }
 
         if (isUp)
         {
             if (!_winHeld)
-            {
-                return CallNextHookEx(
-                    _hookHandle,
-                    nCode,
-                    wParam,
-                    lParam);
-            }
+                return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
 
-            /* Decide whether this was the configured opening shortcut. */
-            bool triggerHotkey = _openingShortcut && !_combinationUsed;
+            var mode = _pendingMode;
+            if (mode is not null)
+                _onLaunch(mode.Value);
 
-            if (triggerHotkey)
-                _onLongHold();
-
-            if (!triggerHotkey && !_winDownReplayed)
-            {
-                /*
-                 * A short standalone Win press should behave like a
-                 * normal physical Win press: down followed by up.
-                 */
-                ReplayWinDown();
+            if (_winDownReplayed)
                 ReplayWinUp(_activeWinKey);
-            }
-            else if (_winDownReplayed)
-            {
-                /*
-                 * Win-down was replayed for a modifier combination.
-                 * Replay the corresponding Win-up now.
-                 */
-                ReplayWinUp(_activeWinKey);
-            }
 
             _winHeld = false;
-            _combinationUsed = false;
             _winDownReplayed = false;
             _activeWinKey = 0;
-            _openingShortcut = false;
-
-            /*
-             * For a long hold, both Win-down and Win-up were suppressed.
-             */
-            return IntPtr.Zero;
+            _pendingMode = null;
+            return mode is not null ? IntPtr.Zero : CallNextHookEx(_hookHandle, nCode, wParam, lParam);
         }
 
-        return CallNextHookEx(
-            _hookHandle,
-            nCode,
-            wParam,
-            lParam);
+        return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
     }
 
-    private bool IsOpeningModifierTrackedDown()
+    private LaunchMode? DetermineMode()
     {
-        return _openingShortcutModifier switch
+        bool ctrl = _keysDown[0x11] || _keysDown[VK_LCTRL] || _keysDown[VK_RCTRL];
+        bool alt = _keysDown[0x12] || _keysDown[VK_LALT] || _keysDown[VK_RALT];
+        if (ctrl && alt) return LaunchMode.VoiceOutput;
+        if (ctrl) return LaunchMode.VoiceInputOutput;
+        if (alt) return LaunchMode.Text;
+        return null;
+    }
+
+    private void ReplayWinDownIfNeeded() => SendWinInput((ushort)_activeWinKey, false);
+    private static void ReplayWinUp(int virtualKey) => SendWinInput((ushort)virtualKey, true);
+
+    private static void SendWinInput(ushort virtualKey, bool keyUp)
+    {
+        var input = new INPUT { type = INPUT_KEYBOARD, U = new InputUnion { ki = new KEYBDINPUT
         {
-            "Ctrl" => _keysDown[0x11] || _keysDown[0xA2] || _keysDown[0xA3],
-            "Shift" => _keysDown[0x10] || _keysDown[0xA0] || _keysDown[0xA1],
-            _ => _keysDown[0x12] || _keysDown[0xA4] || _keysDown[0xA5]
-        };
-    }
-
-    public void SetOpeningShortcut(string openingShortcut)
-    {
-        _openingShortcutModifier = openingShortcut switch
-        {
-            "Ctrl+Win" => "Ctrl",
-            "Shift+Win" => "Shift",
-            _ => "Alt"
-        };
-    }
-
-    private bool HasAnotherTrackedKeyDown()
-    {
-        /*
-         * Use key events observed by this hook rather than
-         * GetAsyncKeyState, which can be unreliable inside a
-         * low-level keyboard hook callback.
-         */
-        for (int virtualKey = 1; virtualKey < _keysDown.Length; virtualKey++)
-        {
-            if (virtualKey == VK_LWIN ||
-                virtualKey == VK_RWIN ||
-                virtualKey == 0x12 ||
-                virtualKey == 0xA4 ||
-                virtualKey == 0xA5)
-            {
-                continue;
-            }
-
-            if (_keysDown[virtualKey])
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool IsKeyDown(System.Windows.Forms.Keys key)
-    {
-        return (GetAsyncKeyState((int)key) & 0x8000) != 0;
-    }
-
-    private void ReplayWinDown()
-    {
-        SendWinInput(
-            (ushort)_activeWinKey,
-            keyUp: false);
-    }
-
-    private void ReplayWinUp(int virtualKey)
-    {
-        SendWinInput(
-            (ushort)virtualKey,
-            keyUp: true);
-    }
-
-    private static void SendKeyTap(int virtualKey)
-    {
-        SendKeyInput((ushort)virtualKey, keyUp: false);
-        SendKeyInput((ushort)virtualKey, keyUp: true);
-    }
-
-    private static void SendKeyInput(
-        ushort virtualKey,
-        bool keyUp)
-    {
-        var input =
-            new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                U = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = virtualKey,
-                        wScan = 0,
-                        dwFlags = keyUp
-                            ? KEYEVENTF_KEYUP
-                            : 0,
-                        time = 0,
-                        dwExtraInfo = UIntPtr.Zero
-                    }
-                }
-            };
-
-        if (SendInput(
-                1,
-                new[] { input },
-                Marshal.SizeOf<INPUT>()) == 0)
-        {
-            Debug.WriteLine(
-                "Ballknower could not replay a keyboard event.");
-        }
-    }
-
-    private static void SendWinInput(
-        ushort virtualKey,
-        bool keyUp)
-    {
-        var input =
-            new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                U = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = virtualKey,
-                        wScan = 0,
-                        dwFlags = keyUp
-                            ? KEYEVENTF_KEYUP
-                            : 0,
-                        time = 0,
-                        dwExtraInfo = UIntPtr.Zero
-                    }
-                }
-            };
-
-        if (SendInput(
-                1,
-                new[] { input },
-                Marshal.SizeOf<INPUT>()) == 0)
-        {
-            Debug.WriteLine(
-                "Ballknower could not replay the Windows key.");
-        }
+            wVk = virtualKey, wScan = 0, dwFlags = keyUp ? KEYEVENTF_KEYUP : 0, time = 0, dwExtraInfo = UIntPtr.Zero
+        }}};
+        SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
     }
 
     public void Dispose()
     {
-        if (_disposed)
-            return;
-
+        if (_disposed) return;
         _disposed = true;
-
-        if (_hookHandle != IntPtr.Zero)
-        {
-            UnhookWindowsHookEx(_hookHandle);
-            _hookHandle = IntPtr.Zero;
-        }
+        if (_hookHandle != IntPtr.Zero) { UnhookWindowsHookEx(_hookHandle); _hookHandle = IntPtr.Zero; }
     }
 
-    private delegate IntPtr LowLevelKeyboardProc(
-        int nCode,
-        IntPtr wParam,
-        IntPtr lParam);
+    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+    [StructLayout(LayoutKind.Sequential)] private struct KBDLLHOOKSTRUCT { public uint vkCode; public uint scanCode; public uint flags; public uint time; public UIntPtr dwExtraInfo; }
+    [StructLayout(LayoutKind.Sequential)] private struct INPUT { public uint type; public InputUnion U; }
+    [StructLayout(LayoutKind.Explicit)] private struct InputUnion { [FieldOffset(0)] public KEYBDINPUT ki; }
+    [StructLayout(LayoutKind.Sequential)] private struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public UIntPtr dwExtraInfo; }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KBDLLHOOKSTRUCT
-    {
-        public uint vkCode;
-        public uint scanCode;
-        public uint flags;
-        public uint time;
-        public UIntPtr dwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT
-    {
-        public uint type;
-        public InputUnion U;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct InputUnion
-    {
-        [FieldOffset(0)]
-        public KEYBDINPUT ki;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KEYBDINPUT
-    {
-        public ushort wVk;
-        public ushort wScan;
-        public uint dwFlags;
-        public uint time;
-        public UIntPtr dwExtraInfo;
-    }
-
-    [DllImport(
-        "user32.dll",
-        SetLastError = true)]
-    private static extern IntPtr SetWindowsHookEx(
-        int idHook,
-        LowLevelKeyboardProc lpfn,
-        IntPtr hMod,
-        uint dwThreadId);
-
-    [DllImport(
-        "user32.dll",
-        SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWindowsHookEx(
-        IntPtr hhk);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CallNextHookEx(
-        IntPtr hhk,
-        int nCode,
-        IntPtr wParam,
-        IntPtr lParam);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    private static extern IntPtr GetModuleHandle(
-        string? lpModuleName);
-
-    [DllImport("user32.dll")]
-    private static extern short GetAsyncKeyState(
-        int vKey);
-
-    [DllImport(
-        "user32.dll",
-        SetLastError = true)]
-    private static extern uint SendInput(
-        uint nInputs,
-        INPUT[] pInputs,
-        int cbSize);
+    [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+    [DllImport("user32.dll")] private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandle(string? lpModuleName);
+    [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 }
