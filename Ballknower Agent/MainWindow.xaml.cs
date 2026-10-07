@@ -295,6 +295,9 @@ public partial class MainWindow : Window
             var cancellationToken = _speechCancellation?.Token ?? CancellationToken.None;
             await _speechOutput.SpeakAsync(text, cancellationToken);
         }
+        catch (OperationCanceledException)
+        {
+        }
         catch (Exception ex)
         {
             AppLogger.Error("Speech output failed", ex);
