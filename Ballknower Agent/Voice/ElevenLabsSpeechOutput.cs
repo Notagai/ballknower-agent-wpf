@@ -85,8 +85,14 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
     public Task TestAsync(CancellationToken cancellationToken = default)
         => SpeakAsync("Hello. This is Ballknower's ElevenLabs voice test.", cancellationToken);
 
+    public void Stop()
+    {
+        _audioOutput.Stop();
+    }
+
     public void Dispose()
     {
+        Stop();
         _audioOutput.Dispose();
         _httpClient.Dispose();
     }
