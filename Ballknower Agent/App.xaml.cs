@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using Ballknower.Voice;
 
 using WpfApplication = System.Windows.Application;
 
