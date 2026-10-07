@@ -64,6 +64,16 @@ public sealed class AudioOutputService : IDisposable
         }, cancellationToken);
     }
 
+    public void Stop()
+    {
+        lock (_sync)
+        {
+            _output?.Stop();
+            _output?.Dispose();
+            _output = null;
+        }
+    }
+
     public static IReadOnlyList<string> GetOutputDevices()
     {
         using var enumerator = new MMDeviceEnumerator();
@@ -75,13 +85,5 @@ public sealed class AudioOutputService : IDisposable
             .ToList();
     }
 
-    public void Dispose()
-    {
-        lock (_sync)
-        {
-            _output?.Stop();
-            _output?.Dispose();
-            _output = null;
-        }
-    }
+    public void Dispose() => Stop();
 }
