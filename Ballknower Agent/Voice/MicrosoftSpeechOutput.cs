@@ -4,33 +4,60 @@ namespace Ballknower.Voice;
 
 public sealed class MicrosoftSpeechOutput : ISpeechOutput
 {
-    public Task SpeakAsync(string text, CancellationToken cancellationToken = default)
+    private readonly object _sync = new();
+    private SpeechSynthesizer? _synthesizer;
+
+    public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(text))
-            return Task.CompletedTask;
+            return;
 
-        return Task.Run(() =>
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var synthesizer = new SpeechSynthesizer();
+        synthesizer.SetOutputToDefaultAudioDevice();
+
+        lock (_sync)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            _synthesizer?.SpeakAsyncCancelAll();
+            _synthesizer = synthesizer;
+        }
 
-            using var synthesizer = new SpeechSynthesizer();
-            synthesizer.SetOutputToDefaultAudioDevice();
+        try
+        {
+            var completion = new TaskCompletionSource<object?>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
 
+            EventHandler<SpeakCompletedEventArgs>? handler = null;
+            handler = (_, args) =>
+            {
+                synthesizer.SpeakCompleted -= handler;
+                if (args.Error is not null)
+                    completion.TrySetException(args.Error);
+                else if (args.Cancelled)
+                    completion.TrySetCanceled();
+                else
+                    completion.TrySetResult(null);
+            };
+
+            synthesizer.SpeakCompleted += handler;
             using var registration = cancellationToken.Register(() =>
             {
-                try
-                {
-                    synthesizer.SpeakAsyncCancelAll();
-                }
-                catch
-                {
-                    // The synthesis task will observe cancellation below.
-                }
+                try { synthesizer.SpeakAsyncCancelAll(); } catch { }
             });
 
-            synthesizer.Speak(text);
+            synthesizer.SpeakAsync(text);
+            await completion.Task.ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-        }, cancellationToken);
+        }
+        finally
+        {
+            lock (_sync)
+            {
+                if (ReferenceEquals(_synthesizer, synthesizer))
+                    _synthesizer = null;
+            }
+        }
     }
 
     public Task<IReadOnlyList<SpeechVoice>> GetVoicesAsync(
@@ -57,7 +84,16 @@ public sealed class MicrosoftSpeechOutput : ISpeechOutput
             "Hello. This is Ballknower using Microsoft Windows text to speech.",
             cancellationToken);
 
+    public void Stop()
+    {
+        lock (_sync)
+        {
+            try { _synthesizer?.SpeakAsyncCancelAll(); } catch { }
+        }
+    }
+
     public void Dispose()
     {
+        Stop();
     }
 }
