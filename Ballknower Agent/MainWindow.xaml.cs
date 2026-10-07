@@ -3,6 +3,7 @@ using Ballknower.Commands;
 using Ballknower.Config;
 using Ballknower.Diagnostics;
 using Ballknower.Tools;
+using Ballknower.Voice;
 
 using System;
 using System.Collections.Generic;
@@ -107,6 +108,10 @@ public partial class MainWindow : Window
     private readonly ToolRegistry _toolRegistry;
     private readonly CredentialStore _credentialStore;
     private readonly Ballknower.Google.GoogleDriveService _googleDriveService;
+    private readonly ISpeechInput _speechInput;
+    private readonly ISpeechOutput _speechOutput;
+    private CancellationTokenSource? _speechCancellation;
+    private LaunchMode _launchMode = LaunchMode.Text;
 
     private readonly TranslateTransform _inputPillTransform;
     private readonly TranslateTransform _messageAreaTransform;
@@ -169,9 +174,6 @@ public partial class MainWindow : Window
      */
     private bool _ignoreShortcutDeactivation;
 
-    public string OpeningShortcut =>
-        _settings.OpeningShortcut;
-
     private const int VkMenu = 0x12;
     private const int VkLWin = 0x5B;
     private const int VkRWin = 0x5C;
@@ -193,8 +195,10 @@ public partial class MainWindow : Window
         IntPtr hToken,
         out IntPtr ppszPath);
 
-    public void FocusBallknower()
+    public void FocusBallknower(LaunchMode launchMode = LaunchMode.Text)
     {
+        _launchMode = launchMode;
+        _speechCancellation?.Cancel();
         _ignoreShortcutDeactivation = true;
 
         Opacity = 0;
@@ -221,7 +225,73 @@ public partial class MainWindow : Window
 
         Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,
-            new Action(() => _ignoreShortcutDeactivation = false));
+            new Action(async () =>
+            {
+                _ignoreShortcutDeactivation = false;
+                if (_launchMode == LaunchMode.VoiceInputOutput)
+                    await StartVoiceInputAsync();
+            }));
+    }
+
+    private async Task StartVoiceInputAsync()
+    {
+        if (_isProcessing || _launchMode != LaunchMode.VoiceInputOutput)
+            return;
+
+        _speechCancellation?.Cancel();
+        _speechCancellation?.Dispose();
+        _speechCancellation = new CancellationTokenSource();
+
+        try
+        {
+            if (_settings.SpeechEffectsEnabled && _settings.SpeechListeningEffect)
+                SpeechEffects.PlayListening();
+
+            var text = await _speechInput.RecognizeAsync(_speechCancellation.Token);
+            if (string.IsNullOrWhiteSpace(text) ||
+                _speechCancellation.IsCancellationRequested ||
+                _launchMode != LaunchMode.VoiceInputOutput)
+                return;
+
+            ChatInput.Text = text;
+            var args = new System.Windows.Input.KeyEventArgs(
+                Keyboard.PrimaryDevice,
+                PresentationSource.FromVisual(ChatInput),
+                0,
+                Key.Enter)
+            {
+                RoutedEvent = Keyboard.PreviewKeyDownEvent
+            };
+            ChatInput.RaiseEvent(args);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Voice input failed", ex);
+            if (_settings.SpeechEffectsEnabled && _settings.SpeechErrorEffect)
+                SpeechEffects.PlayError();
+        }
+    }
+
+    private async Task SpeakAssistantTextAsync(string text)
+    {
+        if (_launchMode == LaunchMode.Text ||
+            !_settings.SpeechOutputEnabled ||
+            string.IsNullOrWhiteSpace(text))
+            return;
+
+        try
+        {
+            await _speechOutput.SpeakAsync(text);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Speech output failed", ex);
+            if (_settings.SpeechEffectsEnabled && _settings.SpeechErrorEffect)
+                SpeechEffects.PlayError();
+        }
     }
 
     public void RefreshDesktopBackdropForReopen()
@@ -351,6 +421,14 @@ public partial class MainWindow : Window
 
         _credentialStore =
             new CredentialStore();
+
+        _speechInput = new MicrosoftSpeechInput();
+        _speechOutput = new ElevenLabsSpeechOutput(
+            () => _credentialStore.GetApiKey("ElevenLabs"),
+            () => _settings.SpeechVoiceId,
+            () => _settings.SpeechModel,
+            () => _settings.SpeechOutputDevice,
+            () => _settings.SpeechVolume);
 
         _googleDriveService =
             new Ballknower.Google.GoogleDriveService();
@@ -488,6 +566,11 @@ public partial class MainWindow : Window
             _settingsWindow.Close();
             _settingsWindow = null;
         }
+
+        _speechCancellation?.Cancel();
+        _speechCancellation?.Dispose();
+        _speechInput.Dispose();
+        _speechOutput.Dispose();
     }
 
     private void MainWindow_Closing(
@@ -3229,12 +3312,12 @@ public partial class MainWindow : Window
             if (response.ToolCalls is null ||
                 response.ToolCalls.Count == 0)
             {
-                AddAssistantMessage(
-                    string.IsNullOrWhiteSpace(
-                        response.Content)
+                var finalText =
+                    string.IsNullOrWhiteSpace(response.Content)
                         ? "The model returned an empty response."
-                        : response.Content);
-
+                        : response.Content;
+                AddAssistantMessage(finalText);
+                await SpeakAssistantTextAsync(finalText);
                 return;
             }
 
@@ -3296,11 +3379,11 @@ public partial class MainWindow : Window
                 toolCallsExecuted >=
                 maxToolCalls)
             {
-                AddAssistantMessage(
+                var limitText =
                     "Reached the tool-call limit. " +
-                    "The last tool results have been " +
-                    "recorded in this conversation.");
-
+                    "The last tool results have been recorded in this conversation.";
+                AddAssistantMessage(limitText);
+                await SpeakAssistantTextAsync(limitText);
                 return;
             }
         }
