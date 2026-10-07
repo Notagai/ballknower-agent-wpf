@@ -197,8 +197,8 @@ public partial class MainWindow : Window
 
     public void FocusBallknower(LaunchMode launchMode = LaunchMode.Text)
     {
+        StopVoiceActivity();
         _launchMode = launchMode;
-        _speechCancellation?.Cancel();
         _ignoreShortcutDeactivation = true;
 
         Opacity = 0;
@@ -275,6 +275,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void StopVoiceActivity()
+    {
+        _speechCancellation?.Cancel();
+        _speechCancellation?.Dispose();
+        _speechCancellation = null;
+        _speechOutput.Stop();
+    }
+
     private async Task SpeakAssistantTextAsync(string text)
     {
         if (_launchMode == LaunchMode.Text ||
@@ -284,7 +292,8 @@ public partial class MainWindow : Window
 
         try
         {
-            await _speechOutput.SpeakAsync(text);
+            var cancellationToken = _speechCancellation?.Token ?? CancellationToken.None;
+            await _speechOutput.SpeakAsync(text, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -562,8 +571,7 @@ public partial class MainWindow : Window
             _settingsWindow = null;
         }
 
-        _speechCancellation?.Cancel();
-        _speechCancellation?.Dispose();
+        StopVoiceActivity();
         _speechInput.Dispose();
         _speechOutput.Dispose();
     }
@@ -627,6 +635,7 @@ public partial class MainWindow : Window
                  * App.IsExiting and still follows the exit path below.
                  */
                 e.Cancel = true;
+                StopVoiceActivity();
                 ResetToInitialState();
                 Hide();
                 Opacity = 1;
@@ -635,12 +644,15 @@ public partial class MainWindow : Window
             else
             {
                 e.Cancel = true;
+                StopVoiceActivity();
                 ResetToInitialState();
                 Hide();
                 Opacity = 1;
                 return;
             }
         }
+
+        StopVoiceActivity();
 
         /*
          * Explicit application exit: preserve the existing
@@ -671,6 +683,7 @@ public partial class MainWindow : Window
 
     private void ResetToInitialState()
     {
+        _launchMode = LaunchMode.Text;
         _isPillAnimating = false;
         _hasEnteredChat = false;
         UpdateInputPillGlow();
@@ -741,6 +754,7 @@ public partial class MainWindow : Window
         // Drop out of the topmost desktop layer before hiding so Alt+Tab
         // can fully hand focus and visual control back to the selected app.
         Topmost = false;
+        StopVoiceActivity();
         ResetToInitialState();
         Hide();
     }
@@ -2871,6 +2885,13 @@ public partial class MainWindow : Window
 
             if (_settingsWindow is null)
                 ChatInput.Focus();
+
+            if (_launchMode == LaunchMode.VoiceInputOutput &&
+                IsVisible &&
+                !App.IsExiting)
+            {
+                await StartVoiceInputAsync();
+            }
         }
     }
 
