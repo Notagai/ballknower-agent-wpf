@@ -79,7 +79,7 @@ public partial class App : WpfApplication
 
         IsExiting = true;
 
-        MainWindow?.Close();
+        Shutdown();
     }
 
     protected override void OnExit(
