@@ -1212,10 +1212,6 @@ public partial class SettingsWindow : Window
                 _settings.JailbreakPrompt =
                     importedSettings.JailbreakPrompt ?? string.Empty;
 
-                _settings.OpeningShortcut =
-                    NormalizeOpeningShortcut(
-                        importedSettings.OpeningShortcut);
-
                 _settings.HistoryTokenBudget =
                     NormalizeHistoryBudget(
                         importedSettings.HistoryTokenBudget);
@@ -1767,9 +1763,6 @@ public partial class SettingsWindow : Window
         _settingsStore.Save(
             _targetSettings);
 
-        (System.Windows.Application.Current as App)?
-            .UpdateOpeningShortcut(
-                _settings.OpeningShortcut);
         _isDirty = false;
         _allowClose = true;
         Close();
