@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows;
+using Ballknower.Voice;
 
 using FormsContextMenu = System.Windows.Forms.ContextMenuStrip;
 using FormsMenuItem = System.Windows.Forms.ToolStripMenuItem;
@@ -77,7 +78,7 @@ public sealed class BackgroundActivity : IDisposable
         window?.OpenSettingsFromTray();
     }
 
-    public void ShowBallknower()
+    public void ShowBallknower(LaunchMode launchMode = LaunchMode.Text)
     {
         if (_disposed)
             return;
@@ -88,7 +89,7 @@ public sealed class BackgroundActivity : IDisposable
             return;
 
         window.RefreshDesktopBackdropForReopen();
-        window.FocusBallknower();
+        window.FocusBallknower(launchMode);
     }
 
     public void Dispose()

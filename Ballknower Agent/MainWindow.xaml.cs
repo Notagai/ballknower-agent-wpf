@@ -3,6 +3,7 @@ using Ballknower.Commands;
 using Ballknower.Config;
 using Ballknower.Diagnostics;
 using Ballknower.Tools;
+using Ballknower.Voice;
 
 using System;
 using System.Collections.Generic;
@@ -107,6 +108,10 @@ public partial class MainWindow : Window
     private readonly ToolRegistry _toolRegistry;
     private readonly CredentialStore _credentialStore;
     private readonly Ballknower.Google.GoogleDriveService _googleDriveService;
+    private readonly ISpeechInput _speechInput;
+    private readonly ISpeechOutput _speechOutput;
+    private CancellationTokenSource? _speechCancellation;
+    private LaunchMode _launchMode = LaunchMode.Text;
 
     private readonly TranslateTransform _inputPillTransform;
     private readonly TranslateTransform _messageAreaTransform;
@@ -169,9 +174,6 @@ public partial class MainWindow : Window
      */
     private bool _ignoreShortcutDeactivation;
 
-    public string OpeningShortcut =>
-        _settings.OpeningShortcut;
-
     private const int VkMenu = 0x12;
     private const int VkLWin = 0x5B;
     private const int VkRWin = 0x5C;
@@ -193,8 +195,10 @@ public partial class MainWindow : Window
         IntPtr hToken,
         out IntPtr ppszPath);
 
-    public void FocusBallknower()
+    public void FocusBallknower(LaunchMode launchMode = LaunchMode.Text)
     {
+        StopVoiceActivity();
+        _launchMode = launchMode;
         _ignoreShortcutDeactivation = true;
 
         Opacity = 0;
@@ -221,7 +225,85 @@ public partial class MainWindow : Window
 
         Dispatcher.BeginInvoke(
             DispatcherPriority.ApplicationIdle,
-            new Action(() => _ignoreShortcutDeactivation = false));
+            new Action(async () =>
+            {
+                _ignoreShortcutDeactivation = false;
+                if (_launchMode == LaunchMode.VoiceInputOutput)
+                    await StartVoiceInputAsync();
+            }));
+    }
+
+    private async Task StartVoiceInputAsync()
+    {
+        if (_isProcessing || _launchMode != LaunchMode.VoiceInputOutput)
+            return;
+
+        _speechCancellation?.Cancel();
+        _speechCancellation?.Dispose();
+        _speechCancellation = new CancellationTokenSource();
+
+        try
+        {
+            if (_settings.SpeechEffectsEnabled && _settings.SpeechListeningEffect)
+                SpeechEffects.PlayListening();
+
+            var text = await _speechInput.RecognizeAsync(_speechCancellation.Token);
+            if (string.IsNullOrWhiteSpace(text) ||
+                _speechCancellation.IsCancellationRequested ||
+                _launchMode != LaunchMode.VoiceInputOutput)
+                return;
+
+            ChatInput.Text = text;
+            var args = new System.Windows.Input.KeyEventArgs(
+                Keyboard.PrimaryDevice,
+                PresentationSource.FromVisual(ChatInput),
+                0,
+                Key.Enter)
+            {
+                RoutedEvent = Keyboard.PreviewKeyDownEvent
+            };
+            ChatInput.RaiseEvent(args);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Voice input failed", ex);
+            if (_settings.SpeechEffectsEnabled && _settings.SpeechErrorEffect)
+                SpeechEffects.PlayError();
+        }
+    }
+
+    private void StopVoiceActivity()
+    {
+        _speechCancellation?.Cancel();
+        _speechCancellation?.Dispose();
+        _speechCancellation = null;
+        _speechOutput.Stop();
+    }
+
+    private async Task SpeakAssistantTextAsync(string text)
+    {
+        if (_launchMode == LaunchMode.Text ||
+            !_settings.SpeechOutputEnabled ||
+            string.IsNullOrWhiteSpace(text))
+            return;
+
+        try
+        {
+            var cancellationToken = _speechCancellation?.Token ?? CancellationToken.None;
+            await _speechOutput.SpeakAsync(text, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Speech output failed", ex);
+            if (_settings.SpeechEffectsEnabled && _settings.SpeechErrorEffect)
+                SpeechEffects.PlayError();
+        }
     }
 
     public void RefreshDesktopBackdropForReopen()
@@ -351,6 +433,9 @@ public partial class MainWindow : Window
 
         _credentialStore =
             new CredentialStore();
+
+        _speechInput = new MicrosoftSpeechInput();
+        _speechOutput = new MicrosoftSpeechOutput();
 
         _googleDriveService =
             new Ballknower.Google.GoogleDriveService();
@@ -488,6 +573,10 @@ public partial class MainWindow : Window
             _settingsWindow.Close();
             _settingsWindow = null;
         }
+
+        StopVoiceActivity();
+        _speechInput.Dispose();
+        _speechOutput.Dispose();
     }
 
     private void MainWindow_Closing(
@@ -549,6 +638,7 @@ public partial class MainWindow : Window
                  * App.IsExiting and still follows the exit path below.
                  */
                 e.Cancel = true;
+                StopVoiceActivity();
                 ResetToInitialState();
                 Hide();
                 Opacity = 1;
@@ -557,12 +647,15 @@ public partial class MainWindow : Window
             else
             {
                 e.Cancel = true;
+                StopVoiceActivity();
                 ResetToInitialState();
                 Hide();
                 Opacity = 1;
                 return;
             }
         }
+
+        StopVoiceActivity();
 
         /*
          * Explicit application exit: preserve the existing
@@ -593,6 +686,7 @@ public partial class MainWindow : Window
 
     private void ResetToInitialState()
     {
+        _launchMode = LaunchMode.Text;
         _isPillAnimating = false;
         _hasEnteredChat = false;
         UpdateInputPillGlow();
@@ -663,6 +757,7 @@ public partial class MainWindow : Window
         // Drop out of the topmost desktop layer before hiding so Alt+Tab
         // can fully hand focus and visual control back to the selected app.
         Topmost = false;
+        StopVoiceActivity();
         ResetToInitialState();
         Hide();
     }
@@ -2793,6 +2888,13 @@ public partial class MainWindow : Window
 
             if (_settingsWindow is null)
                 ChatInput.Focus();
+
+            if (_launchMode == LaunchMode.VoiceInputOutput &&
+                IsVisible &&
+                !App.IsExiting)
+            {
+                await StartVoiceInputAsync();
+            }
         }
     }
 
@@ -3229,12 +3331,12 @@ public partial class MainWindow : Window
             if (response.ToolCalls is null ||
                 response.ToolCalls.Count == 0)
             {
-                AddAssistantMessage(
-                    string.IsNullOrWhiteSpace(
-                        response.Content)
+                var finalText =
+                    string.IsNullOrWhiteSpace(response.Content)
                         ? "The model returned an empty response."
-                        : response.Content);
-
+                        : response.Content;
+                AddAssistantMessage(finalText);
+                await SpeakAssistantTextAsync(finalText);
                 return;
             }
 
@@ -3296,11 +3398,11 @@ public partial class MainWindow : Window
                 toolCallsExecuted >=
                 maxToolCalls)
             {
-                AddAssistantMessage(
+                var limitText =
                     "Reached the tool-call limit. " +
-                    "The last tool results have been " +
-                    "recorded in this conversation.");
-
+                    "The last tool results have been recorded in this conversation.";
+                AddAssistantMessage(limitText);
+                await SpeakAssistantTextAsync(limitText);
                 return;
             }
         }

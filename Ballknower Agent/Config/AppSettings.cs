@@ -26,7 +26,6 @@ public class AppSettings
 
     public string JailbreakPrompt { get; set; } = string.Empty;
 
-    public string OpeningShortcut { get; set; } = "Alt+Win";
 
     // Approximate conversation history budget per AI request.
     // Does not include the model's response or all tool overhead.
@@ -46,6 +45,16 @@ public class AppSettings
     public bool StyleAnimatedEffects { get; set; } = true;
     public bool StyleRainbowBorder { get; set; } = true;
     public bool StyleGlowEffect { get; set; } = true;
+
+    public bool SpeechOutputEnabled { get; set; } = true;
+    public string SpeechVoiceId { get; set; } = string.Empty;
+    public string SpeechModel { get; set; } = "eleven_multilingual_v2";
+    public string SpeechOutputDevice { get; set; } = string.Empty;
+    public int SpeechVolume { get; set; } = 100;
+    public bool SpeechEffectsEnabled { get; set; } = true;
+    public bool SpeechStartupEffect { get; set; } = true;
+    public bool SpeechListeningEffect { get; set; } = true;
+    public bool SpeechErrorEffect { get; set; } = true;
 
     public Dictionary<string, string> Shortcuts { get; set; } =
         new();

@@ -80,27 +80,63 @@
             </TabItem>
             <TabItem Header="Shortcuts">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
-                    <TextBlock Text="Add or edit a slash command" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <TextBlock Text="Opening shortcut" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <ComboBox x:Name="OpeningShortcutInput" SelectedValuePath="Content" SelectionChanged="OpeningShortcutInput_SelectionChanged" Margin="0,0,0,16">
-                        <ComboBoxItem Content="Alt+Win"/>
-                        <ComboBoxItem Content="Ctrl+Win"/>
-                        <ComboBoxItem Content="Shift+Win"/>
-                    </ComboBox>
-                    <TextBlock Text="Built-in commands" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <TextBlock Text="/help — Show command list&#10;/settings — Open settings&#10;/logs — Open error logs&#10;/clear — Clear conversation&#10;/confetti — Show confetti&#10;/see — Reveal desktop without blur&#10;/pin — Stay visible while switching apps&#10;/unpin — Hide when focus is lost&#10;/shutdown — Exit Ballknower and stop the background process" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,16"/>
-                    <TextBox x:Name="CommandInput" ToolTip="Command name, e.g. notes" Margin="0,0,0,8" TextChanged="SettingsChanged"/>
-                    <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBox x:Name="PathInput" Grid.Column="0" TextChanged="SettingsChanged"/>
-                        <Button Grid.Column="1" Content="Browse" Click="BrowseButton_Click" Margin="10,0,0,0"/>
+                    <TextBlock Text="Command Shortcuts" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Optional command shortcuts for launching local executables. These are separate from Ballknower's fixed voice activation shortcuts." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <TextBlock Text="Command" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBox x:Name="CommandInput" Margin="0,0,0,10"/>
+                    <TextBlock Text="Executable" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="PathInput" Grid.Column="0" Margin="0,0,10,0"/>
+                        <Button x:Name="BrowseButton" Grid.Column="1" Content="Browse" Click="BrowseButton_Click" Padding="14,5"/>
                     </Grid>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <Button x:Name="AddShortcutButton" Content="Add Shortcut" Click="AddShortcutButton_Click" Margin="0,0,10,0"/>
-                        <Button x:Name="CancelEditButton" Content="Cancel Edit" Click="CancelEditButton_Click" Visibility="Collapsed"/>
-                        <Button Content="Test Shortcut" Click="TestShortcutButton_Click" Margin="10,0,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button x:Name="AddShortcutButton" Content="Add Shortcut" Click="AddShortcutButton_Click" Padding="14,5" Margin="0,0,10,0"/>
+                        <Button x:Name="CancelEditButton" Content="Cancel Edit" Click="CancelEditButton_Click" Padding="14,5" Visibility="Collapsed"/>
                     </StackPanel>
-                    <TextBlock x:Name="ShortcutTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD" Margin="0,0,0,12"/>
-                    <StackPanel x:Name="ShortcutList" Margin="0,0,0,20"/>
+                    <Button Content="Test Shortcut" Click="TestShortcutButton_Click" HorizontalAlignment="Left" Padding="14,5" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="ShortcutTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD" Margin="0,0,0,16"/>
+                    <TextBlock Text="Saved Shortcuts" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <StackPanel x:Name="ShortcutList"/>
+                </StackPanel></ScrollViewer>
+            </TabItem>
+            <TabItem Header="Speech">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+                    <TextBlock Text="Speech" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Voice input uses the Microsoft Windows speech recognizer. Voice output uses ElevenLabs and is separate from your AI provider." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                    <TextBlock Text="Output" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="SpeechOutputEnabledCheckBox" Content="Enable voice output" Margin="0,0,0,12" Checked="SpeechSettingChanged" Unchecked="SpeechSettingChanged"/>
+                    <TextBlock Text="ElevenLabs API Key" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <PasswordBox x:Name="SpeechApiKeyInput" PasswordChanged="SpeechSettingChanged" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button Content="Test Key" Click="TestSpeechKeyButton_Click" Padding="14,5"/>
+                        <TextBlock x:Name="SpeechKeyStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
+                    </StackPanel>
+                    <TextBlock Text="Voice" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <ComboBox x:Name="SpeechVoiceInput" Grid.Column="0" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="SpeechSettingChanged"/>
+                        <Button Grid.Column="1" Content="Fetch Voices" Click="FetchSpeechVoicesButton_Click" Margin="10,0,0,0" Padding="14,5"/>
+                    </Grid>
+                    <TextBlock Text="Voice ID (manual override)" FontSize="12" Opacity="0.65" Margin="0,0,0,6"/>
+                    <TextBox x:Name="SpeechVoiceIdInput" TextChanged="SpeechSettingChanged" Margin="0,0,0,12"/>
+                    <TextBlock Text="Model" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBox x:Name="SpeechModelInput" TextChanged="SpeechSettingChanged" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Button Content="Test Voice" Click="TestSpeechButton_Click" Padding="14,5"/>
+                        <TextBlock x:Name="SpeechTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
+                    </StackPanel>
+                    <TextBlock Text="Speaker" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ComboBox x:Name="SpeechOutputDeviceInput" SelectionChanged="SpeechSettingChanged" Margin="0,0,0,12"/>
+                    <Button Content="Refresh Speakers" Click="RefreshSpeechOutputDevicesButton_Click" HorizontalAlignment="Left" Padding="14,5" Margin="0,0,0,16"/>
+                    <TextBlock Text="Volume" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <Slider x:Name="SpeechVolumeSlider" Minimum="0" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="SpeechVolumeSlider_ValueChanged" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="SpeechVolumeLabel" Text="100%" Opacity="0.65" Margin="0,0,0,18"/>
+                    <TextBlock Text="Sound Effects" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="SpeechEffectsEnabledCheckBox" Content="Enable speech sound effects" Margin="0,0,0,8" Checked="SpeechSettingChanged" Unchecked="SpeechSettingChanged"/>
+                    <CheckBox x:Name="SpeechStartupEffectCheckBox" Content="Startup / activation sound" Margin="0,0,0,8" Checked="SpeechSettingChanged" Unchecked="SpeechSettingChanged"/>
+                    <CheckBox x:Name="SpeechListeningEffectCheckBox" Content="Listening sound" Margin="0,0,0,8" Checked="SpeechSettingChanged" Unchecked="SpeechSettingChanged"/>
+                    <CheckBox x:Name="SpeechErrorEffectCheckBox" Content="Error sound" Margin="0,0,0,8" Checked="SpeechSettingChanged" Unchecked="SpeechSettingChanged"/>
                 </StackPanel></ScrollViewer>
             </TabItem>
             <TabItem Header="Google Drive">

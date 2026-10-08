@@ -1,6 +1,7 @@
 ﻿using Ballknower.Config;
 using Ballknower.Diagnostics;
 using Ballknower.Google;
+using Ballknower.Voice;
 using Microsoft.Win32;
 
 using System;
@@ -72,7 +73,6 @@ public partial class SettingsWindow : Window
             SearchProvider = NormalizeSearchProvider(settings.SearchProvider),
             JailbreakEnabled = settings.JailbreakEnabled,
             JailbreakPrompt = settings.JailbreakPrompt,
-            OpeningShortcut = settings.OpeningShortcut,
             HistoryTokenBudget = settings.HistoryTokenBudget,
             Shortcuts = new Dictionary<string, string>(
                 settings.Shortcuts),
@@ -92,7 +92,16 @@ public partial class SettingsWindow : Window
             StyleFontFamily = settings.StyleFontFamily,
             StyleAnimatedEffects = settings.StyleAnimatedEffects,
             StyleRainbowBorder = settings.StyleRainbowBorder,
-            StyleGlowEffect = settings.StyleGlowEffect
+            StyleGlowEffect = settings.StyleGlowEffect,
+            SpeechOutputEnabled = settings.SpeechOutputEnabled,
+            SpeechVoiceId = settings.SpeechVoiceId,
+            SpeechModel = settings.SpeechModel,
+            SpeechOutputDevice = settings.SpeechOutputDevice,
+            SpeechVolume = settings.SpeechVolume,
+            SpeechEffectsEnabled = settings.SpeechEffectsEnabled,
+            SpeechStartupEffect = settings.SpeechStartupEffect,
+            SpeechListeningEffect = settings.SpeechListeningEffect,
+            SpeechErrorEffect = settings.SpeechErrorEffect
         };
 
         _settingsStore = new SettingsStore();
@@ -107,10 +116,6 @@ public partial class SettingsWindow : Window
 
         SearchProviderInput.SelectedValue =
             NormalizeSearchProvider(_settings.SearchProvider);
-
-        OpeningShortcutInput.SelectedValue =
-            NormalizeOpeningShortcut(
-                _settings.OpeningShortcut);
 
         UpdateProviderUI();
 
@@ -127,6 +132,7 @@ public partial class SettingsWindow : Window
         RefreshShortcutList();
         RefreshGoogleDriveStatus();
         LoadStyleControls();
+        LoadSpeechControls();
         ApplySettingsTheme();
 
         _isInitializing = false;
@@ -148,26 +154,6 @@ public partial class SettingsWindow : Window
             return;
 
         _settings.SearchProvider = NormalizeSearchProvider(provider);
-        MarkDirty();
-    }
-
-    private static string NormalizeOpeningShortcut(string shortcut)
-    {
-        return shortcut is "Ctrl+Win" or "Shift+Win"
-            ? shortcut
-            : "Alt+Win";
-    }
-
-    private void OpeningShortcutInput_SelectionChanged(
-        object sender,
-        SelectionChangedEventArgs e)
-    {
-        if (_isInitializing ||
-            OpeningShortcutInput.SelectedValue is not string shortcut)
-            return;
-
-        _settings.OpeningShortcut =
-            NormalizeOpeningShortcut(shortcut);
         MarkDirty();
     }
 
@@ -431,6 +417,7 @@ public partial class SettingsWindow : Window
         LoadApiKey("OpenRouter");
         LoadApiKey("OpenAI");
         LoadApiKey("Gemini");
+        LoadApiKey("ElevenLabs");
     }
 
     private void LoadApiKey(string provider)
@@ -724,6 +711,7 @@ public partial class SettingsWindow : Window
         SaveApiKey("OpenRouter");
         SaveApiKey("OpenAI");
         SaveApiKey("Gemini");
+        SaveApiKey("ElevenLabs");
     }
 
     private void SaveApiKey(string provider)
@@ -1224,10 +1212,6 @@ public partial class SettingsWindow : Window
                 _settings.JailbreakPrompt =
                     importedSettings.JailbreakPrompt ?? string.Empty;
 
-                _settings.OpeningShortcut =
-                    NormalizeOpeningShortcut(
-                        importedSettings.OpeningShortcut);
-
                 _settings.HistoryTokenBudget =
                     NormalizeHistoryBudget(
                         importedSettings.HistoryTokenBudget);
@@ -1265,6 +1249,15 @@ public partial class SettingsWindow : Window
                 _settings.StyleAnimatedEffects = importedSettings.StyleAnimatedEffects;
                 _settings.StyleRainbowBorder = importedSettings.StyleRainbowBorder;
                 _settings.StyleGlowEffect = importedSettings.StyleGlowEffect;
+                _settings.SpeechOutputEnabled = importedSettings.SpeechOutputEnabled;
+                _settings.SpeechVoiceId = importedSettings.SpeechVoiceId;
+                _settings.SpeechModel = importedSettings.SpeechModel;
+                _settings.SpeechOutputDevice = importedSettings.SpeechOutputDevice;
+                _settings.SpeechVolume = importedSettings.SpeechVolume;
+                _settings.SpeechEffectsEnabled = importedSettings.SpeechEffectsEnabled;
+                _settings.SpeechStartupEffect = importedSettings.SpeechStartupEffect;
+                _settings.SpeechListeningEffect = importedSettings.SpeechListeningEffect;
+                _settings.SpeechErrorEffect = importedSettings.SpeechErrorEffect;
 
                 ProviderInput.SelectedValue =
                     _settings.AIProvider;
@@ -1286,9 +1279,6 @@ public partial class SettingsWindow : Window
                         ? Visibility.Visible
                         : Visibility.Collapsed;
 
-                OpeningShortcutInput.SelectedValue =
-                    _settings.OpeningShortcut;
-
                 UpdateHistorySlider();
 
                 _editingCommand = null;
@@ -1308,6 +1298,7 @@ public partial class SettingsWindow : Window
                 RefreshShortcutList();
                 RefreshPresetList();
                 LoadStyleControls();
+                LoadSpeechControls();
                 MarkDirty();
             }
             finally
@@ -1333,6 +1324,138 @@ public partial class SettingsWindow : Window
                 WpfMessageBoxButton.OK,
                 WpfMessageBoxImage.Error);
         }
+    }
+
+    private void LoadSpeechControls()
+    {
+        SpeechOutputEnabledCheckBox.IsChecked = _settings.SpeechOutputEnabled;
+        SpeechApiKeyInput.Password = _apiKeys.TryGetValue("ElevenLabs", out var key) ? key : string.Empty;
+        SpeechModelInput.Text = _settings.SpeechModel;
+        SpeechVoiceIdInput.Text = _settings.SpeechVoiceId;
+        SpeechVolumeSlider.Value = Math.Clamp(_settings.SpeechVolume, 0, 100);
+        SpeechVolumeLabel.Text = $"{_settings.SpeechVolume}%";
+        SpeechEffectsEnabledCheckBox.IsChecked = _settings.SpeechEffectsEnabled;
+        SpeechStartupEffectCheckBox.IsChecked = _settings.SpeechStartupEffect;
+        SpeechListeningEffectCheckBox.IsChecked = _settings.SpeechListeningEffect;
+        SpeechErrorEffectCheckBox.IsChecked = _settings.SpeechErrorEffect;
+        RefreshSpeechOutputDevices();
+    }
+
+    private void SpeechSettingChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing) return;
+        SaveSpeechControls();
+        MarkDirty();
+    }
+
+    private void SpeechSettingChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing) return;
+        SaveSpeechControls();
+        MarkDirty();
+    }
+
+    private void SpeechVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isInitializing || SpeechVolumeLabel is null) return;
+        _settings.SpeechVolume = Math.Clamp((int)Math.Round(e.NewValue), 0, 100);
+        SpeechVolumeLabel.Text = $"{_settings.SpeechVolume}%";
+        MarkDirty();
+    }
+
+    private void SaveSpeechControls()
+    {
+        _settings.SpeechOutputEnabled = SpeechOutputEnabledCheckBox.IsChecked == true;
+        _settings.SpeechVoiceId = SpeechVoiceIdInput.Text.Trim();
+        _settings.SpeechModel = string.IsNullOrWhiteSpace(SpeechModelInput.Text) ? "eleven_multilingual_v2" : SpeechModelInput.Text.Trim();
+        _settings.SpeechOutputDevice = SpeechOutputDeviceInput.SelectedItem as string ?? string.Empty;
+        _settings.SpeechVolume = Math.Clamp((int)Math.Round(SpeechVolumeSlider.Value), 0, 100);
+        _settings.SpeechEffectsEnabled = SpeechEffectsEnabledCheckBox.IsChecked == true;
+        _settings.SpeechStartupEffect = SpeechStartupEffectCheckBox.IsChecked == true;
+        _settings.SpeechListeningEffect = SpeechListeningEffectCheckBox.IsChecked == true;
+        _settings.SpeechErrorEffect = SpeechErrorEffectCheckBox.IsChecked == true;
+        var key = SpeechApiKeyInput.Password.Trim();
+        if (string.IsNullOrWhiteSpace(key)) _apiKeys.Remove("ElevenLabs");
+        else _apiKeys["ElevenLabs"] = key;
+    }
+
+    private void RefreshSpeechOutputDevices()
+    {
+        try
+        {
+            var selected = _settings.SpeechOutputDevice;
+            var devices = AudioOutputService.GetOutputDevices();
+            SpeechOutputDeviceInput.ItemsSource = devices;
+            if (!string.IsNullOrWhiteSpace(selected) && devices.Contains(selected, StringComparer.OrdinalIgnoreCase))
+                SpeechOutputDeviceInput.SelectedItem = devices.First(d => string.Equals(d, selected, StringComparison.OrdinalIgnoreCase));
+            else if (devices.Count > 0)
+            {
+                SpeechOutputDeviceInput.SelectedIndex = 0;
+                _settings.SpeechOutputDevice = SpeechOutputDeviceInput.SelectedItem as string ?? string.Empty;
+            }
+        }
+        catch (Exception ex) { AppLogger.Error("Could not enumerate speech output devices", ex); }
+    }
+
+    private void RefreshSpeechOutputDevicesButton_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshSpeechOutputDevices();
+        MarkDirty();
+    }
+
+    private async void FetchSpeechVoicesButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSpeechControls();
+        try
+        {
+            using var service = CreateSpeechService();
+            var voices = await service.GetVoicesAsync();
+            SpeechVoiceInput.ItemsSource = voices;
+            SpeechVoiceInput.SelectedValue = _settings.SpeechVoiceId;
+            SpeechTestStatus.Text = $"✓ {voices.Count} voices loaded";
+        }
+        catch (Exception ex) { SpeechTestStatus.Text = "✗ " + ex.Message; }
+    }
+
+    private async void TestSpeechButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSpeechControls();
+        SpeechTestStatus.Text = "Testing…";
+        try
+        {
+            using var service = CreateSpeechService();
+            await service.TestAsync();
+            SpeechTestStatus.Text = "✓ Voice played";
+        }
+        catch (Exception ex) { SpeechTestStatus.Text = "✗ " + ex.Message; }
+    }
+
+    private async void TestSpeechKeyButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSpeechControls();
+        if (string.IsNullOrWhiteSpace(SpeechApiKeyInput.Password.Trim()))
+        {
+            SpeechKeyStatus.Text = "✗ Enter an API key";
+            return;
+        }
+        SpeechKeyStatus.Text = "Testing…";
+        try
+        {
+            using var service = CreateSpeechService();
+            var voices = await service.GetVoicesAsync();
+            SpeechKeyStatus.Text = $"✓ Key accepted ({voices.Count} voices)";
+        }
+        catch (Exception ex) { SpeechKeyStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : ex.Message); }
+    }
+
+    private ElevenLabsSpeechOutput CreateSpeechService()
+    {
+        return new ElevenLabsSpeechOutput(
+            () => _apiKeys.TryGetValue("ElevenLabs", out var key) ? key : null,
+            () => _settings.SpeechVoiceId,
+            () => _settings.SpeechModel,
+            () => _settings.SpeechOutputDevice,
+            () => _settings.SpeechVolume);
     }
 
     private void LoadStyleControls()
@@ -1571,6 +1694,7 @@ public partial class SettingsWindow : Window
     {
         SaveCurrentModel();
         SaveCurrentHistoryBudget();
+        SaveSpeechControls();
         SaveApiKeys();
 
         _settings.StreamResponses =
@@ -1600,9 +1724,6 @@ public partial class SettingsWindow : Window
         _targetSettings.JailbreakEnabled = _settings.JailbreakEnabled;
         _targetSettings.JailbreakPrompt = _settings.JailbreakPrompt;
 
-        _targetSettings.OpeningShortcut =
-            _settings.OpeningShortcut;
-
         _targetSettings.HistoryTokenBudget =
             _settings.HistoryTokenBudget;
 
@@ -1629,12 +1750,19 @@ public partial class SettingsWindow : Window
         _targetSettings.StyleRainbowBorder = _settings.StyleRainbowBorder;
         _targetSettings.StyleGlowEffect = _settings.StyleGlowEffect;
 
+        _targetSettings.SpeechOutputEnabled = _settings.SpeechOutputEnabled;
+        _targetSettings.SpeechVoiceId = _settings.SpeechVoiceId;
+        _targetSettings.SpeechModel = _settings.SpeechModel;
+        _targetSettings.SpeechOutputDevice = _settings.SpeechOutputDevice;
+        _targetSettings.SpeechVolume = _settings.SpeechVolume;
+        _targetSettings.SpeechEffectsEnabled = _settings.SpeechEffectsEnabled;
+        _targetSettings.SpeechStartupEffect = _settings.SpeechStartupEffect;
+        _targetSettings.SpeechListeningEffect = _settings.SpeechListeningEffect;
+        _targetSettings.SpeechErrorEffect = _settings.SpeechErrorEffect;
+
         _settingsStore.Save(
             _targetSettings);
 
-        (System.Windows.Application.Current as App)?
-            .UpdateOpeningShortcut(
-                _settings.OpeningShortcut);
         _isDirty = false;
         _allowClose = true;
         Close();
