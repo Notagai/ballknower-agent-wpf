@@ -27,10 +27,41 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         _audioOutput = new AudioOutputService(getOutputDevice, getVolume);
     }
 
+
+    private static string NormalizeApiKey(string? key)
+    {
+        var normalized = (key ?? string.Empty).Trim().Trim('"', '\'');
+        if (normalized.StartsWith("xi-api-key:", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized.Substring("xi-api-key:".Length).Trim();
+        if (normalized.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized.Substring("Bearer ".Length).Trim();
+        // PasswordBox pastes can occasionally contain line breaks or other whitespace.
+        return string.Concat(normalized.Where(c => !char.IsWhiteSpace(c)));
+    }
+
+    private static InvalidOperationException CreateApiException(System.Net.HttpStatusCode statusCode, string? body)
+    {
+        if (statusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            var detail = string.IsNullOrWhiteSpace(body) ? string.Empty : " API response: " + body;
+            return new InvalidOperationException(
+                "ElevenLabs rejected the API key (401 Unauthorized). Check that you pasted the full, active ElevenLabs API key and that it has not expired or been revoked." + detail);
+        }
+
+        if (statusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            var detail = string.IsNullOrWhiteSpace(body) ? string.Empty : " API response: " + body;
+            return new InvalidOperationException(
+                "ElevenLabs denied this request (403 Forbidden). Check the API key's endpoint permissions and any IP allowlist restrictions." + detail);
+        }
+
+        return new InvalidOperationException("ElevenLabs returned " + (int)statusCode + " (" + statusCode + "): " + body);
+    }
+
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
-        var key = _getApiKey();
+        var key = NormalizeApiKey(_getApiKey());
         var voiceId = _getVoiceId();
         if (string.IsNullOrWhiteSpace(key))
             throw new InvalidOperationException("ElevenLabs API key is not configured.");
@@ -48,7 +79,7 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         var body = response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"ElevenLabs returned {(int)response.StatusCode}: {body}");
+            throw CreateApiException(response.StatusCode, body);
 
         await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var memory = new MemoryStream();
@@ -57,9 +88,23 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         await _audioOutput.PlayMp3Async(memory, cancellationToken);
     }
 
+    public async Task TestApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        var key = NormalizeApiKey(_getApiKey());
+        if (string.IsNullOrWhiteSpace(key))
+            throw new InvalidOperationException("Enter an ElevenLabs API key first.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/user");
+        request.Headers.Add("xi-api-key", key);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw CreateApiException(response.StatusCode, body);
+    }
+
     public async Task<IReadOnlyList<SpeechVoice>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
-        var key = _getApiKey();
+        var key = NormalizeApiKey(_getApiKey());
         if (string.IsNullOrWhiteSpace(key))
             throw new InvalidOperationException("Enter an ElevenLabs API key first.");
 
@@ -68,7 +113,7 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"ElevenLabs returned {(int)response.StatusCode}: {body}");
+            throw CreateApiException(response.StatusCode, body);
 
         using var document = JsonDocument.Parse(body);
         return document.RootElement.TryGetProperty("voices", out var items)
@@ -78,6 +123,32 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
                     item.GetProperty("name").GetString() ?? string.Empty))
                 .Where(v => !string.IsNullOrWhiteSpace(v.Id) && !string.IsNullOrWhiteSpace(v.Name))
                 .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList()
+            : new List<SpeechVoice>();
+    }
+
+    public async Task<IReadOnlyList<SpeechVoice>> GetModelsAsync(CancellationToken cancellationToken = default)
+    {
+        var key = NormalizeApiKey(_getApiKey());
+        if (string.IsNullOrWhiteSpace(key))
+            throw new InvalidOperationException("Enter an ElevenLabs API key first.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/models");
+        request.Headers.Add("xi-api-key", key);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw CreateApiException(response.StatusCode, body);
+
+        using var document = JsonDocument.Parse(body);
+        return document.RootElement.ValueKind == JsonValueKind.Array
+            ? document.RootElement.EnumerateArray()
+                .Where(item => !item.TryGetProperty("can_do_text_to_speech", out var canSpeak) || canSpeak.GetBoolean())
+                .Select(item => new SpeechVoice(
+                    item.GetProperty("model_id").GetString() ?? string.Empty,
+                    item.TryGetProperty("name", out var name) ? name.GetString() ?? item.GetProperty("model_id").GetString() ?? string.Empty : item.GetProperty("model_id").GetString() ?? string.Empty))
+                .Where(model => !string.IsNullOrWhiteSpace(model.Id))
+                .OrderBy(model => model.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList()
             : new List<SpeechVoice>();
     }

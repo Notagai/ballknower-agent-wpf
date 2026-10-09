@@ -34,8 +34,13 @@ public sealed class AudioOutputService : IDisposable
                 ? new WasapiOut(AudioClientShareMode.Shared, true, 100)
                 : new WasapiOut(device, AudioClientShareMode.Shared, true, 100);
 
-            output.Volume = Math.Clamp(_getVolume(), 0, 100) / 100f;
-            output.Init(reader);
+            // Apply the app volume as a per-sample gain multiplier. Do not set the
+            // output/session/device volume, so Windows master volume is never changed.
+            var volumeProvider = new VolumeWaveProvider16(reader)
+            {
+                Volume = Math.Clamp(_getVolume(), 0, 100) / 100f
+            };
+            output.Init(volumeProvider);
             lock (_sync)
             {
                 _output?.Stop();

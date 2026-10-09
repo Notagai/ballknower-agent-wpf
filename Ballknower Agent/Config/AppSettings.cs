@@ -47,6 +47,7 @@ public class AppSettings
     public bool StyleGlowEffect { get; set; } = true;
 
     public bool SpeechOutputEnabled { get; set; } = true;
+    public string SpeechProvider { get; set; } = "ElevenLabs";
     public string SpeechVoiceId { get; set; } = string.Empty;
     public string SpeechModel { get; set; } = "eleven_multilingual_v2";
     public string SpeechOutputDevice { get; set; } = string.Empty;

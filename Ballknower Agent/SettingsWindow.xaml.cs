@@ -94,6 +94,7 @@ public partial class SettingsWindow : Window
             StyleRainbowBorder = settings.StyleRainbowBorder,
             StyleGlowEffect = settings.StyleGlowEffect,
             SpeechOutputEnabled = settings.SpeechOutputEnabled,
+            SpeechProvider = settings.SpeechProvider,
             SpeechVoiceId = settings.SpeechVoiceId,
             SpeechModel = settings.SpeechModel,
             SpeechOutputDevice = settings.SpeechOutputDevice,
@@ -1250,6 +1251,7 @@ public partial class SettingsWindow : Window
                 _settings.StyleRainbowBorder = importedSettings.StyleRainbowBorder;
                 _settings.StyleGlowEffect = importedSettings.StyleGlowEffect;
                 _settings.SpeechOutputEnabled = importedSettings.SpeechOutputEnabled;
+                _settings.SpeechProvider = importedSettings.SpeechProvider ?? "ElevenLabs";
                 _settings.SpeechVoiceId = importedSettings.SpeechVoiceId;
                 _settings.SpeechModel = importedSettings.SpeechModel;
                 _settings.SpeechOutputDevice = importedSettings.SpeechOutputDevice;
@@ -1329,8 +1331,11 @@ public partial class SettingsWindow : Window
     private void LoadSpeechControls()
     {
         SpeechOutputEnabledCheckBox.IsChecked = _settings.SpeechOutputEnabled;
+        SpeechProviderInput.SelectedValue = string.IsNullOrWhiteSpace(_settings.SpeechProvider) ? "ElevenLabs" : _settings.SpeechProvider;
+        ElevenLabsSettingsPanel.Visibility = string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase) ? Visibility.Collapsed : Visibility.Visible;
         SpeechApiKeyInput.Password = _apiKeys.TryGetValue("ElevenLabs", out var key) ? key : string.Empty;
-        SpeechModelInput.Text = _settings.SpeechModel;
+        SpeechModelInput.ItemsSource = new List<SpeechVoice> { new("eleven_multilingual_v2", "Eleven Multilingual v2"), new("eleven_flash_v2_5", "Eleven Flash v2.5"), new("eleven_turbo_v2_5", "Eleven Turbo v2.5") };
+        SpeechModelInput.SelectedValue = _settings.SpeechModel;
         SpeechVoiceIdInput.Text = _settings.SpeechVoiceId;
         SpeechVolumeSlider.Value = Math.Clamp(_settings.SpeechVolume, 0, 100);
         SpeechVolumeLabel.Text = $"{_settings.SpeechVolume}%";
@@ -1339,6 +1344,22 @@ public partial class SettingsWindow : Window
         SpeechListeningEffectCheckBox.IsChecked = _settings.SpeechListeningEffect;
         SpeechErrorEffectCheckBox.IsChecked = _settings.SpeechErrorEffect;
         RefreshSpeechOutputDevices();
+    }
+
+    private void SpeechProviderInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || SpeechProviderInput is null) return;
+        _settings.SpeechProvider = SpeechProviderInput.SelectedValue as string ?? "ElevenLabs";
+        ElevenLabsSettingsPanel.Visibility = string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase) ? Visibility.Collapsed : Visibility.Visible;
+        MarkDirty();
+    }
+
+    private void SpeechVoiceInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || SpeechVoiceInput.SelectedItem is not SpeechVoice voice) return;
+        SpeechVoiceIdInput.Text = voice.Id;
+        SaveSpeechControls();
+        MarkDirty();
     }
 
     private void SpeechSettingChanged(object sender, RoutedEventArgs e)
@@ -1366,8 +1387,9 @@ public partial class SettingsWindow : Window
     private void SaveSpeechControls()
     {
         _settings.SpeechOutputEnabled = SpeechOutputEnabledCheckBox.IsChecked == true;
+        _settings.SpeechProvider = SpeechProviderInput.SelectedValue as string ?? "ElevenLabs";
         _settings.SpeechVoiceId = SpeechVoiceIdInput.Text.Trim();
-        _settings.SpeechModel = string.IsNullOrWhiteSpace(SpeechModelInput.Text) ? "eleven_multilingual_v2" : SpeechModelInput.Text.Trim();
+        _settings.SpeechModel = SpeechModelInput.SelectedValue as string ?? _settings.SpeechModel ?? "eleven_multilingual_v2";
         _settings.SpeechOutputDevice = SpeechOutputDeviceInput.SelectedItem as string ?? string.Empty;
         _settings.SpeechVolume = Math.Clamp((int)Math.Round(SpeechVolumeSlider.Value), 0, 100);
         _settings.SpeechEffectsEnabled = SpeechEffectsEnabledCheckBox.IsChecked == true;
@@ -1412,7 +1434,24 @@ public partial class SettingsWindow : Window
             var voices = await service.GetVoicesAsync();
             SpeechVoiceInput.ItemsSource = voices;
             SpeechVoiceInput.SelectedValue = _settings.SpeechVoiceId;
+            if (SpeechVoiceInput.SelectedItem is SpeechVoice selectedVoice) SpeechVoiceIdInput.Text = selectedVoice.Id;
             SpeechTestStatus.Text = $"✓ {voices.Count} voices loaded";
+        }
+        catch (Exception ex) { SpeechTestStatus.Text = "✗ " + ex.Message; }
+    }
+
+    private async void FetchSpeechModelsButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveSpeechControls();
+        try
+        {
+            using var service = CreateSpeechService();
+            var models = await service.GetModelsAsync();
+            SpeechModelInput.ItemsSource = models;
+            SpeechModelInput.SelectedValue = _settings.SpeechModel;
+            if (SpeechModelInput.SelectedItem is null && models.Count > 0) SpeechModelInput.SelectedIndex = 0;
+            SaveSpeechControls();
+            SpeechTestStatus.Text = $"✓ {models.Count} TTS models loaded";
         }
         catch (Exception ex) { SpeechTestStatus.Text = "✗ " + ex.Message; }
     }
@@ -1442,16 +1481,32 @@ public partial class SettingsWindow : Window
         try
         {
             using var service = CreateSpeechService();
-            var voices = await service.GetVoicesAsync();
-            SpeechKeyStatus.Text = $"✓ Key accepted ({voices.Count} voices)";
+            await service.TestApiKeyAsync();
+
+            // A successful key test also persists the credential immediately.
+            // CredentialStore encrypts the credentials file with DPAPI for the current Windows user.
+            var verifiedKey = SpeechApiKeyInput.Password.Trim();
+            _credentialStore.SaveApiKey("ElevenLabs", verifiedKey);
+            _apiKeys["ElevenLabs"] = verifiedKey;
+            SpeechKeyStatus.Text = "✓ Key accepted and saved securely";
         }
-        catch (Exception ex) { SpeechKeyStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : ex.Message); }
+        catch (Exception ex)
+        {
+            SpeechKeyStatus.Text = ex is TaskCanceledException ? "✗ Timed out" : "✗ Request rejected";
+            WpfMessageBox.Show(this, "ElevenLabs key test failed.\n\n" + ex.Message, "ElevenLabs API Key Test", WpfMessageBoxButton.OK, WpfMessageBoxImage.Error);
+        }
     }
 
     private ElevenLabsSpeechOutput CreateSpeechService()
     {
         return new ElevenLabsSpeechOutput(
-            () => _apiKeys.TryGetValue("ElevenLabs", out var key) ? key : null,
+            () =>
+            {
+                // During Test Key, use the value currently shown in the password field.
+                var enteredKey = SpeechApiKeyInput.Password.Trim();
+                if (!string.IsNullOrWhiteSpace(enteredKey)) return enteredKey;
+                return _apiKeys.TryGetValue("ElevenLabs", out var savedKey) ? savedKey : null;
+            },
             () => _settings.SpeechVoiceId,
             () => _settings.SpeechModel,
             () => _settings.SpeechOutputDevice,
@@ -1751,6 +1806,7 @@ public partial class SettingsWindow : Window
         _targetSettings.StyleGlowEffect = _settings.StyleGlowEffect;
 
         _targetSettings.SpeechOutputEnabled = _settings.SpeechOutputEnabled;
+        _targetSettings.SpeechProvider = _settings.SpeechProvider;
         _targetSettings.SpeechVoiceId = _settings.SpeechVoiceId;
         _targetSettings.SpeechModel = _settings.SpeechModel;
         _targetSettings.SpeechOutputDevice = _settings.SpeechOutputDevice;
