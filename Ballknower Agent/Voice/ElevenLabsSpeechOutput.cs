@@ -88,6 +88,20 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         await _audioOutput.PlayMp3Async(memory, cancellationToken);
     }
 
+    public async Task TestApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        var key = NormalizeApiKey(_getApiKey());
+        if (string.IsNullOrWhiteSpace(key))
+            throw new InvalidOperationException("Enter an ElevenLabs API key first.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/user");
+        request.Headers.Add("xi-api-key", key);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw CreateApiException(response.StatusCode, body);
+    }
+
     public async Task<IReadOnlyList<SpeechVoice>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
         var key = _getApiKey();
