@@ -66,14 +66,31 @@ public sealed class KeyboardShortcutManager : IDisposable
                 if (isUp) _keysDown[data.vkCode] = false;
             }
 
-            if (isDown && _winHeld && _pendingMode is not null &&
-                data.vkCode != VK_LCTRL && data.vkCode != VK_RCTRL &&
-                data.vkCode != VK_LALT && data.vkCode != VK_RALT &&
-                data.vkCode != 0x11 && data.vkCode != 0x12)
+            if (_winHeld && isDown)
             {
-                ReplayWinDownIfNeeded();
-                _winDownReplayed = true;
-                _pendingMode = null;
+                bool isModifier =
+                    data.vkCode == VK_LCTRL || data.vkCode == VK_RCTRL ||
+                    data.vkCode == VK_LALT || data.vkCode == VK_RALT ||
+                    data.vkCode == 0x11 || data.vkCode == 0x12;
+
+                if (isModifier)
+                {
+                    // Allow modifiers to be pressed after Win. This is the
+                    // normal key order for Win+Ctrl+Alt on many keyboards.
+                    _pendingMode = DetermineMode() ?? _pendingMode;
+                }
+                else
+                {
+                    // A real key was pressed while Win was held, so this is
+                    // a Windows shortcut rather than one of Ballknower's chords.
+                    if (!_winDownReplayed)
+                    {
+                        ReplayWinDownIfNeeded();
+                        _winDownReplayed = true;
+                    }
+
+                    _pendingMode = null;
+                }
             }
 
             return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
@@ -88,12 +105,9 @@ public sealed class KeyboardShortcutManager : IDisposable
             _activeWinKey = (int)data.vkCode;
             _pendingMode = DetermineMode();
 
-            if (_pendingMode is not null)
-                return IntPtr.Zero;
-
-            ReplayWinDownIfNeeded();
-            _winDownReplayed = true;
-            return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+            // Hold the Win key until release so the user can press Win first,
+            // then add Ctrl/Alt without opening Start prematurely.
+            return IntPtr.Zero;
         }
 
         if (isUp)
@@ -103,9 +117,18 @@ public sealed class KeyboardShortcutManager : IDisposable
 
             var mode = _pendingMode;
             if (mode is not null)
+            {
                 _onLaunch(mode.Value);
+            }
+            else
+            {
+                // Preserve ordinary Win-key behavior when no app chord matched.
+                if (!_winDownReplayed)
+                    ReplayWinDownIfNeeded();
+                ReplayWinUp(_activeWinKey);
+            }
 
-            if (_winDownReplayed)
+            if (mode is not null && _winDownReplayed)
                 ReplayWinUp(_activeWinKey);
 
             _winHeld = false;
@@ -131,7 +154,7 @@ public sealed class KeyboardShortcutManager : IDisposable
                    IsKeyPhysicallyDown(VK_LALT) ||
                    IsKeyPhysicallyDown(VK_RALT);
 
-        if (ctrl && alt) return LaunchMode.VoiceOutput;
+        if (ctrl && alt) return LaunchMode.SpeechInterface;
         if (ctrl) return LaunchMode.VoiceInputOutput;
         if (alt) return LaunchMode.Text;
         return null;
