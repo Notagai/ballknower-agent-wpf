@@ -2565,24 +2565,10 @@ public partial class MainWindow : Window
         if (e.Key != Key.Escape && e.SystemKey != Key.Escape)
             return;
 
-        /*
-         * Escape first dismisses autocomplete.
-         * A second Escape closes Ballknower.
-         */
-        if (CommandSuggestions.Visibility ==
-            Visibility.Visible)
-        {
-            HideCommandSuggestions();
-
-            e.Handled = true;
-            return;
-        }
-
-        /*
-         * Escape dismisses the overlay. When pinned, hide it directly
-         * instead of routing through Window.Close(), which would trigger
-         * the pinned close confirmation and interfere with the pinned state.
-         */
+        // Escape always dismisses the overlay, even when autocomplete is
+        // open or focus is on another control within the overlay.
+        // Do not close the background process; Close() is intercepted by
+        // MainWindow_Closing and hides the window when Ballknower is running.
         if (_isPinned)
         {
             ResetToInitialState();
@@ -2592,10 +2578,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        /*
-         * Fade the visible window before asking the normal close
-         * handler to hide it.
-         */
+        if (_isClosingWithFade)
+        {
+            e.Handled = true;
+            return;
+        }
+
         AnimateDouble(
             animation =>
                 BeginAnimation(
