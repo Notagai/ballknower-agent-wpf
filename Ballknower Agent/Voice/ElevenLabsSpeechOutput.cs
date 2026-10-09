@@ -28,6 +28,17 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
     }
 
 
+    private static string NormalizeApiKey(string? key)
+    {
+        var normalized = (key ?? string.Empty).Trim().Trim('"', '\'');
+        if (normalized.StartsWith("xi-api-key:", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized.Substring("xi-api-key:".Length).Trim();
+        if (normalized.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized.Substring("Bearer ".Length).Trim();
+        // PasswordBox pastes can occasionally contain line breaks or other whitespace.
+        return string.Concat(normalized.Where(c => !char.IsWhiteSpace(c)));
+    }
+
     private static InvalidOperationException CreateApiException(System.Net.HttpStatusCode statusCode, string? body)
     {
         if (statusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -50,7 +61,7 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
-        var key = _getApiKey();
+        var key = NormalizeApiKey(_getApiKey());
         var voiceId = _getVoiceId();
         if (string.IsNullOrWhiteSpace(key))
             throw new InvalidOperationException("ElevenLabs API key is not configured.");
@@ -59,7 +70,7 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
 
         var url = $"{BaseUrl}/text-to-speech/{Uri.EscapeDataString(voiceId)}/stream?output_format=mp3_44100_128";
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Add("xi-api-key", key.Trim());
+        request.Headers.Add("xi-api-key", key);
         request.Content = new StringContent(
             JsonSerializer.Serialize(new { text, model_id = _getModel() }),
             Encoding.UTF8,
