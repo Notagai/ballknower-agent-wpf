@@ -435,7 +435,14 @@ public partial class MainWindow : Window
             new CredentialStore();
 
         _speechInput = new MicrosoftSpeechInput();
-        _speechOutput = new MicrosoftSpeechOutput();
+        _speechOutput = string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
+            ? new MicrosoftSpeechOutput()
+            : new ElevenLabsSpeechOutput(
+                () => _credentialStore.GetApiKey("ElevenLabs"),
+                () => _settings.SpeechVoiceId,
+                () => _settings.SpeechModel,
+                () => _settings.SpeechOutputDevice,
+                () => _settings.SpeechVolume);
 
         _googleDriveService =
             new Ballknower.Google.GoogleDriveService();
