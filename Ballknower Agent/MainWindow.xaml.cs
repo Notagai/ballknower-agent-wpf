@@ -249,18 +249,30 @@ public partial class MainWindow : Window
 
         _speechCancellation?.Cancel();
         _speechCancellation?.Dispose();
-        _speechCancellation = new CancellationTokenSource();
+        var speechCancellation = new CancellationTokenSource();
+        _speechCancellation = speechCancellation;
 
         try
         {
             if (_settings.SpeechEffectsEnabled && _settings.SpeechListeningEffect)
                 SpeechEffects.PlayListening();
 
-            var text = await _speechInput.RecognizeAsync(_speechCancellation.Token);
-            if (string.IsNullOrWhiteSpace(text) ||
-                _speechCancellation.IsCancellationRequested ||
-                !IsVoiceInputMode())
+            var text = await _speechInput.RecognizeAsync(speechCancellation.Token);
+            if (speechCancellation.IsCancellationRequested || !IsVoiceInputMode())
                 return;
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                // A silence/timeout is not the end of a speech session.
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.ApplicationIdle,
+                    new Action(async () =>
+                    {
+                        if (IsVoiceInputMode() && IsVisible && !_isProcessing)
+                            await StartVoiceInputAsync();
+                    }));
+                return;
+            }
 
             if (_launchMode == LaunchMode.SpeechInterface)
             {
@@ -285,6 +297,8 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             AppLogger.Error("Voice input failed", ex);
+            if (_launchMode == LaunchMode.SpeechInterface)
+                VoiceStatusText.Text = "Voice input failed. Check microphone permissions.";
             if (_settings.SpeechEffectsEnabled && _settings.SpeechErrorEffect)
                 SpeechEffects.PlayError();
         }
