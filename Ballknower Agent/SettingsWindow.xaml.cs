@@ -1482,7 +1482,13 @@ public partial class SettingsWindow : Window
         {
             using var service = CreateSpeechService();
             await service.TestApiKeyAsync();
-            SpeechKeyStatus.Text = "✓ Key accepted";
+
+            // A successful key test also persists the credential immediately.
+            // CredentialStore encrypts the credentials file with DPAPI for the current Windows user.
+            var verifiedKey = SpeechApiKeyInput.Password.Trim();
+            _credentialStore.SaveApiKey("ElevenLabs", verifiedKey);
+            _apiKeys["ElevenLabs"] = verifiedKey;
+            SpeechKeyStatus.Text = "✓ Key accepted and saved securely";
         }
         catch (Exception ex)
         {
