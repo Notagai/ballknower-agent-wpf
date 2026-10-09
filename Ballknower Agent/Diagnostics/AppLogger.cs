@@ -35,6 +35,11 @@ public static class AppLogger
             null);
     }
 
+    public static void Info(string message)
+    {
+        Write("INFO", message, null);
+    }
+
     private static void Write(
         string level,
         string message,
