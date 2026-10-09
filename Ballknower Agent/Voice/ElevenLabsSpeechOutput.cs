@@ -104,12 +104,12 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
 
     public async Task<IReadOnlyList<SpeechVoice>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
-        var key = _getApiKey();
+        var key = NormalizeApiKey(_getApiKey());
         if (string.IsNullOrWhiteSpace(key))
             throw new InvalidOperationException("Enter an ElevenLabs API key first.");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/voices");
-        request.Headers.Add("xi-api-key", key.Trim());
+        request.Headers.Add("xi-api-key", key);
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -129,12 +129,12 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
 
     public async Task<IReadOnlyList<SpeechVoice>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
-        var key = _getApiKey();
+        var key = NormalizeApiKey(_getApiKey());
         if (string.IsNullOrWhiteSpace(key))
             throw new InvalidOperationException("Enter an ElevenLabs API key first.");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/models");
-        request.Headers.Add("xi-api-key", key.Trim());
+        request.Headers.Add("xi-api-key", key);
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
