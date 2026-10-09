@@ -82,6 +82,32 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
             : new List<SpeechVoice>();
     }
 
+    public async Task<IReadOnlyList<SpeechVoice>> GetModelsAsync(CancellationToken cancellationToken = default)
+    {
+        var key = _getApiKey();
+        if (string.IsNullOrWhiteSpace(key))
+            throw new InvalidOperationException("Enter an ElevenLabs API key first.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/models");
+        request.Headers.Add("xi-api-key", key);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"ElevenLabs returned {(int)response.StatusCode}: {body}");
+
+        using var document = JsonDocument.Parse(body);
+        return document.RootElement.ValueKind == JsonValueKind.Array
+            ? document.RootElement.EnumerateArray()
+                .Where(item => !item.TryGetProperty("can_do_text_to_speech", out var canSpeak) || canSpeak.GetBoolean())
+                .Select(item => new SpeechVoice(
+                    item.GetProperty("model_id").GetString() ?? string.Empty,
+                    item.TryGetProperty("name", out var name) ? name.GetString() ?? item.GetProperty("model_id").GetString() ?? string.Empty : item.GetProperty("model_id").GetString() ?? string.Empty))
+                .Where(model => !string.IsNullOrWhiteSpace(model.Id))
+                .OrderBy(model => model.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList()
+            : new List<SpeechVoice>();
+    }
+
     public Task TestAsync(CancellationToken cancellationToken = default)
         => SpeakAsync("Hello. This is Ballknower's ElevenLabs voice test.", cancellationToken);
 
