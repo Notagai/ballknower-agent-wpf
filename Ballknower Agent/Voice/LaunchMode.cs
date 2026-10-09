@@ -4,5 +4,6 @@ public enum LaunchMode
 {
     Text,
     VoiceOutput,
-    VoiceInputOutput
+    VoiceInputOutput,
+    SpeechInterface
 }

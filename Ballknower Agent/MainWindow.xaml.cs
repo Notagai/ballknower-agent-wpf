@@ -200,6 +200,7 @@ public partial class MainWindow : Window
     {
         StopVoiceActivity();
         _launchMode = launchMode;
+        ApplyLaunchModePresentation();
         _ignoreShortcutDeactivation = true;
 
         Opacity = 0;
@@ -229,30 +230,55 @@ public partial class MainWindow : Window
             new Action(async () =>
             {
                 _ignoreShortcutDeactivation = false;
-                if (_launchMode == LaunchMode.VoiceInputOutput)
+                if (IsVoiceInputMode())
                     await StartVoiceInputAsync();
             }));
     }
 
+    private bool IsVoiceInputMode() =>
+        _launchMode == LaunchMode.VoiceInputOutput ||
+        _launchMode == LaunchMode.SpeechInterface;
+
     private async Task StartVoiceInputAsync()
     {
-        if (_isProcessing || _launchMode != LaunchMode.VoiceInputOutput)
+        if (_isProcessing || !IsVoiceInputMode())
             return;
+
+        if (_launchMode == LaunchMode.SpeechInterface)
+            VoiceStatusText.Text = "Listening…";
 
         _speechCancellation?.Cancel();
         _speechCancellation?.Dispose();
-        _speechCancellation = new CancellationTokenSource();
+        var speechCancellation = new CancellationTokenSource();
+        _speechCancellation = speechCancellation;
 
         try
         {
             if (_settings.SpeechEffectsEnabled && _settings.SpeechListeningEffect)
                 SpeechEffects.PlayListening();
 
-            var text = await _speechInput.RecognizeAsync(_speechCancellation.Token);
-            if (string.IsNullOrWhiteSpace(text) ||
-                _speechCancellation.IsCancellationRequested ||
-                _launchMode != LaunchMode.VoiceInputOutput)
+            var text = await _speechInput.RecognizeAsync(speechCancellation.Token);
+            if (speechCancellation.IsCancellationRequested || !IsVoiceInputMode())
                 return;
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                // A silence/timeout is not the end of a speech session.
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.ApplicationIdle,
+                    new Action(async () =>
+                    {
+                        if (IsVoiceInputMode() && IsVisible && !_isProcessing)
+                            await StartVoiceInputAsync();
+                    }));
+                return;
+            }
+
+            if (_launchMode == LaunchMode.SpeechInterface)
+            {
+                VoiceTranscriptText.Text = text;
+                VoiceStatusText.Text = "Processing…";
+            }
 
             ChatInput.Text = text;
             var args = new System.Windows.Input.KeyEventArgs(
@@ -271,8 +297,56 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             AppLogger.Error("Voice input failed", ex);
+            if (_launchMode == LaunchMode.SpeechInterface)
+                VoiceStatusText.Text = "Voice input failed. Check microphone permissions.";
             if (_settings.SpeechEffectsEnabled && _settings.SpeechErrorEffect)
                 SpeechEffects.PlayError();
+        }
+    }
+
+    private void SwitchToTextChatWithVoiceOutput_Click(object sender, RoutedEventArgs e)
+    {
+        StopVoiceActivity();
+        _launchMode = LaunchMode.VoiceOutput;
+        VoiceInterfacePanel.Visibility = Visibility.Collapsed;
+        InputPill.Visibility = Visibility.Visible;
+
+        if (!_hasEnteredChat && MessagePanel.Children.Count == 0)
+            MessageArea.Visibility = Visibility.Collapsed;
+
+        UpdateLayoutPositions();
+        UpdateAllAdaptiveColors();
+        ChatInput.Focus();
+    }
+
+    private void ApplyLaunchModePresentation()
+    {
+        bool speechInterface = _launchMode == LaunchMode.SpeechInterface;
+        VoiceInterfacePanel.Visibility = speechInterface ? Visibility.Visible : Visibility.Collapsed;
+        InputPill.Visibility = speechInterface ? Visibility.Collapsed : Visibility.Visible;
+
+        if (speechInterface)
+        {
+            VoiceStatusText.Text = "Listening…";
+            VoiceTranscriptText.Text = "Speak naturally. Your words will appear here and in the chat.";
+            MessageArea.Visibility = Visibility.Visible;
+            MessageArea.Width = ChatPillWidth;
+            InputPill.Width = ChatPillWidth;
+
+            double height = ContentRoot.ActualHeight;
+            if (height > 0)
+                _inputPillTransform.Y = height * ChatPillPosition;
+
+            UpdateMessageAreaPosition();
+            UpdateCommandSuggestionPosition();
+            UpdateAllAdaptiveColors();
+        }
+        else
+        {
+            if (!_hasEnteredChat && MessagePanel.Children.Count == 0)
+                MessageArea.Visibility = Visibility.Collapsed;
+
+            UpdateLayoutPositions();
         }
     }
 
@@ -319,8 +393,12 @@ public partial class MainWindow : Window
         try
         {
             EnsureSpeechOutputProvider();
+            if (_launchMode == LaunchMode.SpeechInterface)
+                VoiceStatusText.Text = "Speaking…";
             var cancellationToken = _speechCancellation?.Token ?? CancellationToken.None;
             await _speechOutput.SpeakAsync(text, cancellationToken);
+            if (_launchMode == LaunchMode.SpeechInterface)
+                VoiceStatusText.Text = "Listening…";
         }
         catch (OperationCanceledException)
         {
@@ -744,6 +822,8 @@ public partial class MainWindow : Window
     private void ResetToInitialState()
     {
         _launchMode = LaunchMode.Text;
+        VoiceInterfacePanel.Visibility = Visibility.Collapsed;
+        InputPill.Visibility = Visibility.Visible;
         _isPillAnimating = false;
         _hasEnteredChat = false;
         UpdateInputPillGlow();
@@ -2554,8 +2634,10 @@ public partial class MainWindow : Window
             IsPointInside(MessageArea, point);
         bool insideSuggestions = CommandSuggestions.Visibility == Visibility.Visible &&
             IsPointInside(CommandSuggestions, point);
+        bool insideVoiceInterface = VoiceInterfacePanel.Visibility == Visibility.Visible &&
+            IsPointInside(VoiceInterfacePanel, point);
 
-        if (insideInput || insideMessages || insideSuggestions)
+        if (insideInput || insideMessages || insideSuggestions || insideVoiceInterface)
             return;
 
         Topmost = false;
@@ -2900,7 +2982,7 @@ public partial class MainWindow : Window
             if (_settingsWindow is null)
                 ChatInput.Focus();
 
-            if (_launchMode == LaunchMode.VoiceInputOutput &&
+            if (IsVoiceInputMode() &&
                 IsVisible &&
                 !App.IsExiting)
             {
