@@ -36,11 +36,11 @@ public sealed class AudioOutputService : IDisposable
 
             // Apply the app volume as a per-sample gain multiplier. Do not set the
             // output/session/device volume, so Windows master volume is never changed.
-            var volumeProvider = new VolumeSampleProvider(reader.ToSampleProvider())
+            var volumeProvider = new VolumeWaveProvider16(reader)
             {
                 Volume = Math.Clamp(_getVolume(), 0, 100) / 100f
             };
-            output.Init(new SampleToWaveProvider(volumeProvider));
+            output.Init(volumeProvider);
             lock (_sync)
             {
                 _output?.Stop();
