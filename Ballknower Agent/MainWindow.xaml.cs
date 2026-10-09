@@ -2620,8 +2620,10 @@ public partial class MainWindow : Window
             IsPointInside(MessageArea, point);
         bool insideSuggestions = CommandSuggestions.Visibility == Visibility.Visible &&
             IsPointInside(CommandSuggestions, point);
+        bool insideVoiceInterface = VoiceInterfacePanel.Visibility == Visibility.Visible &&
+            IsPointInside(VoiceInterfacePanel, point);
 
-        if (insideInput || insideMessages || insideSuggestions)
+        if (insideInput || insideMessages || insideSuggestions || insideVoiceInterface)
             return;
 
         Topmost = false;
