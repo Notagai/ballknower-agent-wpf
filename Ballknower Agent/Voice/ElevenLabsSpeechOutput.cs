@@ -27,6 +27,26 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         _audioOutput = new AudioOutputService(getOutputDevice, getVolume);
     }
 
+
+    private static InvalidOperationException CreateApiException(System.Net.HttpStatusCode statusCode, string? body)
+    {
+        if (statusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            var detail = string.IsNullOrWhiteSpace(body) ? string.Empty : " API response: " + body;
+            return new InvalidOperationException(
+                "ElevenLabs rejected the API key (401 Unauthorized). Check that you pasted the full, active ElevenLabs API key and that it has not expired or been revoked." + detail);
+        }
+
+        if (statusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            var detail = string.IsNullOrWhiteSpace(body) ? string.Empty : " API response: " + body;
+            return new InvalidOperationException(
+                "ElevenLabs denied this request (403 Forbidden). Check the API key's endpoint permissions and any IP allowlist restrictions." + detail);
+        }
+
+        return new InvalidOperationException("ElevenLabs returned " + (int)statusCode + " (" + statusCode + "): " + body);
+    }
+
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
@@ -39,7 +59,7 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
 
         var url = $"{BaseUrl}/text-to-speech/{Uri.EscapeDataString(voiceId)}/stream?output_format=mp3_44100_128";
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Add("xi-api-key", key);
+        request.Headers.Add("xi-api-key", key.Trim());
         request.Content = new StringContent(
             JsonSerializer.Serialize(new { text, model_id = _getModel() }),
             Encoding.UTF8,
@@ -48,7 +68,7 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
         using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         var body = response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"ElevenLabs returned {(int)response.StatusCode}: {body}");
+            throw CreateApiException(response.StatusCode, body);
 
         await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var memory = new MemoryStream();
@@ -64,11 +84,11 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
             throw new InvalidOperationException("Enter an ElevenLabs API key first.");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/voices");
-        request.Headers.Add("xi-api-key", key);
+        request.Headers.Add("xi-api-key", key.Trim());
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"ElevenLabs returned {(int)response.StatusCode}: {body}");
+            throw CreateApiException(response.StatusCode, body);
 
         using var document = JsonDocument.Parse(body);
         return document.RootElement.TryGetProperty("voices", out var items)
@@ -89,11 +109,11 @@ public sealed class ElevenLabsSpeechOutput : ISpeechOutput
             throw new InvalidOperationException("Enter an ElevenLabs API key first.");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, $"{BaseUrl}/models");
-        request.Headers.Add("xi-api-key", key);
+        request.Headers.Add("xi-api-key", key.Trim());
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"ElevenLabs returned {(int)response.StatusCode}: {body}");
+            throw CreateApiException(response.StatusCode, body);
 
         using var document = JsonDocument.Parse(body);
         return document.RootElement.ValueKind == JsonValueKind.Array
