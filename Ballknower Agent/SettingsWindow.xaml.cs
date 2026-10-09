@@ -1354,6 +1354,14 @@ public partial class SettingsWindow : Window
         MarkDirty();
     }
 
+    private void SpeechVoiceInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || SpeechVoiceInput.SelectedItem is not SpeechVoice voice) return;
+        SpeechVoiceIdInput.Text = voice.Id;
+        SaveSpeechControls();
+        MarkDirty();
+    }
+
     private void SpeechSettingChanged(object sender, RoutedEventArgs e)
     {
         if (_isInitializing) return;
