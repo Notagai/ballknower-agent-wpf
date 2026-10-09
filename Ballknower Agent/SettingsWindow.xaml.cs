@@ -1490,7 +1490,13 @@ public partial class SettingsWindow : Window
     private ElevenLabsSpeechOutput CreateSpeechService()
     {
         return new ElevenLabsSpeechOutput(
-            () => _apiKeys.TryGetValue("ElevenLabs", out var key) ? key : null,
+            () =>
+            {
+                // During Test Key, use the value currently shown in the password field.
+                var enteredKey = SpeechApiKeyInput.Password.Trim();
+                if (!string.IsNullOrWhiteSpace(enteredKey)) return enteredKey;
+                return _apiKeys.TryGetValue("ElevenLabs", out var savedKey) ? savedKey : null;
+            },
             () => _settings.SpeechVoiceId,
             () => _settings.SpeechModel,
             () => _settings.SpeechOutputDevice,
