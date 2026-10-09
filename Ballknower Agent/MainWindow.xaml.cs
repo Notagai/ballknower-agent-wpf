@@ -109,7 +109,8 @@ public partial class MainWindow : Window
     private readonly CredentialStore _credentialStore;
     private readonly Ballknower.Google.GoogleDriveService _googleDriveService;
     private readonly ISpeechInput _speechInput;
-    private readonly ISpeechOutput _speechOutput;
+    private ISpeechOutput _speechOutput;
+    private string _activeSpeechProvider = string.Empty;
     private CancellationTokenSource? _speechCancellation;
     private LaunchMode _launchMode = LaunchMode.Text;
 
@@ -283,6 +284,31 @@ public partial class MainWindow : Window
         _speechOutput.Stop();
     }
 
+    private string NormalizeSpeechProvider() =>
+        string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
+            ? "Microsoft"
+            : "ElevenLabs";
+
+    private ISpeechOutput CreateSpeechOutput() =>
+        NormalizeSpeechProvider() == "Microsoft"
+            ? new MicrosoftSpeechOutput()
+            : new ElevenLabsSpeechOutput(
+                () => _credentialStore.GetApiKey("ElevenLabs"),
+                () => _settings.SpeechVoiceId,
+                () => _settings.SpeechModel,
+                () => _settings.SpeechOutputDevice,
+                () => _settings.SpeechVolume);
+
+    private void EnsureSpeechOutputProvider()
+    {
+        var provider = NormalizeSpeechProvider();
+        if (string.Equals(provider, _activeSpeechProvider, StringComparison.OrdinalIgnoreCase)) return;
+        _speechOutput.Stop();
+        _speechOutput.Dispose();
+        _speechOutput = CreateSpeechOutput();
+        _activeSpeechProvider = provider;
+    }
+
     private async Task SpeakAssistantTextAsync(string text)
     {
         if (_launchMode == LaunchMode.Text ||
@@ -292,6 +318,7 @@ public partial class MainWindow : Window
 
         try
         {
+            EnsureSpeechOutputProvider();
             var cancellationToken = _speechCancellation?.Token ?? CancellationToken.None;
             await _speechOutput.SpeakAsync(text, cancellationToken);
         }
@@ -435,14 +462,8 @@ public partial class MainWindow : Window
             new CredentialStore();
 
         _speechInput = new MicrosoftSpeechInput();
-        _speechOutput = string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
-            ? new MicrosoftSpeechOutput()
-            : new ElevenLabsSpeechOutput(
-                () => _credentialStore.GetApiKey("ElevenLabs"),
-                () => _settings.SpeechVoiceId,
-                () => _settings.SpeechModel,
-                () => _settings.SpeechOutputDevice,
-                () => _settings.SpeechVolume);
+        _speechOutput = CreateSpeechOutput();
+        _activeSpeechProvider = NormalizeSpeechProvider();
 
         _googleDriveService =
             new Ballknower.Google.GoogleDriveService();
