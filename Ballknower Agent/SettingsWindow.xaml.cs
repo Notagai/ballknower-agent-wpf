@@ -1481,8 +1481,8 @@ public partial class SettingsWindow : Window
         try
         {
             using var service = CreateSpeechService();
-            var voices = await service.GetVoicesAsync();
-            SpeechKeyStatus.Text = $"✓ Key accepted ({voices.Count} voices)";
+            await service.TestApiKeyAsync();
+            SpeechKeyStatus.Text = "✓ Key accepted";
         }
         catch (Exception ex) { SpeechKeyStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : ex.Message); }
     }
