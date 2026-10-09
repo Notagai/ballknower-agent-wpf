@@ -35,7 +35,7 @@
                     <PasswordBox x:Name="ApiKeyInput" PasswordChanged="SettingsChanged" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <Button Content="Test Key" Click="TestKeyButton_Click" Padding="14,5"/>
-                        <TextBlock x:Name="KeyTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
+                        <TextBlock x:Name="KeyTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
                     <TextBlock Text="API keys are stored locally using Windows encryption." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,18"/>
                     <TextBlock x:Name="ModelLabel" Text="Groq Model" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
@@ -43,7 +43,7 @@
                     <Button x:Name="FetchGeminiModelsButton" Content="Fetch Available Gemini Models" Click="FetchGeminiModelsButton_Click" HorizontalAlignment="Left" Padding="14,5" Margin="0,0,0,8" Visibility="Collapsed"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <Button Content="Test Prompt" Click="TestPromptButton_Click" Padding="14,5"/>
-                        <TextBlock x:Name="PromptTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
+                        <TextBlock x:Name="PromptTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
                     <TextBlock Text="The prompt test sends a short request to the selected provider and model; usage may incur a small API charge." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,18"/>
                     <TextBlock Text="Saved AI Presets" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
@@ -75,7 +75,7 @@
                     </Grid>
                     <TextBlock Text="This is a history budget, not a provider rate limit. The current request, tools and AI response also use tokens." TextWrapping="Wrap" Opacity="0.65" FontSize="12"/>
                     <Button Content="Test Conversation Settings" Click="TestConversationButton_Click" HorizontalAlignment="Left" Margin="0,24,0,8" Padding="14,5"/>
-                    <TextBlock x:Name="ConversationTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD"/>
+                    <TextBlock x:Name="ConversationTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="560"/>
                 </StackPanel></ScrollViewer>
             </TabItem>
             <TabItem Header="Shortcuts">
@@ -95,7 +95,7 @@
                         <Button x:Name="CancelEditButton" Content="Cancel Edit" Click="CancelEditButton_Click" Padding="14,5" Visibility="Collapsed"/>
                     </StackPanel>
                     <Button Content="Test Shortcut" Click="TestShortcutButton_Click" HorizontalAlignment="Left" Padding="14,5" Margin="0,0,0,8"/>
-                    <TextBlock x:Name="ShortcutTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD" Margin="0,0,0,16"/>
+                    <TextBlock x:Name="ShortcutTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD" Margin="0,0,0,16" TextWrapping="Wrap" MaxWidth="560"/>
                     <TextBlock Text="Saved Shortcuts" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <StackPanel x:Name="ShortcutList"/>
                 </StackPanel></ScrollViewer>
@@ -115,7 +115,7 @@
                     <PasswordBox x:Name="SpeechApiKeyInput" PasswordChanged="SpeechSettingChanged" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                         <Button Content="Test Key" Click="TestSpeechKeyButton_Click" Padding="14,5"/>
-                        <TextBlock x:Name="SpeechKeyStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
+                        <TextBlock x:Name="SpeechKeyStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
                     <TextBlock Text="Voice" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <Grid Margin="0,0,0,12">
@@ -134,7 +134,7 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Button Content="Test Voice" Click="TestSpeechButton_Click" Padding="14,5"/>
-                        <TextBlock x:Name="SpeechTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD"/>
+                        <TextBlock x:Name="SpeechTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
                     <TextBlock Text="Speaker" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <ComboBox x:Name="SpeechOutputDeviceInput" SelectionChanged="SpeechSettingChanged" Margin="0,0,0,12"/>
@@ -154,14 +154,14 @@
                     <TextBlock Text="Google Drive" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <TextBlock Text="Connect Ballknower to one Google Drive account. Authentication is started only when you click Connect." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,16"/>
                     <TextBlock Text="Status" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <TextBlock x:Name="GoogleDriveStatusText" Text="○ Not connected" Foreground="#FFBDBDBD" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="GoogleDriveAccountText" Text="" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,14"/>
+                    <TextBlock x:Name="GoogleDriveStatusText" Text="○ Not connected" Foreground="#FFBDBDBD" Margin="0,0,0,4" TextWrapping="Wrap" MaxWidth="560"/>
+                    <TextBlock x:Name="GoogleDriveAccountText" Text="" Foreground="#FFBDBDBD" TextWrapping="Wrap" Margin="0,0,0,14" MaxWidth="560"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                         <Button x:Name="GoogleDriveConnectButton" Content="Connect Google Drive" Click="GoogleDriveConnectButton_Click" Padding="14,5" Margin="0,0,10,0"/>
                         <Button x:Name="GoogleDriveTestButton" Content="Test Connection" Click="GoogleDriveTestButton_Click" Padding="14,5" Margin="0,0,10,0"/>
                         <Button x:Name="GoogleDriveDisconnectButton" Content="Disconnect" Click="GoogleDriveDisconnectButton_Click" Padding="14,5"/>
                     </StackPanel>
-                    <TextBlock x:Name="GoogleDriveErrorText" Foreground="#FFFF7B72" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <TextBlock x:Name="GoogleDriveErrorText" Foreground="#FFFF7B72" TextWrapping="Wrap" Visibility="Collapsed" MaxWidth="560"/>
                     <TextBlock Text="Your OAuth token is stored locally using Windows encryption. The OAuth client JSON should remain on this PC and should not be committed to GitHub." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,16,0,0"/>
                 </StackPanel></ScrollViewer>
             </TabItem>
@@ -217,7 +217,7 @@
                         <Button Content="Export Settings" Click="ExportButton_Click"/>
                     </StackPanel>
                     <Button Content="Test Settings Data" Click="TestDataButton_Click" HorizontalAlignment="Left" Margin="0,24,0,8" Padding="14,5"/>
-                    <TextBlock x:Name="DataTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD"/>
+                    <TextBlock x:Name="DataTestStatus" Text="○ Not tested" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="560"/>
                 </StackPanel>
             </TabItem>
         </TabControl>
