@@ -1484,7 +1484,11 @@ public partial class SettingsWindow : Window
             await service.TestApiKeyAsync();
             SpeechKeyStatus.Text = "✓ Key accepted";
         }
-        catch (Exception ex) { SpeechKeyStatus.Text = "✗ " + (ex is TaskCanceledException ? "Timed out" : ex.Message); }
+        catch (Exception ex)
+        {
+            SpeechKeyStatus.Text = ex is TaskCanceledException ? "✗ Timed out" : "✗ Request rejected";
+            WpfMessageBox.Show(this, "ElevenLabs key test failed.\n\n" + ex.Message, "ElevenLabs API Key Test", WpfMessageBoxButton.OK, WpfMessageBoxImage.Error);
+        }
     }
 
     private ElevenLabsSpeechOutput CreateSpeechService()
