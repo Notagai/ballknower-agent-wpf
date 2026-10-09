@@ -532,6 +532,7 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        LogMemorySnapshot("window loaded");
         if (_isOpeningWithFade)
             return;
 
@@ -640,6 +641,7 @@ public partial class MainWindow : Window
                 e.Cancel = true;
                 StopVoiceActivity();
                 ResetToInitialState();
+                ReleaseDesktopBackdrop();
                 Hide();
                 Opacity = 1;
                 return;
@@ -649,6 +651,7 @@ public partial class MainWindow : Window
                 e.Cancel = true;
                 StopVoiceActivity();
                 ResetToInitialState();
+                ReleaseDesktopBackdrop();
                 Hide();
                 Opacity = 1;
                 return;
@@ -682,6 +685,32 @@ public partial class MainWindow : Window
                 _allowClose = true;
                 Close();
             });
+    }
+
+    private void LogMemorySnapshot(string stage)
+    {
+        try
+        {
+            using var process = Process.GetCurrentProcess();
+            process.Refresh();
+
+            const double bytesPerMiB = 1024d * 1024d;
+            AppLogger.Info(
+                $"Memory snapshot ({stage}): " +
+                $"working set={process.WorkingSet64 / bytesPerMiB:F1} MiB, " +
+                $"private bytes={process.PrivateMemorySize64 / bytesPerMiB:F1} MiB, " +
+                $"managed heap={GC.GetTotalMemory(false) / bytesPerMiB:F1} MiB");
+        }
+        catch
+        {
+            // Diagnostics must never interfere with the UI lifecycle.
+        }
+    }
+
+    private void ReleaseDesktopBackdrop()
+    {
+        DesktopBackdrop.Source = null;
+        LogMemorySnapshot("desktop backdrop released");
     }
 
     private void ResetToInitialState()
@@ -759,6 +788,7 @@ public partial class MainWindow : Window
         Topmost = false;
         StopVoiceActivity();
         ResetToInitialState();
+        ReleaseDesktopBackdrop();
         Hide();
     }
 
@@ -876,32 +906,12 @@ public partial class MainWindow : Window
                     smallHeight);
             }
 
-            using var blurred =
-                new DrawingBitmap(
-                    screenshot.Width,
-                    screenshot.Height,
-                    DrawingPixelFormat.Format32bppArgb);
-
-            using (DrawingGraphics graphics =
-                   DrawingGraphics.FromImage(
-                       blurred))
-            {
-                graphics.InterpolationMode =
-                    System.Drawing.Drawing2D
-                        .InterpolationMode.HighQualityBilinear;
-
-                graphics.DrawImage(
-                    small,
-                    0,
-                    0,
-                    blurred.Width,
-                    blurred.Height);
-            }
-
+            // The backdrop is intentionally low-resolution and stretched by WPF.
+            // Keeping the quarter-size bitmap avoids retaining another full-screen buffer.
             using var stream =
                 new MemoryStream();
 
-            blurred.Save(
+            small.Save(
                 stream,
                 System.Drawing.Imaging.ImageFormat.Png);
 
@@ -924,6 +934,8 @@ public partial class MainWindow : Window
 
             DesktopBackdrop.Source =
                 image;
+
+            LogMemorySnapshot("desktop backdrop captured");
         }
         catch (Exception ex)
         {
@@ -1055,32 +1067,12 @@ public partial class MainWindow : Window
                     smallHeight);
             }
 
-            using var blurred =
-                new DrawingBitmap(
-                    screenshot.Width,
-                    screenshot.Height,
-                    DrawingPixelFormat.Format32bppArgb);
-
-            using (DrawingGraphics graphics =
-                   DrawingGraphics.FromImage(
-                       blurred))
-            {
-                graphics.InterpolationMode =
-                    System.Drawing.Drawing2D
-                        .InterpolationMode.HighQualityBilinear;
-
-                graphics.DrawImage(
-                    small,
-                    0,
-                    0,
-                    blurred.Width,
-                    blurred.Height);
-            }
-
+            // The backdrop is intentionally low-resolution and stretched by WPF.
+            // Keeping the quarter-size bitmap avoids retaining another full-screen buffer.
             using var stream =
                 new MemoryStream();
 
-            blurred.Save(
+            small.Save(
                 stream,
                 System.Drawing.Imaging.ImageFormat.Png);
 
@@ -1103,6 +1095,8 @@ public partial class MainWindow : Window
 
             DesktopBackdrop.Source =
                 image;
+
+            LogMemorySnapshot("desktop backdrop captured");
         }
         catch (Exception ex)
         {
@@ -2538,6 +2532,7 @@ public partial class MainWindow : Window
 
         Topmost = false;
         ResetToInitialState();
+        ReleaseDesktopBackdrop();
         Hide();
     }
 
