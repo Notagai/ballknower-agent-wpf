@@ -77,7 +77,7 @@ public sealed class KeyboardShortcutManager : IDisposable
                 {
                     // Allow modifiers to be pressed after Win. This is the
                     // normal key order for Win+Ctrl+Alt on many keyboards.
-                    _pendingMode = DetermineMode() ?? _pendingMode;
+                    _pendingMode = DetermineMode((int)data.vkCode) ?? _pendingMode;
                 }
                 else
                 {
@@ -141,18 +141,23 @@ public sealed class KeyboardShortcutManager : IDisposable
         return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
     }
 
-    private LaunchMode? DetermineMode()
+    private LaunchMode? DetermineMode(int modifierBeingPressed = 0)
     {
-        // Read the actual modifier state when Windows is pressed. The hook's
-        // tracked key state can become stale across shell focus changes, which
-        // could otherwise make a plain/double Windows-key press look like a
-        // configured shortcut.
+        // Read the actual modifier state when Windows is pressed. The current
+        // modifier is also included explicitly because GetAsyncKeyState may
+        // not reflect a keydown until after this low-level hook returns.
         bool ctrl = IsKeyPhysicallyDown(0x11) ||
                     IsKeyPhysicallyDown(VK_LCTRL) ||
-                    IsKeyPhysicallyDown(VK_RCTRL);
+                    IsKeyPhysicallyDown(VK_RCTRL) ||
+                    modifierBeingPressed == 0x11 ||
+                    modifierBeingPressed == VK_LCTRL ||
+                    modifierBeingPressed == VK_RCTRL;
         bool alt = IsKeyPhysicallyDown(0x12) ||
                    IsKeyPhysicallyDown(VK_LALT) ||
-                   IsKeyPhysicallyDown(VK_RALT);
+                   IsKeyPhysicallyDown(VK_RALT) ||
+                   modifierBeingPressed == 0x12 ||
+                   modifierBeingPressed == VK_LALT ||
+                   modifierBeingPressed == VK_RALT;
 
         if (ctrl && alt) return LaunchMode.SpeechInterface;
         if (ctrl) return LaunchMode.VoiceInputOutput;
