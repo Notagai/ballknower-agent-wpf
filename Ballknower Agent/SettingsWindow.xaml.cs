@@ -97,6 +97,7 @@ public partial class SettingsWindow : Window
             SpeechProvider = settings.SpeechProvider,
             SpeechVoiceId = settings.SpeechVoiceId,
             SpeechModel = settings.SpeechModel,
+            KittenTTS2Voice = settings.KittenTTS2Voice,
             SpeechOutputDevice = settings.SpeechOutputDevice,
             SpeechVolume = settings.SpeechVolume,
             SpeechEffectsEnabled = settings.SpeechEffectsEnabled,
@@ -1254,6 +1255,7 @@ public partial class SettingsWindow : Window
                 _settings.SpeechProvider = importedSettings.SpeechProvider ?? "ElevenLabs";
                 _settings.SpeechVoiceId = importedSettings.SpeechVoiceId;
                 _settings.SpeechModel = importedSettings.SpeechModel;
+                _settings.KittenTTS2Voice = importedSettings.KittenTTS2Voice ?? "Luna";
                 _settings.SpeechOutputDevice = importedSettings.SpeechOutputDevice;
                 _settings.SpeechVolume = importedSettings.SpeechVolume;
                 _settings.SpeechEffectsEnabled = importedSettings.SpeechEffectsEnabled;
@@ -1332,11 +1334,16 @@ public partial class SettingsWindow : Window
     {
         SpeechOutputEnabledCheckBox.IsChecked = _settings.SpeechOutputEnabled;
         SpeechProviderInput.SelectedValue = string.IsNullOrWhiteSpace(_settings.SpeechProvider) ? "ElevenLabs" : _settings.SpeechProvider;
-        ElevenLabsSettingsPanel.Visibility = string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase) ? Visibility.Collapsed : Visibility.Visible;
+        UpdateSpeechProviderPanels();
         SpeechApiKeyInput.Password = _apiKeys.TryGetValue("ElevenLabs", out var key) ? key : string.Empty;
         SpeechModelInput.ItemsSource = new List<SpeechVoice> { new("eleven_multilingual_v2", "Eleven Multilingual v2"), new("eleven_flash_v2_5", "Eleven Flash v2.5"), new("eleven_turbo_v2_5", "Eleven Turbo v2.5") };
         SpeechModelInput.SelectedValue = _settings.SpeechModel;
         SpeechVoiceIdInput.Text = _settings.SpeechVoiceId;
+        using (var kittenService = new KittenTts2SpeechOutput(() => _settings.KittenTTS2Voice, () => _settings.SpeechOutputDevice, () => _settings.SpeechVolume))
+        {
+            KittenTTS2VoiceInput.ItemsSource = kittenService.GetVoicesAsync().GetAwaiter().GetResult();
+            KittenTTS2VoiceInput.SelectedValue = string.IsNullOrWhiteSpace(_settings.KittenTTS2Voice) ? "Luna" : _settings.KittenTTS2Voice;
+        }
         SpeechVolumeSlider.Value = Math.Clamp(_settings.SpeechVolume, 0, 100);
         SpeechVolumeLabel.Text = $"{_settings.SpeechVolume}%";
         SpeechEffectsEnabledCheckBox.IsChecked = _settings.SpeechEffectsEnabled;
@@ -1346,11 +1353,19 @@ public partial class SettingsWindow : Window
         RefreshSpeechOutputDevices();
     }
 
+    private void UpdateSpeechProviderPanels()
+    {
+        var provider = SpeechProviderInput.SelectedValue as string ?? _settings.SpeechProvider ?? "ElevenLabs";
+        var isKitten = provider.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase);
+        var isElevenLabs = !isKitten && !string.Equals(provider, "Microsoft", StringComparison.OrdinalIgnoreCase);
+        ElevenLabsSettingsPanel.Visibility = isElevenLabs ? Visibility.Visible : Visibility.Collapsed;
+        KittenTTS2SettingsPanel.Visibility = isKitten ? Visibility.Visible : Visibility.Collapsed;
+    }
     private void SpeechProviderInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_isInitializing || SpeechProviderInput is null) return;
         _settings.SpeechProvider = SpeechProviderInput.SelectedValue as string ?? "ElevenLabs";
-        ElevenLabsSettingsPanel.Visibility = string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase) ? Visibility.Collapsed : Visibility.Visible;
+        UpdateSpeechProviderPanels();
         MarkDirty();
     }
 
@@ -1359,6 +1374,13 @@ public partial class SettingsWindow : Window
         if (_isInitializing || SpeechVoiceInput.SelectedItem is not SpeechVoice voice) return;
         SpeechVoiceIdInput.Text = voice.Id;
         SaveSpeechControls();
+        MarkDirty();
+    }
+
+    private void KittenTTS2VoiceInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || KittenTTS2VoiceInput.SelectedValue is not string voice) return;
+        _settings.KittenTTS2Voice = voice;
         MarkDirty();
     }
 
@@ -1390,6 +1412,7 @@ public partial class SettingsWindow : Window
         _settings.SpeechProvider = SpeechProviderInput.SelectedValue as string ?? "ElevenLabs";
         _settings.SpeechVoiceId = SpeechVoiceIdInput.Text.Trim();
         _settings.SpeechModel = SpeechModelInput.SelectedValue as string ?? _settings.SpeechModel ?? "eleven_multilingual_v2";
+        _settings.KittenTTS2Voice = KittenTTS2VoiceInput.SelectedValue as string ?? _settings.KittenTTS2Voice ?? "Luna";
         _settings.SpeechOutputDevice = SpeechOutputDeviceInput.SelectedItem as string ?? string.Empty;
         _settings.SpeechVolume = Math.Clamp((int)Math.Round(SpeechVolumeSlider.Value), 0, 100);
         _settings.SpeechEffectsEnabled = SpeechEffectsEnabledCheckBox.IsChecked == true;
@@ -1430,11 +1453,19 @@ public partial class SettingsWindow : Window
         SaveSpeechControls();
         try
         {
-            using var service = CreateSpeechService();
+            using var service = CreateSelectedSpeechOutputService();
             var voices = await service.GetVoicesAsync();
-            SpeechVoiceInput.ItemsSource = voices;
-            SpeechVoiceInput.SelectedValue = _settings.SpeechVoiceId;
-            if (SpeechVoiceInput.SelectedItem is SpeechVoice selectedVoice) SpeechVoiceIdInput.Text = selectedVoice.Id;
+            if (_settings.SpeechProvider.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase))
+            {
+                KittenTTS2VoiceInput.ItemsSource = voices;
+                KittenTTS2VoiceInput.SelectedValue = _settings.KittenTTS2Voice;
+            }
+            else
+            {
+                SpeechVoiceInput.ItemsSource = voices;
+                SpeechVoiceInput.SelectedValue = _settings.SpeechVoiceId;
+                if (SpeechVoiceInput.SelectedItem is SpeechVoice selectedVoice) SpeechVoiceIdInput.Text = selectedVoice.Id;
+            }
             SpeechTestStatus.Text = $"✓ {voices.Count} voices loaded";
         }
         catch (Exception ex) { SpeechTestStatus.Text = "✗ " + ex.Message; }
@@ -1462,7 +1493,7 @@ public partial class SettingsWindow : Window
         SpeechTestStatus.Text = "Testing…";
         try
         {
-            using var service = CreateSpeechService();
+            using var service = CreateSelectedSpeechOutputService();
             await service.TestAsync();
             SpeechTestStatus.Text = "✓ Voice played";
         }
@@ -1495,6 +1526,16 @@ public partial class SettingsWindow : Window
             SpeechKeyStatus.Text = ex is TaskCanceledException ? "✗ Timed out" : "✗ Request rejected";
             WpfMessageBox.Show(this, "ElevenLabs key test failed.\n\n" + ex.Message, "ElevenLabs API Key Test", WpfMessageBoxButton.OK, WpfMessageBoxImage.Error);
         }
+    }
+
+    private ISpeechOutput CreateSelectedSpeechOutputService()
+    {
+        var provider = SpeechProviderInput.SelectedValue as string ?? _settings.SpeechProvider ?? "ElevenLabs";
+        if (provider.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase))
+            return new KittenTts2SpeechOutput(() => _settings.KittenTTS2Voice, () => _settings.SpeechOutputDevice, () => _settings.SpeechVolume);
+        if (string.Equals(provider, "Microsoft", StringComparison.OrdinalIgnoreCase))
+            return new MicrosoftSpeechOutput();
+        return CreateSpeechService();
     }
 
     private ElevenLabsSpeechOutput CreateSpeechService()
