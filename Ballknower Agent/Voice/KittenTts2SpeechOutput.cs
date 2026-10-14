@@ -6,6 +6,14 @@ namespace Ballknower.Voice;
 
 public sealed class KittenTts2SpeechOutput : ISpeechOutput
 {
+    public event Action<string>? ProgressChanged;
+
+    private void ReportProgress(string message)
+    {
+        Ballknower.Diagnostics.AppLogger.Info("KittenTTS 2 setup: " + message);
+        ProgressChanged?.Invoke(message);
+    }
+
     private static readonly string[] KnownVoices =
     {
         "Alfred", "Arabic", "Bella", "Bruno", "Chinese", "Claire", "Dante",
@@ -46,6 +54,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
         try
         {
             await EnsureWorkerAsync(cancellationToken).ConfigureAwait(false);
+            ReportProgress("Generating test speech…");
             outputPath = Path.Combine(Path.GetTempPath(), "Ballknower", "KittenTTS2", Guid.NewGuid().ToString("N") + ".wav");
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
             await _workerInput!.WriteLineAsync(JsonSerializer.Serialize(new
@@ -144,20 +153,27 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
 
             if (!File.Exists(venvPython))
             {
+                ReportProgress("Preparing the local Python environment…");
                 var pythonLauncher = await FindPythonLauncherAsync(cancellationToken).ConfigureAwait(false);
+                ReportProgress("Creating KittenTTS 2's private Python environment…");
                 await RunProcessAsync(pythonLauncher.file, pythonLauncher.prefix.Concat(new[]
                 {
                     "-m", "venv", Path.Combine(runtimeDirectory, "venv")
                 }), runtimeDirectory, cancellationToken).ConfigureAwait(false);
             }
 
+            ReportProgress("Checking KittenTTS 2 dependencies…");
             var importCheck = await RunProcessCaptureAsync(venvPython, new[] { "-c", "import kittenml, soundfile" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
             if (importCheck.exitCode != 0)
             {
+                ReportProgress("Installing KittenTTS 2 dependencies. This can take several minutes; downloading packages…");
                 await RunProcessAsync(venvPython, new[] { "-m", "pip", "install", "--upgrade", "pip" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
+                ReportProgress("Installing KittenTTS 2 and its dependencies…");
                 await RunProcessAsync(venvPython, new[] { "-m", "pip", "install", "kittenml" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
+                ReportProgress("Dependencies installed. Starting the speech model…");
             }
 
+            ReportProgress("Loading KittenTTS 2 model. The first run may download about 506 MiB…");
             var start = new ProcessStartInfo
             {
                 FileName = venvPython,
