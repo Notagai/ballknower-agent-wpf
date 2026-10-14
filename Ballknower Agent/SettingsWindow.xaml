@@ -144,9 +144,9 @@
                             <Button Content="Upload audio/video…" Click="BrowseVoiceCloneReferenceButton_Click" Padding="14,5"/>
                             <TextBlock x:Name="VoiceCloneReferenceStatus" Text="No reference clip selected" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap" MaxWidth="360"/>
                         </StackPanel>
-                        <TextBlock Text="Exact words spoken in the clip" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="Exact words spoken in the first 15 seconds of the clip" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,6"/>
                         <TextBox x:Name="VoiceCloneReferenceTextInput" MinHeight="64" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="VoiceCloneSettingChanged" Margin="0,0,0,8" ToolTip="Type the words spoken in the reference recording."/>
-                        <CheckBox x:Name="VoiceCloneConsentCheckBox" Content="I own this voice or have the speaker’s explicit permission to create and use this voice profile." Foreground="White" TextWrapping="Wrap" Margin="0,0,0,8" Checked="VoiceCloneSettingChanged" Unchecked="VoiceCloneSettingChanged"/>
+                        <CheckBox x:Name="VoiceCloneConsentCheckBox" Foreground="White" Margin="0,0,0,8" Checked="VoiceCloneSettingChanged" Unchecked="VoiceCloneSettingChanged"><TextBlock Text="I own this voice or have the speaker’s explicit permission to create and use this voice profile." TextWrapping="Wrap"/></CheckBox>
                         <TextBlock Text="First use installs a local voice-cloning runtime and downloads its model. The model has non-commercial licensing terms; review them before any commercial use." FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,4"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
