@@ -1541,14 +1541,32 @@ public partial class SettingsWindow : Window
     private async void TestSpeechButton_Click(object sender, RoutedEventArgs e)
     {
         SaveSpeechControls();
-        SpeechTestStatus.Text = "Testing…";
+        SpeechTestStatus.Text = "Starting voice test…";
+        SpeechTestProgressBar.Visibility = Visibility.Visible;
+        TestSpeechButton.IsEnabled = false;
+        KittenTts2SpeechOutput? kittenService = null;
+        Action<string>? progressHandler = null;
         try
         {
             using var service = CreateSelectedSpeechOutputService();
+            if (service is KittenTts2SpeechOutput kitten)
+            {
+                kittenService = kitten;
+                progressHandler = message => Dispatcher.BeginInvoke(() => SpeechTestStatus.Text = message);
+                kitten.ProgressChanged += progressHandler;
+            }
+
             await service.TestAsync();
             SpeechTestStatus.Text = "✓ Voice played";
         }
         catch (Exception ex) { SpeechTestStatus.Text = "✗ " + ex.Message; }
+        finally
+        {
+            if (kittenService is not null && progressHandler is not null)
+                kittenService.ProgressChanged -= progressHandler;
+            SpeechTestProgressBar.Visibility = Visibility.Collapsed;
+            TestSpeechButton.IsEnabled = true;
+        }
     }
 
     private async void TestSpeechKeyButton_Click(object sender, RoutedEventArgs e)
