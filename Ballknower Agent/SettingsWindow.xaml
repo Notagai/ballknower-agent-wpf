@@ -1,7 +1,7 @@
 <Window x:Class="Ballknower.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Ballknower Settings" Width="700" Height="720"
+        Title="Ballknower Settings" Width="700" Height="820"
         MinWidth="620" MinHeight="600"
         WindowStyle="None" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
@@ -108,7 +108,7 @@
                     <CheckBox x:Name="SpeechOutputEnabledCheckBox" Content="Enable voice output" Margin="0,0,0,12" Checked="SpeechSettingChanged" Unchecked="SpeechSettingChanged"/>
                     <TextBlock Text="Output Provider" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <ComboBox x:Name="SpeechProviderInput" SelectedValuePath="Content" SelectionChanged="SpeechProviderInput_SelectionChanged" Margin="0,0,0,12">
-                        <ComboBoxItem Content="ElevenLabs"/><ComboBoxItem Content="Microsoft"/><ComboBoxItem Content="KittenTTS2 (Local)"/>
+                        <ComboBoxItem Content="ElevenLabs"/><ComboBoxItem Content="Microsoft"/><ComboBoxItem Content="KittenTTS2 (Local)"/><ComboBoxItem Content="Voice Clone (Local)"/>
                     </ComboBox>
                     <StackPanel x:Name="ElevenLabsSettingsPanel">
                     <TextBlock Text="ElevenLabs API Key" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
@@ -136,6 +136,18 @@
                         <TextBlock Text="Local KittenTTS 2 Voice" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                         <ComboBox x:Name="KittenTTS2VoiceInput" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="KittenTTS2VoiceInput_SelectionChanged" Margin="0,0,0,8"/>
                         <TextBlock Text="Runs locally inside Ballknower. The first use creates a private Python environment and downloads the model (about 506 MiB). Requires Python 3.9+ and about 6 GB RAM. No speech API key is required." FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                    </StackPanel>
+                    <StackPanel x:Name="VoiceCloneSettingsPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                        <TextBlock Text="Clone a voice from a reference clip" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="Import an audio or video clip containing the voice you are authorized to use. Ballknower extracts the audio locally and uses the spoken reference text to guide voice-matched speech. The reference file stays on this PC." FontSize="12" Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="Upload audio/video…" Click="BrowseVoiceCloneReferenceButton_Click" Padding="14,5"/>
+                            <TextBlock x:Name="VoiceCloneReferenceStatus" Text="No reference clip selected" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap" MaxWidth="360"/>
+                        </StackPanel>
+                        <TextBlock Text="Exact words spoken in the clip" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBox x:Name="VoiceCloneReferenceTextInput" MinHeight="64" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="VoiceCloneSettingChanged" Margin="0,0,0,8" ToolTip="Type the words spoken in the reference recording."/>
+                        <CheckBox x:Name="VoiceCloneConsentCheckBox" Content="I own this voice or have the speaker’s explicit permission to create and use this voice profile." Foreground="White" TextWrapping="Wrap" Margin="0,0,0,8" Checked="VoiceCloneSettingChanged" Unchecked="VoiceCloneSettingChanged"/>
+                        <TextBlock Text="First use installs a local voice-cloning runtime and downloads its model. The model has non-commercial licensing terms; review them before any commercial use." FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,4"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Button Content="Test Voice" Click="TestSpeechButton_Click" Padding="14,5"/>
