@@ -23,4 +23,8 @@
     <Content Include="Voice\kittentts2_worker.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Voice\voice_clone_worker.py" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
