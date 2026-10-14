@@ -285,19 +285,27 @@ public partial class MainWindow : Window
     }
 
     private string NormalizeSpeechProvider() =>
-        string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
-            ? "Microsoft"
-            : "ElevenLabs";
+        _settings.SpeechProvider?.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase) == true
+            ? "KittenTTS2"
+            : string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
+                ? "Microsoft"
+                : "ElevenLabs";
 
     private ISpeechOutput CreateSpeechOutput() =>
-        NormalizeSpeechProvider() == "Microsoft"
-            ? new MicrosoftSpeechOutput()
-            : new ElevenLabsSpeechOutput(
+        NormalizeSpeechProvider() switch
+        {
+            "Microsoft" => new MicrosoftSpeechOutput(),
+            "KittenTTS2" => new KittenTts2SpeechOutput(
+                () => _settings.KittenTTS2Voice,
+                () => _settings.SpeechOutputDevice,
+                () => _settings.SpeechVolume),
+            _ => new ElevenLabsSpeechOutput(
                 () => _credentialStore.GetApiKey("ElevenLabs"),
                 () => _settings.SpeechVoiceId,
                 () => _settings.SpeechModel,
                 () => _settings.SpeechOutputDevice,
-                () => _settings.SpeechVolume);
+                () => _settings.SpeechVolume)
+        };
 
     private void EnsureSpeechOutputProvider()
     {
