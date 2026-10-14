@@ -1552,7 +1552,7 @@ public partial class SettingsWindow : Window
             if (service is KittenTts2SpeechOutput kitten)
             {
                 kittenService = kitten;
-                progressHandler = message => Dispatcher.BeginInvoke(() => SpeechTestStatus.Text = message);
+                progressHandler = message => Dispatcher.BeginInvoke(new Action(() => SpeechTestStatus.Text = message));
                 kitten.ProgressChanged += progressHandler;
             }
 
