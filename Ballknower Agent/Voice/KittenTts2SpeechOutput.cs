@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Ballknower.Voice;
 
@@ -10,8 +9,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
     private static readonly string[] KnownVoices =
     {
         "Alfred", "Arabic", "Bella", "Bruno", "Chinese", "Claire", "Dante",
-        "Diana", "Dolores", "Eleanor", "Edith", "Elliot", "Elliot", "Elliot",
-        "Elliot", "Frank", "French", "German", "Grace", "Herbert", "Hindi",
+        "Diana", "Dolores", "Eleanor", "Edith", "Elliot", "Frank", "French", "German", "Grace", "Herbert", "Hindi",
         "Hugo", "Iris", "Italian", "Jasper", "Julian", "Kiki", "Laurence",
         "Leo", "Luna", "Maeve", "Marcus", "Martha", "Matthew", "Miles",
         "Otis", "Portuguese", "Reginald", "Rosie", "Russian", "Sable",
