@@ -135,7 +135,7 @@
                     <StackPanel x:Name="KittenTTS2SettingsPanel" Visibility="Collapsed" Margin="0,0,0,12">
                         <TextBlock Text="Local KittenTTS 2 Voice" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                         <ComboBox x:Name="KittenTTS2VoiceInput" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="KittenTTS2VoiceInput_SelectionChanged" Margin="0,0,0,8"/>
-                        <TextBlock Text="Runs locally inside Ballknower. The first use installs a private Python runtime and downloads the model (about 506 MiB). Requires Python 3.9+ and about 6 GB RAM. No speech API key is required." FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <TextBlock Text="Runs locally inside Ballknower. The first use creates a private Python environment and downloads the model (about 506 MiB). Requires Python 3.9+ and about 6 GB RAM. No speech API key is required." FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,4"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Button Content="Test Voice" Click="TestSpeechButton_Click" Padding="14,5"/>
