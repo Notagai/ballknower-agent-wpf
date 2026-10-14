@@ -69,6 +69,52 @@ public sealed class AudioOutputService : IDisposable
         }, cancellationToken);
     }
 
+    public async Task PlayWavFileAsync(string wavPath, CancellationToken cancellationToken = default)
+    {
+        await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var reader = new WaveFileReader(wavPath);
+            using var enumerator = new MMDeviceEnumerator();
+            var selected = _getDevice();
+            var device = string.IsNullOrWhiteSpace(selected)
+                ? null
+                : enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active)
+                    .FirstOrDefault(d => string.Equals(d.FriendlyName, selected, StringComparison.OrdinalIgnoreCase));
+            var output = device is null
+                ? new WasapiOut(AudioClientShareMode.Shared, true, 100)
+                : new WasapiOut(device, AudioClientShareMode.Shared, true, 100);
+            var volumeProvider = new VolumeWaveProvider16(reader)
+            {
+                Volume = Math.Clamp(_getVolume(), 0, 100) / 100f
+            };
+            output.Init(volumeProvider);
+            lock (_sync)
+            {
+                _output?.Stop();
+                _output?.Dispose();
+                _output = output;
+            }
+            output.Play();
+            try
+            {
+                while (output.PlaybackState == PlaybackState.Playing)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Thread.Sleep(20);
+                }
+            }
+            finally
+            {
+                lock (_sync)
+                {
+                    if (ReferenceEquals(_output, output)) _output = null;
+                }
+                output.Dispose();
+            }
+        }, cancellationToken);
+    }
+
     public void Stop()
     {
         lock (_sync)
