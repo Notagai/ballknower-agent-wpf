@@ -13,9 +13,9 @@ def reply(payload):
 
 def main():
     try:
-        import soundfile as sf
-        from kittenml import KittenTTS
         with contextlib.redirect_stdout(sys.stderr):
+            import soundfile as sf
+            from kittenml import KittenTTS
             model = KittenTTS("KittenML/kitten-tts-2", weights="emb4")
         reply({"ok": True, "type": "ready", "voices": list(model.available_voices), "sample_rate": model.sample_rate})
     except Exception as exc:
