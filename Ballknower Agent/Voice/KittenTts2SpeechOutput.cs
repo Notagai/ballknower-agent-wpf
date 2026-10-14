@@ -25,6 +25,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
     private StreamWriter? _workerInput;
     private StreamReader? _workerOutput;
     private bool _disposed;
+    private volatile bool _isRequestInProgress;
 
     public KittenTts2SpeechOutput(
         Func<string> getVoice,
@@ -37,8 +38,10 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
 
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(KittenTts2SpeechOutput));
         if (string.IsNullOrWhiteSpace(text)) return;
         await _requestLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        _isRequestInProgress = true;
         string? outputPath = null;
         try
         {
@@ -82,6 +85,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
             {
                 try { if (File.Exists(outputPath)) File.Delete(outputPath); } catch { }
             }
+            _isRequestInProgress = false;
             _requestLock.Release();
         }
     }
@@ -103,16 +107,16 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
     public void Stop()
     {
         _audioOutput.Stop();
-        StopWorker();
+        if (_isRequestInProgress) StopWorker();
     }
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        Stop();
+        _audioOutput.Stop();
+        StopWorker();
         _audioOutput.Dispose();
-        _requestLock.Dispose();
     }
 
     private static string NormalizeVoice(string? voice) =>
