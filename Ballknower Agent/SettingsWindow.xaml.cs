@@ -1850,6 +1850,7 @@ public partial class SettingsWindow : Window
         _targetSettings.SpeechProvider = _settings.SpeechProvider;
         _targetSettings.SpeechVoiceId = _settings.SpeechVoiceId;
         _targetSettings.SpeechModel = _settings.SpeechModel;
+        _targetSettings.KittenTTS2Voice = _settings.KittenTTS2Voice;
         _targetSettings.SpeechOutputDevice = _settings.SpeechOutputDevice;
         _targetSettings.SpeechVolume = _settings.SpeechVolume;
         _targetSettings.SpeechEffectsEnabled = _settings.SpeechEffectsEnabled;
