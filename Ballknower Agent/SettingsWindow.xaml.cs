@@ -98,6 +98,9 @@ public partial class SettingsWindow : Window
             SpeechVoiceId = settings.SpeechVoiceId,
             SpeechModel = settings.SpeechModel,
             KittenTTS2Voice = settings.KittenTTS2Voice,
+            VoiceCloneReferencePath = settings.VoiceCloneReferencePath,
+            VoiceCloneReferenceText = settings.VoiceCloneReferenceText,
+            VoiceCloneConsentConfirmed = settings.VoiceCloneConsentConfirmed,
             SpeechOutputDevice = settings.SpeechOutputDevice,
             SpeechVolume = settings.SpeechVolume,
             SpeechEffectsEnabled = settings.SpeechEffectsEnabled,
@@ -1339,6 +1342,9 @@ public partial class SettingsWindow : Window
         SpeechModelInput.ItemsSource = new List<SpeechVoice> { new("eleven_multilingual_v2", "Eleven Multilingual v2"), new("eleven_flash_v2_5", "Eleven Flash v2.5"), new("eleven_turbo_v2_5", "Eleven Turbo v2.5") };
         SpeechModelInput.SelectedValue = _settings.SpeechModel;
         SpeechVoiceIdInput.Text = _settings.SpeechVoiceId;
+        VoiceCloneReferenceTextInput.Text = _settings.VoiceCloneReferenceText ?? string.Empty;
+        VoiceCloneConsentCheckBox.IsChecked = _settings.VoiceCloneConsentConfirmed;
+        VoiceCloneReferenceStatus.Text = string.IsNullOrWhiteSpace(_settings.VoiceCloneReferencePath) ? "No reference clip selected" : Path.GetFileName(_settings.VoiceCloneReferencePath);
         using (var kittenService = new KittenTts2SpeechOutput(() => _settings.KittenTTS2Voice, () => _settings.SpeechOutputDevice, () => _settings.SpeechVolume))
         {
             KittenTTS2VoiceInput.ItemsSource = kittenService.GetVoicesAsync().GetAwaiter().GetResult();
@@ -1357,9 +1363,11 @@ public partial class SettingsWindow : Window
     {
         var provider = SpeechProviderInput.SelectedValue as string ?? _settings.SpeechProvider ?? "ElevenLabs";
         var isKitten = provider.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase);
-        var isElevenLabs = !isKitten && !string.Equals(provider, "Microsoft", StringComparison.OrdinalIgnoreCase);
+        var isVoiceClone = provider.StartsWith("Voice Clone", StringComparison.OrdinalIgnoreCase);
+        var isElevenLabs = !isKitten && !isVoiceClone && !string.Equals(provider, "Microsoft", StringComparison.OrdinalIgnoreCase);
         ElevenLabsSettingsPanel.Visibility = isElevenLabs ? Visibility.Visible : Visibility.Collapsed;
         KittenTTS2SettingsPanel.Visibility = isKitten ? Visibility.Visible : Visibility.Collapsed;
+        VoiceCloneSettingsPanel.Visibility = isVoiceClone ? Visibility.Visible : Visibility.Collapsed;
     }
     private void SpeechProviderInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -1373,6 +1381,47 @@ public partial class SettingsWindow : Window
     {
         if (_isInitializing || SpeechVoiceInput.SelectedItem is not SpeechVoice voice) return;
         SpeechVoiceIdInput.Text = voice.Id;
+        SaveSpeechControls();
+        MarkDirty();
+    }
+
+    private void BrowseVoiceCloneReferenceButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Choose an audio or video reference clip",
+            Filter = "Audio and video files|*.wav;*.mp3;*.m4a;*.aac;*.flac;*.ogg;*.wma;*.mp4;*.mov;*.mkv;*.webm;*.avi;*.wmv|All files|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ballknower", "VoiceClones");
+            Directory.CreateDirectory(folder);
+            var extension = Path.GetExtension(dialog.FileName);
+            var destination = Path.Combine(folder, "reference" + extension);
+            File.Copy(dialog.FileName, destination, true);
+            _settings.VoiceCloneReferencePath = destination;
+            VoiceCloneReferenceStatus.Text = Path.GetFileName(destination) + " (stored locally)";
+            MarkDirty();
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this, "Could not import the reference clip. " + ex.Message, "Voice Clone Import", WpfMessageBoxButton.OK, WpfMessageBoxImage.Error);
+        }
+    }
+
+    private void VoiceCloneSettingChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing) return;
+        SaveSpeechControls();
+        MarkDirty();
+    }
+
+    private void VoiceCloneSettingChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInitializing) return;
         SaveSpeechControls();
         MarkDirty();
     }
@@ -1413,6 +1462,8 @@ public partial class SettingsWindow : Window
         _settings.SpeechVoiceId = SpeechVoiceIdInput.Text.Trim();
         _settings.SpeechModel = SpeechModelInput.SelectedValue as string ?? _settings.SpeechModel ?? "eleven_multilingual_v2";
         _settings.KittenTTS2Voice = KittenTTS2VoiceInput.SelectedValue as string ?? _settings.KittenTTS2Voice ?? "Luna";
+        _settings.VoiceCloneReferenceText = VoiceCloneReferenceTextInput.Text.Trim();
+        _settings.VoiceCloneConsentConfirmed = VoiceCloneConsentCheckBox.IsChecked == true;
         _settings.SpeechOutputDevice = SpeechOutputDeviceInput.SelectedItem as string ?? string.Empty;
         _settings.SpeechVolume = Math.Clamp((int)Math.Round(SpeechVolumeSlider.Value), 0, 100);
         _settings.SpeechEffectsEnabled = SpeechEffectsEnabledCheckBox.IsChecked == true;
@@ -1533,6 +1584,8 @@ public partial class SettingsWindow : Window
         var provider = SpeechProviderInput.SelectedValue as string ?? _settings.SpeechProvider ?? "ElevenLabs";
         if (provider.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase))
             return new KittenTts2SpeechOutput(() => _settings.KittenTTS2Voice, () => _settings.SpeechOutputDevice, () => _settings.SpeechVolume);
+        if (provider.StartsWith("Voice Clone", StringComparison.OrdinalIgnoreCase))
+            return new VoiceCloneSpeechOutput(() => _settings.VoiceCloneReferencePath, () => _settings.VoiceCloneReferenceText, () => _settings.VoiceCloneConsentConfirmed, () => _settings.SpeechOutputDevice, () => _settings.SpeechVolume);
         if (string.Equals(provider, "Microsoft", StringComparison.OrdinalIgnoreCase))
             return new MicrosoftSpeechOutput();
         return CreateSpeechService();
@@ -1851,6 +1904,9 @@ public partial class SettingsWindow : Window
         _targetSettings.SpeechVoiceId = _settings.SpeechVoiceId;
         _targetSettings.SpeechModel = _settings.SpeechModel;
         _targetSettings.KittenTTS2Voice = _settings.KittenTTS2Voice;
+        _targetSettings.VoiceCloneReferencePath = _settings.VoiceCloneReferencePath;
+        _targetSettings.VoiceCloneReferenceText = _settings.VoiceCloneReferenceText;
+        _targetSettings.VoiceCloneConsentConfirmed = _settings.VoiceCloneConsentConfirmed;
         _targetSettings.SpeechOutputDevice = _settings.SpeechOutputDevice;
         _targetSettings.SpeechVolume = _settings.SpeechVolume;
         _targetSettings.SpeechEffectsEnabled = _settings.SpeechEffectsEnabled;
