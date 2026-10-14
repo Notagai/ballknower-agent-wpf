@@ -19,4 +19,4 @@
 		<PackageReference Include="NAudio" Version="2.4.0" />
 	</ItemGroup>
 
-</Project>
+  <ItemGroup>\n    <Content Include="Voice\\kittentts2_worker.py" CopyToOutputDirectory="PreserveNewest" />\n  </ItemGroup>\n\n</Project>
