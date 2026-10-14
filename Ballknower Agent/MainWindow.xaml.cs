@@ -319,8 +319,7 @@ public partial class MainWindow : Window
 
     private async Task SpeakAssistantTextAsync(string text)
     {
-        if (_launchMode == LaunchMode.Text ||
-            !_settings.SpeechOutputEnabled ||
+        if (!_settings.SpeechOutputEnabled ||
             string.IsNullOrWhiteSpace(text))
             return;
 
