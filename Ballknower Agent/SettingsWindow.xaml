@@ -149,8 +149,9 @@
                         <CheckBox x:Name="VoiceCloneConsentCheckBox" Foreground="White" Margin="0,0,0,8" Checked="VoiceCloneSettingChanged" Unchecked="VoiceCloneSettingChanged"><TextBlock Text="I own this voice or have the speaker’s explicit permission to create and use this voice profile." TextWrapping="Wrap"/></CheckBox>
                         <TextBlock Text="First use installs a local Python 3.10 runtime and downloads the model; several GB of memory and an internet connection are needed for setup. The reference clip is processed locally. The model has non-commercial licensing terms; review them before any commercial use." FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,4"/>
                     </StackPanel>
+                    <ProgressBar x:Name="SpeechTestProgressBar" Height="5" IsIndeterminate="True" Visibility="Collapsed" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <Button Content="Test Voice" Click="TestSpeechButton_Click" Padding="14,5"/>
+                        <Button x:Name="TestSpeechButton" Content="Test Voice" Click="TestSpeechButton_Click" Padding="14,5"/>
                         <TextBlock x:Name="SpeechTestStatus" Text="○ Not tested" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#FFBDBDBD" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
                     <TextBlock Text="Speaker" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
