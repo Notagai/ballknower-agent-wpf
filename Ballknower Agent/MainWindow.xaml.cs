@@ -287,9 +287,11 @@ public partial class MainWindow : Window
     private string NormalizeSpeechProvider() =>
         _settings.SpeechProvider?.StartsWith("KittenTTS2", StringComparison.OrdinalIgnoreCase) == true
             ? "KittenTTS2"
-            : string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
-                ? "Microsoft"
-                : "ElevenLabs";
+            : _settings.SpeechProvider?.StartsWith("Voice Clone", StringComparison.OrdinalIgnoreCase) == true
+                ? "VoiceClone"
+                : string.Equals(_settings.SpeechProvider, "Microsoft", StringComparison.OrdinalIgnoreCase)
+                    ? "Microsoft"
+                    : "ElevenLabs";
 
     private ISpeechOutput CreateSpeechOutput() =>
         NormalizeSpeechProvider() switch
@@ -297,6 +299,12 @@ public partial class MainWindow : Window
             "Microsoft" => new MicrosoftSpeechOutput(),
             "KittenTTS2" => new KittenTts2SpeechOutput(
                 () => _settings.KittenTTS2Voice,
+                () => _settings.SpeechOutputDevice,
+                () => _settings.SpeechVolume),
+            "VoiceClone" => new VoiceCloneSpeechOutput(
+                () => _settings.VoiceCloneReferencePath,
+                () => _settings.VoiceCloneReferenceText,
+                () => _settings.VoiceCloneConsentConfirmed,
                 () => _settings.SpeechOutputDevice,
                 () => _settings.SpeechVolume),
             _ => new ElevenLabsSpeechOutput(
