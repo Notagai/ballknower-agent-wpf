@@ -50,6 +50,7 @@ public class AppSettings
     public string SpeechProvider { get; set; } = "ElevenLabs";
     public string SpeechVoiceId { get; set; } = string.Empty;
     public string SpeechModel { get; set; } = "eleven_multilingual_v2";
+    public string KittenTTS2Voice { get; set; } = "Luna";
     public string SpeechOutputDevice { get; set; } = string.Empty;
     public int SpeechVolume { get; set; } = 100;
     public bool SpeechEffectsEnabled { get; set; } = true;
