@@ -12,7 +12,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
         "Diana", "Dolores", "Eleanor", "Edith", "Elliot", "Frank", "French", "German", "Grace", "Herbert", "Hindi",
         "Hugo", "Iris", "Italian", "Jasper", "Julian", "Kiki", "Laurence",
         "Leo", "Luna", "Maeve", "Marcus", "Martha", "Matthew", "Miles",
-        "Otis", "Portuguese", "Reginald", "Rosie", "Russian", "Sable",
+        "Otis", "Portuguese", "Raven", "Reginald", "Rosie", "Russian", "Sable",
         "Saoirse", "Serena", "Spanish", "Victor", "Victoria", "Vincent",
         "Walter", "Willow"
     };
