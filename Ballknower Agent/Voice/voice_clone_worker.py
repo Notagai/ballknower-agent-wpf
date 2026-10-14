@@ -60,7 +60,7 @@ def main():
             os.makedirs(os.path.dirname(output), exist_ok=True)
             conversion = subprocess.run(
                 [ffmpeg, "-y", "-i", reference, "-vn", "-ac", "1", "-ar", "24000",
-                 "-t", "30", normalized_reference],
+                 "-t", "15", normalized_reference],
                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, timeout=120
             )
             if conversion.returncode != 0 or not os.path.isfile(normalized_reference):
