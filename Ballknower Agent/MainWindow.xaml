@@ -161,6 +161,72 @@
                 Visibility="Collapsed"
                 Panel.ZIndex="1000"/>
 
+        <!-- Dedicated speech-first interface. The conversation remains visible above it. -->
+        <Grid x:Name="VoiceInterfacePanel"
+              Panel.ZIndex="50"
+              Visibility="Collapsed"
+              VerticalAlignment="Bottom"
+              Height="270"
+              Margin="0,0,0,55">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="220"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="SwitchToTextButton"
+                    Grid.Column="0"
+                    Width="156"
+                    Height="48"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Margin="28,0,0,0"
+                    Padding="14,8"
+                    Background="#E8202020"
+                    Foreground="White"
+                    BorderBrush="#66FFFFFF"
+                    BorderThickness="1"
+                    FontSize="14"
+                    FontWeight="SemiBold"
+                    ToolTip="Switch to text chat with voice output"
+                    Click="SwitchToTextChatWithVoiceOutput_Click"
+                    Content="Text chat  →"/>
+
+            <StackPanel Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxWidth="620">
+                <Border Width="92"
+                        Height="92"
+                        CornerRadius="46"
+                        Background="#FF1677FF"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,14">
+                    <TextBlock Text="🎙"
+                               FontSize="42"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock x:Name="VoiceStatusText"
+                           Text="Listening…"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,8"/>
+                <TextBlock x:Name="VoiceTranscriptText"
+                           Text="Speak naturally. Your words will appear here and in the chat."
+                           FontSize="16"
+                           Foreground="White"
+                           Opacity="0.82"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           MaxWidth="620"/>
+            </StackPanel>
+        </Grid>
+
         <!-- Input pill -->
         <Border x:Name="InputPill"
                     Width="700"
