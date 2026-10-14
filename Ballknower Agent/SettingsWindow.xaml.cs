@@ -1387,7 +1387,7 @@ public partial class SettingsWindow : Window
 
     private void BrowseVoiceCloneReferenceButton_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog
+        var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "Choose an audio or video reference clip",
             Filter = "Audio and video files|*.wav;*.mp3;*.m4a;*.aac;*.flac;*.ogg;*.wma;*.mp4;*.mov;*.mkv;*.webm;*.avi;*.wmv|All files|*.*",
