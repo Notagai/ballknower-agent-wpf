@@ -184,20 +184,23 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
                 catch { }
             });
 
-            var readyLine = await _workerOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-            if (readyLine is null)
+            try
             {
-                var exitCode = _worker.HasExited ? _worker.ExitCode.ToString() : "unknown";
-                StopWorker();
-                throw new InvalidOperationException("KittenTTS 2 failed to start (exit code " + exitCode + "). Check the app log for details.");
-            }
+                var readyLine = await _workerOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                if (readyLine is null)
+                {
+                    var exitCode = _worker.HasExited ? _worker.ExitCode.ToString() : "unknown";
+                    throw new InvalidOperationException("KittenTTS 2 failed to start (exit code " + exitCode + "). Check the app log for details.");
+                }
 
-            using var ready = JsonDocument.Parse(readyLine);
-            if (!ready.RootElement.TryGetProperty("ok", out var readyOk) || !readyOk.GetBoolean())
+                using var ready = JsonDocument.Parse(readyLine);
+                if (!ready.RootElement.TryGetProperty("ok", out var readyOk) || !readyOk.GetBoolean())
+                    throw new InvalidOperationException("KittenTTS 2 could not load its model: " + ReadWorkerError(ready.RootElement));
+            }
+            catch
             {
-                var error = ReadWorkerError(ready.RootElement);
                 StopWorker();
-                throw new InvalidOperationException("KittenTTS 2 could not load its model: " + error);
+                throw;
             }
         }
         finally
