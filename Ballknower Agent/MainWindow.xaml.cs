@@ -130,6 +130,8 @@ public partial class MainWindow : Window
         new SolidColorBrush(Colors.White);
 
     private SettingsWindow? _settingsWindow;
+    private KittenTts2SetupWindow? _kittenSetupWindow;
+    private bool _kittenInitializationStarted;
 
     private bool _isProcessing;
     private bool _hasEnteredChat;
@@ -654,6 +656,51 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         LogMemorySnapshot("window loaded");
+
+        if (!_kittenInitializationStarted &&
+            _settings.SpeechOutputEnabled &&
+            NormalizeSpeechProvider() == "KittenTTS2" &&
+            _speechOutput is KittenTts2SpeechOutput kitten)
+        {
+            _kittenInitializationStarted = true;
+            var setupWindow = new KittenTts2SetupWindow { Owner = this };
+            _kittenSetupWindow = setupWindow;
+            Action<string> progressHandler = message =>
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (setupWindow.IsVisible) setupWindow.SetStatus(message);
+                }));
+            kitten.ProgressChanged += progressHandler;
+            setupWindow.Closed += (_, _) =>
+            {
+                kitten.ProgressChanged -= progressHandler;
+                if (ReferenceEquals(_kittenSetupWindow, setupWindow))
+                    _kittenSetupWindow = null;
+            };
+            setupWindow.Show();
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await kitten.InitializeAsync();
+                    await Dispatcher.InvokeAsync(setupWindow.SetReady);
+                    await Task.Delay(1600);
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        if (setupWindow.IsVisible) setupWindow.Close();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("KittenTTS 2 initialization failed", ex);
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        if (setupWindow.IsVisible) setupWindow.SetFailure(ex.Message);
+                    });
+                }
+            });
+        }
         if (_isOpeningWithFade)
             return;
 
@@ -697,6 +744,8 @@ public partial class MainWindow : Window
         }
 
         StopVoiceActivity();
+        _kittenSetupWindow?.Close();
+        _kittenSetupWindow = null;
         _speechInput.Dispose();
         _speechOutput.Dispose();
     }
