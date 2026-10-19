@@ -68,7 +68,10 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
             {
                 action = "speak",
                 text,
-                voice = NormalizeVoice(_getVoice()),
+                voice = _availableVoices.FirstOrDefault(v =>
+                    string.Equals(v, NormalizeVoice(_getVoice()), StringComparison.OrdinalIgnoreCase))
+                    ?? _availableVoices.FirstOrDefault()
+                    ?? "Luna",
                 output = outputPath
             }).AsMemory(), cancellationToken).ConfigureAwait(false);
             await _workerInput.FlushAsync(cancellationToken).ConfigureAwait(false);
