@@ -291,7 +291,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
                     candidate.prefix.Concat(new[] { "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"}),
                     null,
                     cancellationToken).ConfigureAwait(false);
-                var versionText = result.output.Trim().Split(new[] { '\\r', '\\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                var versionText = result.output.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
                 var parts = versionText?.Split('.');
                 if (result.exitCode == 0 && parts is { Length: >= 2 } &&
                     int.TryParse(parts[0], out var major) &&
