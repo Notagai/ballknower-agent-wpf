@@ -34,6 +34,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
     private StreamReader? _workerOutput;
     private bool _disposed;
     private volatile bool _isRequestInProgress;
+    private IReadOnlyList<string> _availableVoices = KnownVoices;
 
     public KittenTts2SpeechOutput(
         Func<string> getVoice,
@@ -42,6 +43,12 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
     {
         _getVoice = getVoice;
         _audioOutput = new AudioOutputService(getOutputDevice, getVolume);
+    }
+
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(KittenTts2SpeechOutput));
+        await EnsureWorkerAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
@@ -102,7 +109,7 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
     public Task<IReadOnlyList<SpeechVoice>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        IReadOnlyList<SpeechVoice> voices = KnownVoices
+        IReadOnlyList<SpeechVoice> voices = _availableVoices
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
             .Select(v => new SpeechVoice(v, v))
@@ -151,9 +158,10 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
             if (!File.Exists(workerScript))
                 throw new FileNotFoundException("The KittenTTS 2 worker script was not found beside Ballknower.", workerScript);
 
+            ReportProgress("Checking the local Python environment…");
             if (!File.Exists(venvPython))
             {
-                ReportProgress("Preparing the local Python environment…");
+                ReportProgress("Python environment not found. Creating a private environment…");
                 var pythonLauncher = await FindPythonLauncherAsync(cancellationToken).ConfigureAwait(false);
                 ReportProgress("Creating KittenTTS 2's private Python environment…");
                 await RunProcessAsync(pythonLauncher.file, pythonLauncher.prefix.Concat(new[]
@@ -162,18 +170,22 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
                 }), runtimeDirectory, cancellationToken).ConfigureAwait(false);
             }
 
-            ReportProgress("Checking KittenTTS 2 dependencies…");
+            ReportProgress("Checking installed KittenTTS 2 dependencies…");
             var importCheck = await RunProcessCaptureAsync(venvPython, new[] { "-c", "import kittenml, soundfile" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
             if (importCheck.exitCode != 0)
             {
-                ReportProgress("Installing KittenTTS 2 dependencies. This can take several minutes; downloading packages…");
+                ReportProgress("Dependencies are missing. Installing KittenTTS 2 and required packages…");
                 await RunProcessAsync(venvPython, new[] { "-m", "pip", "install", "--upgrade", "pip" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
-                ReportProgress("Installing KittenTTS 2 and its dependencies…");
-                await RunProcessAsync(venvPython, new[] { "-m", "pip", "install", "kittenml" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
-                ReportProgress("Dependencies installed. Starting the speech model…");
+                await RunProcessAsync(venvPython, new[] { "-m", "pip", "install", "--upgrade", "kittenml", "soundfile" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                ReportProgress("Dependencies are installed. Checking for package updates…");
+                // pip's upgrade check ensures an older KittenML runtime is not silently reused.
+                await RunProcessAsync(venvPython, new[] { "-m", "pip", "install", "--upgrade", "kittenml" }, runtimeDirectory, cancellationToken).ConfigureAwait(false);
             }
 
-            ReportProgress("Loading KittenTTS 2 model. The first run may download about 506 MiB…");
+            ReportProgress("Loading KittenTTS 2 model (downloading model files if needed)…");
             var start = new ProcessStartInfo
             {
                 FileName = venvPython,
@@ -206,7 +218,18 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
 
             try
             {
-                var readyLine = await _workerOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                using var startupTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                startupTimeout.CancelAfter(TimeSpan.FromMinutes(10));
+                string? readyLine;
+                try
+                {
+                    readyLine = await _workerOutput.ReadLineAsync(startupTimeout.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException("KittenTTS 2 did not finish loading within 10 minutes. Check the app log, available memory, and internet connection.");
+                }
+
                 if (readyLine is null)
                 {
                     var exitCode = _worker.HasExited ? _worker.ExitCode.ToString() : "unknown";
@@ -216,6 +239,18 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
                 using var ready = JsonDocument.Parse(readyLine);
                 if (!ready.RootElement.TryGetProperty("ok", out var readyOk) || !readyOk.GetBoolean())
                     throw new InvalidOperationException("KittenTTS 2 could not load its model: " + ReadWorkerError(ready.RootElement));
+
+                if (ready.RootElement.TryGetProperty("voices", out var voicesElement) &&
+                    voicesElement.ValueKind == JsonValueKind.Array)
+                {
+                    var voices = voicesElement.EnumerateArray()
+                        .Select(v => v.GetString())
+                        .Where(v => !string.IsNullOrWhiteSpace(v))
+                        .Select(v => v!)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    if (voices.Count > 0) _availableVoices = voices;
+                }
             }
             catch
             {
@@ -248,9 +283,20 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
         {
             try
             {
-                var result = await RunProcessCaptureAsync(candidate.file, candidate.prefix.Concat(new[] { "--version" }), null, cancellationToken).ConfigureAwait(false);
-                if (result.exitCode == 0) return candidate;
+                var result = await RunProcessCaptureAsync(
+                    candidate.file,
+                    candidate.prefix.Concat(new[] { "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"}),
+                    null,
+                    cancellationToken).ConfigureAwait(false);
+                var versionText = result.output.Trim().Split(new[] { '\\r', '\\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                var parts = versionText?.Split('.');
+                if (result.exitCode == 0 && parts is { Length: >= 2 } &&
+                    int.TryParse(parts[0], out var major) &&
+                    int.TryParse(parts[1], out var minor) &&
+                    (major > 3 || (major == 3 && minor >= 9)))
+                    return candidate;
             }
+            catch (OperationCanceledException) { throw; }
             catch { }
         }
         throw new InvalidOperationException("Python 3.9 or newer is required for local KittenTTS 2. Install Python for Windows, then restart Ballknower. Ballknower will install its private KittenTTS 2 runtime automatically.");
@@ -270,7 +316,18 @@ public sealed class KittenTts2SpeechOutput : ISpeechOutput
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start " + file + ".");
         var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromMinutes(10));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            try { if (!process.HasExited) process.Kill(true); } catch { }
+            if (cancellationToken.IsCancellationRequested) throw;
+            throw new TimeoutException(file + " did not finish within 10 minutes.");
+        }
         return (process.ExitCode, (await stdout.ConfigureAwait(false)) + Environment.NewLine + (await stderr.ConfigureAwait(false)));
     }
 }
